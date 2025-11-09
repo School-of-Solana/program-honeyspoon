@@ -10,7 +10,9 @@ export interface GameState {
   depth: number;
   oxygenLevel: number;
   sessionId: string;
+  userId: string;
   discoveredShipwrecks: Shipwreck[];
+  walletBalance?: number;
 }
 
 export interface DiveStats {

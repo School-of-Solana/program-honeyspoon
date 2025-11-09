@@ -3,11 +3,20 @@
 import { useState, useEffect } from "react";
 import OceanScene from "@/components/DeepSeaDiver/OceanScene";
 import { calculateDiveStats } from "@/lib/gameLogic";
-import { performDive, surfaceWithTreasure, generateSessionId } from "./actions/gameActions";
+import { 
+  performDive, 
+  surfaceWithTreasure, 
+  generateSessionId, 
+  startGame,
+  getWalletInfo 
+} from "./actions/gameActions";
 import type { GameState, Shipwreck, DiveStats } from "@/lib/types";
 import { GAME_CONFIG } from "@/lib/constants";
 
 export default function Home() {
+  // Generate a fixed userId for this session (in production, would come from auth)
+  const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`);
+  
   const [gameState, setGameState] = useState<GameState>({
     isPlaying: false,
     diveNumber: 0,
@@ -16,7 +25,9 @@ export default function Home() {
     depth: 0,
     oxygenLevel: 100,
     sessionId: "",
+    userId: "",
     discoveredShipwrecks: [],
+    walletBalance: 0,
   });
 
   const [betAmount, setBetAmount] = useState(100);
@@ -26,20 +37,37 @@ export default function Home() {
   const [survived, setSurvived] = useState<boolean | undefined>(undefined);
   const [showBettingCard, setShowBettingCard] = useState(true);
   const [showHUD, setShowHUD] = useState(false);
+  const [maxBetAllowed, setMaxBetAllowed] = useState<number>(GAME_CONFIG.MAX_BET);
 
-  // Generate session ID on mount
+  // Initialize session and wallet on mount
   useEffect(() => {
-    generateSessionId().then((id) => {
-      setGameState((prev) => ({ ...prev, sessionId: id }));
-    });
-  }, []);
+    const initializeSession = async () => {
+      const sessionId = await generateSessionId();
+      const walletInfo = await getWalletInfo(userId);
+      
+      setGameState((prev) => ({ 
+        ...prev, 
+        sessionId, 
+        userId,
+        walletBalance: walletInfo.balance 
+      }));
+      
+      setMaxBetAllowed(Math.min(walletInfo.balance, walletInfo.maxBet, GAME_CONFIG.MAX_BET));
+    };
+    
+    initializeSession();
+  }, [userId]);
 
   // Validate bet
   const handleBetChange = (amount: number) => {
+    const walletBalance = gameState.walletBalance || 0;
+    
     if (amount < GAME_CONFIG.MIN_BET) {
       setBetError(`Minimum bet is $${GAME_CONFIG.MIN_BET}`);
-    } else if (amount > GAME_CONFIG.MAX_BET) {
-      setBetError(`Maximum bet is $${GAME_CONFIG.MAX_BET}`);
+    } else if (amount > walletBalance) {
+      setBetError(`Insufficient balance. You have $${walletBalance}`);
+    } else if (amount > maxBetAllowed) {
+      setBetError(`Maximum bet is $${maxBetAllowed}`);
     } else {
       setBetError("");
     }
@@ -47,33 +75,56 @@ export default function Home() {
   };
 
   // Start new game
-  const handleStartGame = () => {
-    if (betAmount < GAME_CONFIG.MIN_BET || betAmount > GAME_CONFIG.MAX_BET) {
+  const handleStartGame = async () => {
+    if (betAmount < GAME_CONFIG.MIN_BET || betAmount > maxBetAllowed) {
       return;
     }
 
     console.log(`[GAME] Starting new game with bet: $${betAmount}`);
 
-    // Hide betting card with animation
-    setShowBettingCard(false);
-    
-    // Wait for card to fade, then start game and show HUD
-    setTimeout(() => {
-      setGameState({
-        isPlaying: true,
-        diveNumber: 1,
-        currentTreasure: betAmount,
-        initialBet: betAmount,
-        depth: 0,
-        oxygenLevel: 100,
-        sessionId: gameState.sessionId,
-        discoveredShipwrecks: [],
-      });
-      setShowHUD(true);
-      setLastShipwreck(undefined);
-      setSurvived(undefined);
-      console.log('[GAME] Game started, HUD visible');
-    }, 500);
+    setIsProcessing(true);
+
+    try {
+      // Start game on server (validates wallet, places bet)
+      const result = await startGame(betAmount, userId, gameState.sessionId);
+      
+      if (!result.success) {
+        setBetError(result.error || "Failed to start game");
+        setIsProcessing(false);
+        return;
+      }
+
+      // Update wallet balance
+      const walletInfo = await getWalletInfo(userId);
+
+      // Hide betting card with animation
+      setShowBettingCard(false);
+      
+      // Wait for card to fade, then start game and show HUD
+      setTimeout(() => {
+        setGameState({
+          isPlaying: true,
+          diveNumber: 1,
+          currentTreasure: betAmount,
+          initialBet: betAmount,
+          depth: 0,
+          oxygenLevel: 100,
+          sessionId: gameState.sessionId,
+          userId: gameState.userId,
+          discoveredShipwrecks: [],
+          walletBalance: walletInfo.balance,
+        });
+        setShowHUD(true);
+        setLastShipwreck(undefined);
+        setSurvived(undefined);
+        setIsProcessing(false);
+        console.log('[GAME] Game started, HUD visible');
+      }, 500);
+    } catch (error) {
+      console.error("Failed to start game:", error);
+      setBetError("Failed to start game. Please try again.");
+      setIsProcessing(false);
+    }
   };
 
   // Dive deeper
@@ -97,7 +148,8 @@ export default function Home() {
       const result = await performDive(
         gameState.diveNumber,
         gameState.currentTreasure,
-        gameState.sessionId
+        gameState.sessionId,
+        gameState.userId
       );
 
       console.log(`[GAME] Server response received - Survived: ${result.survived}, Roll: ${result.randomRoll}, Threshold: ${result.threshold}`);
@@ -133,6 +185,9 @@ export default function Home() {
       } else {
         console.log(`[GAME] DROWNED at ${result.depth}m - Game Over`);
 
+        // Update wallet balance
+        const walletInfo = await getWalletInfo(userId);
+
         // Wait for death animation
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
@@ -148,9 +203,11 @@ export default function Home() {
           depth: 0,
           oxygenLevel: 100,
           discoveredShipwrecks: [],
+          walletBalance: walletInfo.balance,
         }));
         setLastShipwreck(undefined);
         setSurvived(undefined);
+        setMaxBetAllowed(Math.min(walletInfo.balance, walletInfo.maxBet, GAME_CONFIG.MAX_BET));
         
         setTimeout(() => setShowBettingCard(true), 500);
       }
@@ -172,14 +229,17 @@ export default function Home() {
     try {
       const result = await surfaceWithTreasure(
         gameState.currentTreasure,
-        gameState.sessionId
+        gameState.sessionId,
+        gameState.userId
       );
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       if (result.success) {
-        const profit = result.finalAmount - gameState.initialBet;
-        console.log(`[GAME] Surface successful! Final amount: $${result.finalAmount}, Profit: $${profit}`);
+        console.log(`[GAME] Surface successful! Final amount: $${result.finalAmount}, Profit: $${result.profit}`);
+
+        // Update wallet balance
+        const walletInfo = await getWalletInfo(userId);
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -195,9 +255,11 @@ export default function Home() {
           depth: 0,
           oxygenLevel: 100,
           discoveredShipwrecks: [],
+          walletBalance: walletInfo.balance,
         }));
         setLastShipwreck(undefined);
         setSurvived(undefined);
+        setMaxBetAllowed(Math.min(walletInfo.balance, walletInfo.maxBet, GAME_CONFIG.MAX_BET));
         
         setTimeout(() => setShowBettingCard(true), 500);
       }
@@ -239,6 +301,21 @@ export default function Home() {
               <p className="text-blue-200 text-sm">
                 Dive for treasure • 15% House Edge • Infinite Depths
               </p>
+            </div>
+
+            {/* Wallet Balance */}
+            <div className="mb-6 p-4 bg-blue-950/50 rounded-lg border-2 border-blue-600">
+              <div className="flex justify-between items-center">
+                <span className="text-blue-300 text-sm font-medium">💰 Your Balance</span>
+                <span className="text-2xl font-bold text-yellow-400">
+                  ${gameState.walletBalance || 0}
+                </span>
+              </div>
+              {maxBetAllowed < GAME_CONFIG.MAX_BET && (
+                <p className="text-xs text-orange-400 mt-2">
+                  Max bet limited to ${maxBetAllowed} (wallet/house limit)
+                </p>
+              )}
             </div>
 
             <div className="space-y-4">
