@@ -1,6 +1,17 @@
 /**
  * Core game logic for Abyss Fortune
- * Fixed EV math and procedural generation
+ * 
+ * THEME LAYER: This wraps the generic game engine with submarine/diving theme
+ * 
+ * The generic engine (gameEngine.ts) handles:
+ * - Probability/multiplier math
+ * - Win/loss determination
+ * - EV calculations
+ * 
+ * This file adds:
+ * - Depth zones (visual)
+ * - Shipwrecks (procedural content)
+ * - Oxygen levels (flavor)
  */
 
 import {
@@ -15,40 +26,33 @@ import {
   SHIPWRECK_VISUALS,
 } from "./constants";
 import type { DiveStats, DepthZone, Shipwreck } from "./types";
+import { calculateRoundStats } from "./gameEngine";
 
 /**
  * Calculate dive statistics for any round
- * EV is ALWAYS 0.85 (15% house edge) - PROVABLY FAIR
+ * 
+ * This wraps the generic game engine with diving theme:
+ * - roundNumber → diveNumber
+ * - Adds depth (visual)
+ * - Adds depth zones (visual)
+ * - Adds oxygen (flavor)
  */
 export function calculateDiveStats(diveNumber: number): DiveStats {
-  const { BASE_WIN_PROB, DECAY_CONSTANT, MIN_WIN_PROB, TARGET_EV } =
-    GAME_CONFIG;
+  // Get generic round stats from engine
+  const roundStats = calculateRoundStats(diveNumber);
 
-  // Survival probability (decreases exponentially)
-  const survivalProb = Math.max(
-    MIN_WIN_PROB,
-    BASE_WIN_PROB * Math.exp(-DECAY_CONSTANT * (diveNumber - 1))
-  );
-
-  // Multiplier DERIVED from EV (mathematically guaranteed)
-  // Formula: multiplier = TARGET_EV / survivalProb
-  const multiplier = TARGET_EV / survivalProb;
-
-  // Depth (visual only)
+  // Add theme-specific visuals
   const depth = GAME_CONFIG.DEPTH_PER_DIVE * diveNumber;
-
-  // Threshold for random roll (0-100)
-  const threshold = Math.round((1 - survivalProb) * 100);
 
   return {
     diveNumber,
-    survivalProbability: Math.round(survivalProb * 1000) / 1000,
-    multiplier: Math.round(multiplier * 100) / 100,
-    expectedValue: TARGET_EV, // ALWAYS 0.85
+    survivalProbability: roundStats.winProbability,
+    multiplier: roundStats.multiplier,
+    expectedValue: roundStats.expectedValue,
     depth,
-    threshold,
+    threshold: roundStats.threshold,
     depthZone: getDepthZone(depth),
-    oxygenRemaining: Math.max(5, 100 - diveNumber * 4), // Depletes over time
+    oxygenRemaining: Math.max(5, 100 - diveNumber * 4), // Depletes over time (flavor)
   };
 }
 

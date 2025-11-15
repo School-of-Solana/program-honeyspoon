@@ -24,17 +24,22 @@ export interface HouseWallet {
 export interface Transaction {
   id: string;
   userId: string;
-  type: 'bet' | 'win' | 'loss' | 'surface' | 'deposit' | 'withdrawal';
+  type: 'bet' | 'win' | 'loss' | 'surface' | 'cashout' | 'deposit' | 'withdrawal';
   amount: number;
   balanceBefore: number;
   balanceAfter: number;
   gameSessionId: string;
   timestamp: number;
   metadata?: {
+    // Generic round-based fields
+    roundNumber?: number;
+    survived?: boolean;
+    profit?: number;
+    
+    // Legacy theme-specific fields (for backward compatibility)
     diveNumber?: number;
     depth?: number;
     multiplier?: number;
-    survived?: boolean;
   };
 }
 
@@ -42,8 +47,8 @@ export interface GameSession {
   sessionId: string;
   userId: string;
   initialBet: number;
-  currentTreasure: number;
-  diveNumber: number;
+  currentTreasure: number; // Current accumulated value (generic name, works for treasure/points/etc)
+  diveNumber: number; // Current round number (legacy name for compatibility)
   isActive: boolean;
   reservedPayout: number; // Max potential payout reserved from house
   startTime: number;
