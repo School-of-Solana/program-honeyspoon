@@ -16,8 +16,8 @@ import { calculateDiveStats } from './gameLogic';
 export const DEFAULT_LIMITS: WalletLimits = {
   minBet: 10,
   maxBet: 500,
-  maxPotentialWin: 10000, // House won't risk more than this per game
-  houseReserveRatio: 0.2, // Keep 20% of house wallet in reserve
+  maxPotentialWin: 100000, // House won't risk more than this per game (increased from 10k)
+  houseReserveRatio: 0.1, // Keep 10% of house wallet in reserve (reduced from 20%)
 };
 
 /**

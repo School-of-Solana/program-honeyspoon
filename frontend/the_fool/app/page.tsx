@@ -33,6 +33,7 @@ export default function Home() {
 
   const betAmount = GAME_CONFIG.FIXED_BET; // Fixed bet amount for simplified gameplay
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isDiving, setIsDiving] = useState(false); // Separate state for diving animation
   const [lastShipwreck, setLastShipwreck] = useState<Shipwreck | undefined>();
   const [survived, setSurvived] = useState<boolean | undefined>(undefined);
   const [showBettingCard, setShowBettingCard] = useState(true);
@@ -187,11 +188,12 @@ export default function Home() {
 
     try {
       // STEP 1: Start diving animation
-      setIsProcessing(true);
+      setIsDiving(true);
       console.log('[GAME] 🎬 Starting diving animation (2.5s)...');
       
       // Wait for diving animation (2.5 seconds as defined in OceanScene)
       await new Promise((resolve) => setTimeout(resolve, 2500));
+      setIsDiving(false);
       
       // STEP 2: Call server to determine result
       console.log('[GAME] 🎲 Calling server for dive result...');
@@ -383,7 +385,7 @@ export default function Home() {
           depth={gameState.depth}
           treasureValue={gameState.currentTreasure}
           oxygenLevel={gameState.oxygenLevel}
-          isDiving={isProcessing}
+          isDiving={isDiving}
           survived={survived}
           lastShipwreck={lastShipwreck}
         />
