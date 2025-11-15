@@ -13,6 +13,7 @@ import {
 } from "./actions/gameActions";
 import type { GameState, Shipwreck, DiveStats } from "@/lib/types";
 import { GAME_CONFIG } from "@/lib/constants";
+import { GAME_COLORS } from "@/lib/gameColors";
 
 export default function Home() {
   // Generate a fixed userId for this session (in production, would come from auth)
@@ -415,10 +416,12 @@ export default function Home() {
       {animationMessage && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
           <div className="nes-container is-dark" style={{ 
-            backgroundColor: 'rgba(33, 37, 41, 0.9)',
-            padding: '24px 48px',
-            fontSize: '32px',
-            animation: 'pulse 1s ease-in-out infinite'
+            backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
+            padding: '16px 32px',
+            fontSize: '16px',
+            animation: 'pulse 1s ease-in-out infinite',
+            minWidth: 'auto',
+            whiteSpace: 'nowrap'
           }}>
             {animationMessage}
           </div>
@@ -430,7 +433,10 @@ export default function Home() {
         <div className={`absolute top-20 right-8 z-50 transition-all duration-500 ${
           showBettingCard ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'
         }`}>
-          <div className="nes-container is-dark with-title" style={{ width: '400px', backgroundColor: '#212529' }}>
+          <div className="nes-container is-dark with-title" style={{ 
+            width: '400px', 
+            backgroundColor: GAME_COLORS.BACKGROUND_DARK 
+          }}>
             <p className="title" style={{ fontSize: '12px' }}>ABYSS FORTUNE</p>
             
             {/* Debug Button */}
@@ -446,7 +452,10 @@ export default function Home() {
             </div>
 
             {/* Wallet Balance */}
-            <div className="nes-container is-rounded mb-4" style={{ backgroundColor: '#ffd700', color: '#000' }}>
+            <div className="nes-container is-rounded mb-4" style={{ 
+              backgroundColor: GAME_COLORS.TREASURE_GOLD, 
+              color: '#000' 
+            }}>
               <div className="flex justify-between items-center">
                 <span style={{ fontSize: '10px' }}>BALANCE</span>
                 <span style={{ fontSize: '16px', fontWeight: 'bold' }}>${gameState.walletBalance || 0}</span>
@@ -454,7 +463,10 @@ export default function Home() {
             </div>
 
             {/* Bet Amount */}
-            <div className="nes-container is-rounded mb-4" style={{ backgroundColor: '#00ff00', color: '#000' }}>
+            <div className="nes-container is-rounded mb-4" style={{ 
+              backgroundColor: GAME_COLORS.SUCCESS, 
+              color: '#000' 
+            }}>
               <div className="text-center">
                 <p style={{ fontSize: '8px', marginBottom: '8px' }}>WAGER PER DIVE</p>
                 <p style={{ fontSize: '24px', fontWeight: 'bold' }}>${betAmount}</p>
@@ -497,21 +509,36 @@ export default function Home() {
           <div className="absolute top-0 left-0 right-0 p-4 pointer-events-auto">
             <div className="max-w-7xl mx-auto grid grid-cols-2 gap-4">
               {/* Left: Depth & Dive # */}
-              <div className="nes-container is-dark" style={{ backgroundColor: 'rgba(33, 37, 41, 0.95)', padding: '16px' }}>
-                <p style={{ fontSize: '32px', color: '#00bfff', marginBottom: '4px' }}>
+              <div className="nes-container is-dark" style={{ 
+                backgroundColor: GAME_COLORS.BACKGROUND_DARKER, 
+                padding: '12px' 
+              }}>
+                <p style={{ 
+                  fontSize: '28px', 
+                  color: GAME_COLORS.DEPTH_CYAN, 
+                  marginBottom: '4px' 
+                }}>
                   {gameState.depth}m
                 </p>
-                <p style={{ fontSize: '10px', color: '#ffd700' }}>
+                <p style={{ fontSize: '8px', color: GAME_COLORS.TEXT_SECONDARY }}>
                   DIVE #{gameState.diveNumber}
                 </p>
               </div>
 
               {/* Right: Treasure */}
-              <div className="nes-container is-dark" style={{ backgroundColor: 'rgba(33, 37, 41, 0.95)', padding: '16px', textAlign: 'right' }}>
-                <p style={{ fontSize: '32px', color: '#ffd700', marginBottom: '4px' }}>
+              <div className="nes-container is-dark" style={{ 
+                backgroundColor: GAME_COLORS.BACKGROUND_DARKER, 
+                padding: '12px', 
+                textAlign: 'right' 
+              }}>
+                <p style={{ 
+                  fontSize: '28px', 
+                  color: GAME_COLORS.TREASURE_GOLD, 
+                  marginBottom: '4px' 
+                }}>
                   ${gameState.currentTreasure}
                 </p>
-                <p style={{ fontSize: '10px', color: '#00ff00' }}>
+                <p style={{ fontSize: '8px', color: GAME_COLORS.TEXT_SECONDARY }}>
                   TREASURE
                 </p>
               </div>
@@ -573,41 +600,28 @@ export default function Home() {
           {/* Bottom: Action Buttons - NES Style */}
           <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
             <div className="max-w-4xl mx-auto">
-              {/* Stats Panel */}
-              <div className="nes-container is-dark mb-4" style={{ backgroundColor: 'rgba(33, 37, 41, 0.95)' }}>
+              {/* Stats Panel - Simplified */}
+              <div className="nes-container is-dark mb-4" style={{ 
+                backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
+                padding: '12px 16px'
+              }}>
                 <div className="flex justify-between items-center">
-                  <div className="grid grid-cols-4 gap-4 text-center flex-1">
-                    <div>
-                      <div style={{ fontSize: '8px', color: '#4ade80', marginBottom: '4px' }}>SURVIVAL</div>
-                      <div style={{ fontSize: '16px', color: '#4ade80', fontWeight: 'bold' }}>
-                        {(currentDiveStats.survivalProbability * 100).toFixed(1)}%
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '8px', color: '#fbbf24', marginBottom: '4px' }}>MULTIPLIER</div>
-                      <div style={{ fontSize: '16px', color: '#fbbf24', fontWeight: 'bold' }}>
-                        {currentDiveStats.multiplier.toFixed(2)}x
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '8px', color: '#a78bfa', marginBottom: '4px' }}>POTENTIAL</div>
-                      <div style={{ fontSize: '16px', color: '#a78bfa', fontWeight: 'bold' }}>
-                        ${Math.floor(gameState.currentTreasure * currentDiveStats.multiplier)}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '8px', color: '#60a5fa', marginBottom: '4px' }}>ZONE</div>
-                      <div style={{ fontSize: '16px', color: '#60a5fa', fontWeight: 'bold' }}>
-                        {currentDiveStats.depthZone.name}
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span style={{ fontSize: '10px', color: GAME_COLORS.TEXT_SECONDARY }}>SURVIVAL CHANCE:</span>
+                    <span style={{ 
+                      fontSize: '20px', 
+                      color: GAME_COLORS.SURVIVAL_GREEN, 
+                      fontWeight: 'bold' 
+                    }}>
+                      {(currentDiveStats.survivalProbability * 100).toFixed(0)}%
+                    </span>
                   </div>
                   
                   {/* Kaplay Debug Toggle */}
                   <button
                     onClick={() => setKaplayDebug(!kaplayDebug)}
-                    className={`nes-btn ${kaplayDebug ? 'is-success' : 'is-warning'} ml-4`}
-                    style={{ padding: '8px 16px', fontSize: '8px' }}
+                    className={`nes-btn ${kaplayDebug ? 'is-success' : 'is-warning'}`}
+                    style={{ padding: '6px 12px', fontSize: '8px' }}
                     title="Toggle Kaplay Debug Mode"
                   >
                     {kaplayDebug ? 'DBG:ON' : 'DBG'}

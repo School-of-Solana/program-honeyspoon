@@ -114,23 +114,6 @@ export default function OceanScene({
       // console.log(`[CANVAS] ✅ Loaded ${sprite.name} (${sprite.sliceX}×${sprite.sliceY} = ${sprite.totalFrames} frames)`);
     });
 
-    // Legacy aliases for existing code
-    k.loadSprite("fish", "/sprites/fish1.png", {
-      sliceX: 8,
-      sliceY: 4,
-      anims: {
-        swim: { from: 0, to: 7, loop: true, speed: 10 },
-      },
-    });
-    k.loadSprite("rock", "/sprites/tiles.png", {
-      sliceX: 11,
-      sliceY: 13,
-    });
-    k.loadSprite("coral", "/sprites/corals.png", {
-      sliceX: 4,
-      sliceY: 7,
-    });
-
     console.log('[CANVAS] ✅ All sprites loaded!');
 
     // CENTRALIZED Animation state (not per-object!)
@@ -643,15 +626,7 @@ export default function OceanScene({
 
       // Treasure bag removed - cleaner surfacing animation with just diver
 
-      // Message
-      const message = k.add([
-        k.text("SURFACING!", { size: 48 }),
-        k.pos(k.width() / 2, k.height() / 2 - 100),
-        k.anchor("center"),
-        k.color(100, 255, 200),
-        k.opacity(1),
-        k.z(100),
-      ]);
+      // Message removed - now handled by React overlay
 
       // Bubble trail
       k.loop(0.1, () => {
@@ -707,8 +682,7 @@ export default function OceanScene({
           underwaterColor.b * (1 - surfacingProgress) + surfaceColor.b * surfacingProgress
         );
 
-        // Fade message
-        message.opacity = 1 - surfacingProgress;
+        // Message fading removed - handled by React
 
         // Move speed lines
         speedLines.forEach(line => {
