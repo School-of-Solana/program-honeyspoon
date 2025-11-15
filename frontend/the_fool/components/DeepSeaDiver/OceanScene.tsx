@@ -260,21 +260,204 @@ export default function OceanScene({
         });
       }
       
-      // Water surface line
+      // Water surface line (matches beach top edge)
+      const waterSurfaceY = k.height() * 0.6;
       k.add([
         k.rect(k.width(), 4),
-        k.pos(0, k.height() * 0.6),
+        k.pos(0, waterSurfaceY),
         k.color(100, 150, 255),
         k.z(5),
       ]);
       
-      // Beach/sand
+      // Beach/sand - DIAGONAL with WAVY LEFT EDGE (more water, less beach)
+      // Create wavy shoreline using polygon with sine wave on LEFT EDGE
+      const beachPoints: any[] = [];
+      const waveAmplitude = 40; // Wave depth (horizontal)
+      const waveFrequency = 0.008; // Wave density (vertical)
+      const beachStartY = waterSurfaceY; // Beach starts at SAME height as water surface
+      const beachBaseX = k.width() * 0.45; // Base position (45% from left)
+      
+      // Top-right corner (start of beach) - at water surface level
+      beachPoints.push(k.vec2(beachBaseX + waveAmplitude, beachStartY));
+      
+      // Wavy LEFT EDGE (water side) - vertical sine wave
+      for (let y = beachStartY; y <= k.height(); y += 10) {
+        const progress = (y - beachStartY) / (k.height() - beachStartY);
+        // Diagonal: beach edge moves right as we go down
+        const baseX = beachBaseX + progress * k.width() * 0.15; // Diagonal from 45% to 60%
+        const waveX = baseX + Math.sin(y * waveFrequency) * waveAmplitude; // Add wave
+        beachPoints.push(k.vec2(waveX, y));
+      }
+      
+      // Bottom-right corner
+      beachPoints.push(k.vec2(k.width(), k.height()));
+      
+      // Top-right corner (close polygon)
+      beachPoints.push(k.vec2(k.width(), beachStartY));
+      
+      // Create beach polygon with wavy left edge
       k.add([
-        k.rect(k.width(), k.height() * 0.4),
-        k.pos(0, k.height() * 0.6),
+        k.polygon(beachPoints),
+        k.pos(0, 0),
         k.color(194, 178, 128), // Sandy color
         k.z(1),
       ]);
+      
+      // Add foam/wave line along beach LEFT edge (decorative white dots)
+      for (let y = beachStartY; y <= k.height(); y += 10) {
+        const progress = (y - beachStartY) / (k.height() - beachStartY);
+        const baseX = beachBaseX + progress * k.width() * 0.15;
+        const waveX = baseX + Math.sin(y * waveFrequency) * waveAmplitude;
+        
+        k.add([
+          k.circle(3),
+          k.pos(waveX, y),
+          k.color(255, 255, 255),
+          k.opacity(0.6),
+          k.z(7),
+        ]);
+      }
+      
+      // === BEACH DECORATIONS (on diagonal beach) ===
+      
+      // Palm tree on far right (on beach)
+      const palmX = k.width() * 0.85;
+      const palmY = k.height() * 0.63; // Adjusted for diagonal beach
+      
+      // Palm trunk
+      k.add([
+        k.rect(15, 80),
+        k.pos(palmX, palmY),
+        k.anchor("top"),
+        k.color(101, 67, 33),
+        k.z(3),
+      ]);
+      
+      // Palm leaves (6 leaves in circle) - using stretched rectangles
+      for (let i = 0; i < 6; i++) {
+        const angle = (Math.PI * 2 * i) / 6;
+        k.add([
+          k.rect(40, 15),
+          k.pos(palmX + Math.cos(angle) * 20, palmY + Math.sin(angle) * 20),
+          k.anchor("center"),
+          k.rotate(angle * (180 / Math.PI)),
+          k.color(34, 139, 34), // Forest green
+          k.z(3),
+        ]);
+      }
+      
+      // Rocks on beach (scattered on diagonal beach)
+      const rockPositions = [
+        { x: 0.50, y: 0.68, size: 20 },
+        { x: 0.62, y: 0.75, size: 15 },
+        { x: 0.75, y: 0.78, size: 18 },
+        { x: 0.88, y: 0.82, size: 12 },
+      ];
+      
+      rockPositions.forEach(rock => {
+        k.add([
+          k.circle(rock.size),
+          k.pos(k.width() * rock.x, k.height() * rock.y),
+          k.color(100, 100, 100),
+          k.outline(2, k.rgb(70, 70, 70)),
+          k.z(2),
+        ]);
+      });
+      
+      // Shells on beach (small decorative, on diagonal beach)
+      const shellPositions = [
+        { x: 0.52, y: 0.65 },
+        { x: 0.64, y: 0.70 },
+        { x: 0.72, y: 0.76 },
+        { x: 0.80, y: 0.80 },
+        { x: 0.92, y: 0.85 },
+      ];
+      
+      shellPositions.forEach(shell => {
+        k.add([
+          k.polygon([
+            k.vec2(0, 0),
+            k.vec2(8, -3),
+            k.vec2(10, 4),
+            k.vec2(5, 8),
+            k.vec2(0, 6),
+          ]),
+          k.pos(k.width() * shell.x, k.height() * shell.y),
+          k.color(255, 240, 220),
+          k.outline(1, k.rgb(200, 180, 160)),
+          k.z(2),
+        ]);
+      });
+      
+      // Clouds in sky (fluffy)
+      const cloudPositions = [
+        { x: 0.2, y: 0.15, scale: 1 },
+        { x: 0.5, y: 0.25, scale: 0.8 },
+        { x: 0.75, y: 0.12, scale: 1.2 },
+      ];
+      
+      cloudPositions.forEach(cloud => {
+        // Cloud made of 3 circles
+        const cloudX = k.width() * cloud.x;
+        const cloudY = k.height() * cloud.y;
+        
+        k.add([
+          k.circle(20 * cloud.scale),
+          k.pos(cloudX, cloudY),
+          k.color(255, 255, 255),
+          k.opacity(0.8),
+          k.z(1),
+        ]);
+        k.add([
+          k.circle(25 * cloud.scale),
+          k.pos(cloudX + 15 * cloud.scale, cloudY),
+          k.color(255, 255, 255),
+          k.opacity(0.8),
+          k.z(1),
+        ]);
+        k.add([
+          k.circle(18 * cloud.scale),
+          k.pos(cloudX + 30 * cloud.scale, cloudY),
+          k.color(255, 255, 255),
+          k.opacity(0.8),
+          k.z(1),
+        ]);
+      });
+      
+      // Flying seagulls
+      function createSeagull(startX: number, startY: number, speed: number) {
+        const seagull = k.add([
+          k.polygon([
+            k.vec2(0, 0),
+            k.vec2(-10, -5),
+            k.vec2(-8, 0),
+            k.vec2(0, -2),
+            k.vec2(8, 0),
+            k.vec2(10, -5),
+          ]),
+          k.pos(startX, startY),
+          k.color(255, 255, 255),
+          k.outline(1, k.rgb(200, 200, 200)),
+          k.z(4),
+        ]);
+        
+        seagull.onUpdate(() => {
+          seagull.pos.x += speed * k.dt();
+          seagull.pos.y += Math.sin(k.time() * 3 + startX) * 20 * k.dt();
+          
+          // Wrap around screen
+          if (seagull.pos.x > k.width() + 50) {
+            seagull.pos.x = -50;
+          }
+        });
+        
+        return seagull;
+      }
+      
+      // Spawn 3 seagulls
+      createSeagull(k.width() * 0.3, k.height() * 0.2, 50);
+      createSeagull(k.width() * 0.6, k.height() * 0.15, 60);
+      createSeagull(k.width() * 0.1, k.height() * 0.25, 45);
       
       // Animated waves at water surface
       for (let i = 0; i < 5; i++) {
@@ -292,9 +475,10 @@ export default function OceanScene({
         });
       }
       
-      // Create boat at water surface
+      // Create boat at water surface (LEFT SIDE - UI is on right)
       const boatBaseY = k.height() * 0.6;
-      const boat = createBoat(k.width() / 2, boatBaseY, 18);
+      const boatX = k.width() * 0.25; // 25% from left (leaves right side clear for UI)
+      const boat = createBoat(boatX, boatBaseY, 18);
       
       // Boat bobbing animation (follows wave motion)
       boat.onUpdate(() => {
@@ -302,10 +486,30 @@ export default function OceanScene({
         boat.angle = Math.sin(k.time() * 1.2) * 2; // Gentle rocking
       });
       
+      // Ripples around boat hull
+      k.loop(0.8, () => {
+        const ripple = k.add([
+          k.circle(10),
+          k.pos(boatX + (Math.random() - 0.5) * 100, boatBaseY + 15),
+          k.anchor("center"),
+          k.outline(2, k.rgb(100, 150, 255)),
+          k.opacity(0.6),
+          k.z(7),
+        ]);
+        
+        ripple.onUpdate(() => {
+          ripple.radius += 40 * k.dt();
+          ripple.opacity -= k.dt() * 0.5;
+          if (ripple.opacity <= 0) {
+            k.destroy(ripple);
+          }
+        });
+      });
+      
       // Diver standing on boat deck
       const diver = k.add([
         k.sprite("diver", { anim: "idle" }),
-        k.pos(k.width() / 2, boatBaseY - 15), // Standing on deck
+        k.pos(boatX, boatBaseY - 15), // Standing on deck
         k.anchor("center"),
         k.scale(2),
         k.rotate(0),
@@ -314,6 +518,7 @@ export default function OceanScene({
       
       // Diver follows boat movement
       diver.onUpdate(() => {
+        diver.pos.x = boat.pos.x; // Follow boat X (in case it moves)
         diver.pos.y = boat.pos.y - 15; // Stay on deck
         diver.angle = boat.angle * 0.5; // Slight lean with boat
       });
@@ -338,20 +543,46 @@ export default function OceanScene({
         }
       });
       
-      // Message: "Ready to Dive!"
-      k.add([
-        k.text("Ready to Dive!", { size: 48, font: "TreasureMapDeadhand" }),
-        k.pos(k.width() / 2, k.height() * 0.25),
-        k.anchor("center"),
-        k.color(255, 255, 255),
-        k.z(100),
-      ]);
-      
-      // Transition to diving when game starts
+      // Transition to diving with animation when game starts
+      let transitionStarted = false;
       k.onUpdate(() => {
-        if (isDivingRef.current) {
-          console.log('[CANVAS] 🤿 Transitioning to diving scene...');
-          k.go("diving");
+        if (isDivingRef.current && !transitionStarted) {
+          transitionStarted = true;
+          console.log('[CANVAS] 🤿 Starting dive transition...');
+          
+          // Fade to black overlay
+          const fadeOverlay = k.add([
+            k.rect(k.width(), k.height()),
+            k.pos(0, 0),
+            k.color(0, 0, 0),
+            k.opacity(0),
+            k.z(200),
+          ]);
+          
+          // Diver jumps off boat animation
+          let jumpProgress = 0;
+          const jumpDuration = 1.0; // 1 second jump
+          const originalY = diver.pos.y;
+          
+          const jumpInterval = k.onUpdate(() => {
+            jumpProgress += k.dt() / jumpDuration;
+            
+            if (jumpProgress < 1) {
+              // Parabolic jump arc
+              const arc = Math.sin(jumpProgress * Math.PI) * 50;
+              diver.pos.y = originalY - arc;
+              diver.pos.x -= 30 * k.dt(); // Move left off boat
+              diver.angle = jumpProgress * 90; // Rotate during jump
+              
+              // Fade to black
+              fadeOverlay.opacity = jumpProgress * 0.8;
+            } else {
+              // Jump complete, transition to diving scene
+              console.log('[CANVAS] ✅ Dive complete, switching scene...');
+              jumpInterval.cancel();
+              k.go("diving");
+            }
+          });
         }
       });
     });
@@ -392,18 +623,37 @@ export default function OceanScene({
         k.z(2),
       ]);
       
-      // Beach (starts hidden)
+      // Beach (starts hidden) - DIAGONAL with WAVY LEFT EDGE (matching beach scene)
+      const beachPoints: any[] = [];
+      const waveAmplitude = 40;
+      const waveFrequency = 0.008;
+      const waterSurfaceY = k.height() * 0.6; // Match water surface
+      const beachStartY = waterSurfaceY; // Beach top edge at water level
+      const beachBaseX = k.width() * 0.45;
+      
+      // Create wavy shoreline polygon (same as beach scene)
+      beachPoints.push(k.vec2(beachBaseX + waveAmplitude, beachStartY));
+      for (let y = beachStartY; y <= k.height(); y += 10) {
+        const progress = (y - beachStartY) / (k.height() - beachStartY);
+        const baseX = beachBaseX + progress * k.width() * 0.15;
+        const waveX = baseX + Math.sin(y * waveFrequency) * waveAmplitude;
+        beachPoints.push(k.vec2(waveX, y));
+      }
+      beachPoints.push(k.vec2(k.width(), k.height()));
+      beachPoints.push(k.vec2(k.width(), beachStartY));
+      
       const beach = k.add([
-        k.rect(k.width(), k.height() * 0.4),
-        k.pos(0, k.height() * 0.6),
+        k.polygon(beachPoints),
+        k.pos(0, 0),
         k.color(194, 178, 128),
         k.opacity(0),
         k.z(1),
       ]);
       
-      // Boat waiting at surface (starts hidden, fades in)
+      // Boat waiting at surface (LEFT SIDE - in water, starts hidden, fades in)
       const boatBaseY = k.height() * 0.6;
-      const boat = createBoat(k.width() / 2, boatBaseY, 18);
+      const boatX = k.width() * 0.25; // 25% from left (in water)
+      const boat = createBoat(boatX, boatBaseY, 18);
       boat.opacity = 0;
       
       // Boat bobbing animation
@@ -412,10 +662,10 @@ export default function OceanScene({
         boat.angle = Math.sin(k.time() * 1.2) * 2;
       });
       
-      // Diver rising from underwater
+      // Diver rising from underwater (LEFT SIDE - toward boat)
       const diver = k.add([
         k.sprite("diver", { anim: "swim" }),
-        k.pos(k.width() / 2, k.height() * 0.8),
+        k.pos(boatX, k.height() * 0.8),
         k.anchor("center"),
         k.scale(2),
         k.z(20),
@@ -424,7 +674,7 @@ export default function OceanScene({
       // Treasure bag
       const treasureBag = k.add([
         k.sprite("treasure"),
-        k.pos(k.width() / 2, k.height() * 0.8 + 35),
+        k.pos(boatX, k.height() * 0.8 + 35),
         k.anchor("center"),
         k.scale(1.5),
         k.z(20),
@@ -532,6 +782,56 @@ export default function OceanScene({
         k.color(bgColor.r * lightLevel, bgColor.g * lightLevel, bgColor.b * lightLevel),
         k.z(0),
       ]);
+      
+      // Fade-in overlay (smooth transition from beach)
+      const fadeInOverlay = k.add([
+        k.rect(k.width(), k.height()),
+        k.pos(0, 0),
+        k.color(0, 0, 0),
+        k.opacity(0.8),
+        k.z(300),
+      ]);
+      
+      // Fade in from black
+      let fadeInProgress = 0;
+      const fadeInDuration = 0.8; // 0.8 seconds
+      const fadeInInterval = k.onUpdate(() => {
+        fadeInProgress += k.dt() / fadeInDuration;
+        if (fadeInProgress >= 1) {
+          k.destroy(fadeInOverlay);
+          fadeInInterval.cancel();
+        } else {
+          fadeInOverlay.opacity = 0.8 * (1 - fadeInProgress);
+        }
+      });
+      
+      // Splash effect at start (water entry)
+      const splashParticles: any[] = [];
+      for (let i = 0; i < 20; i++) {
+        const angle = (Math.PI * 2 * i) / 20;
+        const splash = k.add([
+          k.circle(4 + Math.random() * 3),
+          k.pos(k.width() * 0.25, k.height() * 0.3),
+          k.color(150, 200, 255),
+          k.opacity(0.8),
+          k.z(250),
+        ]);
+        
+        splashParticles.push({ obj: splash, angle, speed: 150 + Math.random() * 100 });
+      }
+      
+      // Animate splash particles
+      splashParticles.forEach(({ obj, angle, speed }) => {
+        obj.onUpdate(() => {
+          obj.pos.x += Math.cos(angle) * speed * k.dt();
+          obj.pos.y += Math.sin(angle) * speed * k.dt();
+          obj.opacity -= k.dt() * 2;
+          
+          if (obj.opacity <= 0) {
+            k.destroy(obj);
+          }
+        });
+      });
 
       // Darkness overlay
       const darknessOverlay = k.add([

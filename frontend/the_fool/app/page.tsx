@@ -393,9 +393,9 @@ export default function Home() {
         />
       </div>
 
-      {/* Betting Card (Above Water Surface - Initially) */}
+      {/* Betting Card (On Beach - Right Side) */}
       {showBettingCard && (
-        <div className={`absolute top-20 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ${
+        <div className={`absolute top-20 right-8 z-50 transition-all duration-500 ${
           showBettingCard ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'
         }`}>
           {/* Pirate Treasure Map Card with Wood Panel Theme */}
