@@ -480,7 +480,7 @@ export default function OceanScene({
         k.sprite("diver", { anim: "idle" }),
         k.pos(boatX, boatBaseY - 15), // Standing on deck
         k.anchor("center"),
-        k.scale(2),
+        k.scale(2.5),
         k.rotate(0),
         k.z(20),
       ]);
@@ -636,7 +636,7 @@ export default function OceanScene({
         k.sprite("diver", { anim: "swim" }),
         k.pos(boatX, k.height() * 0.8),
         k.anchor("center"),
-        k.scale(2),
+        k.scale(2.5),
         k.z(20),
       ]);
 
@@ -935,7 +935,7 @@ export default function OceanScene({
         k.sprite("diver", { anim: "idle" }),
         k.pos(diverX, diverY),
         k.anchor("center"),
-        k.scale(2), // Scale up 32x32 sprite to 64x64
+        k.scale(2.5), // Scale up 32x32 sprite to 80x80
         k.opacity(1),
         k.z(20),
       ]);
@@ -1142,11 +1142,11 @@ export default function OceanScene({
       function showTreasureChest(x: number, y: number) {
         const chest = k.add([
           k.sprite("chest", { anim: "closed" }),
-          k.pos(x, y + 40),
+          k.pos(x, y + 60), // Position below diver
           k.anchor("center"),
           k.scale(3),
           k.opacity(0),
-          k.z(25),
+          k.z(18), // Behind diver (diver is z:20)
         ]);
 
         // Fade in
@@ -1166,7 +1166,7 @@ export default function OceanScene({
 
             // Spawn coin particles
             for (let i = 0; i < 15; i++) {
-              setTimeout(() => createCoinParticle(x, y + 40), i * 30);
+              setTimeout(() => createCoinParticle(x, y + 60), i * 30);
             }
           }, 400);
         }, 500);
