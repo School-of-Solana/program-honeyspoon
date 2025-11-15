@@ -173,10 +173,13 @@ export const SPRITE_CONFIGS: SpriteConfig[] = [
   {
     name: "coin",
     file: "/sprites/coin.png",
-    sliceX: 1,
+    sliceX: 8,
     sliceY: 1,
     frameSize: { w: 16, h: 16 },
-    totalFrames: 1,
+    totalFrames: 8,
+    anims: {
+      spin: { from: 0, to: 7, loop: true, speed: 12 },
+    },
   },
 ];
 

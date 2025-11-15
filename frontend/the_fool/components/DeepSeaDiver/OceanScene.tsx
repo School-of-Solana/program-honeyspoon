@@ -562,12 +562,11 @@ export default function OceanScene({
         const speed = 80 + Math.random() * 80;
         
         const coin = k.add([
-          k.sprite("coin"),
+          k.sprite("coin", { anim: "spin" }), // Use spin animation!
           k.pos(x, y),
           k.anchor("center"),
-          k.scale(2),
+          k.scale(2 + Math.random()), // Vary size
           k.opacity(1),
-          k.rotate(0),
           k.z(26),
           k.lifespan(1.5),
         ]);
@@ -576,7 +575,6 @@ export default function OceanScene({
           coin.pos.x += Math.cos(angle) * speed * k.dt();
           coin.pos.y += Math.sin(angle) * speed * k.dt() - 50 * k.dt(); // Upward bias
           coin.opacity -= k.dt() * 0.7;
-          coin.angle += 360 * k.dt(); // Spinning coin
         });
       }
 
