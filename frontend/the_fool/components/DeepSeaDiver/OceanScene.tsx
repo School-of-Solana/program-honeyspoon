@@ -388,18 +388,25 @@ export default function OceanScene({
         }
       });
 
-      // Fish (using sprites)
+      // Fish (using sprites) - WITH VARIETY!
       function createFish() {
+        // Use all 3 fish types for variety
+        const fishTypes = ["fish1", "fish2", "fish3"];
+        const fishType = fishTypes[Math.floor(Math.random() * fishTypes.length)];
+        
         const fishY = 100 + Math.random() * 400;
         const direction = Math.random() > 0.5 ? 1 : -1;
         const startX = direction > 0 ? -50 : k.width() + 50;
+        
+        // fish2 and fish3 are larger (32px vs 16px)
+        const scaleMultiplier = fishType === "fish1" ? 2 : 1.5;
 
         const fish = k.add([
-          k.sprite("fish", { anim: "swim" }),
+          k.sprite(fishType, { anim: "swim" }),
           k.pos(startX, fishY),
           k.anchor("center"),
           k.z(7),
-          k.scale(direction > 0 ? 2 : -2, 2),
+          k.scale(direction > 0 ? scaleMultiplier : -scaleMultiplier, scaleMultiplier),
           k.opacity(lightLevel * 0.8),
         ]);
 
@@ -422,12 +429,179 @@ export default function OceanScene({
         }
       });
 
-      // Particle effects
+      // Jellyfish (floating creatures)
+      function createJellyfish() {
+        const jellyfishY = 100 + Math.random() * 400;
+        const jellyfishX = Math.random() * k.width();
+        
+        const jellyfish = k.add([
+          k.sprite("jellyfish", { anim: "float" }),
+          k.pos(jellyfishX, jellyfishY),
+          k.anchor("center"),
+          k.z(6),
+          k.scale(2),
+          k.opacity(0.7 * lightLevel),
+        ]);
+        
+        jellyfish.onUpdate(() => {
+          // Slow vertical drift + sine wave horizontal
+          jellyfish.pos.y -= 15 * k.dt();
+          jellyfish.pos.x += Math.sin(k.time() * 2 + jellyfishY) * 30 * k.dt();
+          
+          // Wrap around top
+          if (jellyfish.pos.y < -50) {
+            jellyfish.pos.y = k.height() + 50;
+            jellyfish.pos.x = Math.random() * k.width();
+          }
+        });
+      }
+
+      // Spawn jellyfish periodically
+      k.loop(4, () => {
+        if (Math.random() > 0.5 && lightLevel > 0.2) {
+          createJellyfish();
+        }
+      });
+
+      // Depth-based predators
+      function getDepthPredator(depth: number): string | null {
+        if (depth < 100) return null; // Safe zone
+        if (depth < 200) return "shark"; // Already used for death
+        if (depth < 400) return "sawshark"; // Mid-depth menace
+        if (depth < 600) return "swordfish"; // Deep hunter (fast!)
+        return "seaangler"; // Abyss zone (glowing lure)
+      }
+
+      function createAmbientPredator() {
+        const predator = getDepthPredator(depthRef.current);
+        if (!predator || predator === "shark") return; // Skip shark (used for death)
+        
+        const direction = Math.random() > 0.5 ? 1 : -1;
+        const startX = direction > 0 ? -100 : k.width() + 100;
+        const predatorY = 100 + Math.random() * 400;
+        
+        const creature = k.add([
+          k.sprite(predator, { anim: "swim" }),
+          k.pos(startX, predatorY),
+          k.anchor("center"),
+          k.z(9),
+          k.scale(direction * 2.5, 2.5),
+          k.opacity(0.8 * lightLevel),
+        ]);
+        
+        // Add glowing light for seaangler
+        if (predator === "seaangler") {
+          const light = creature.add([
+            k.circle(15),
+            k.pos(direction > 0 ? 20 : -20, -10), // Lure position
+            k.color(255, 255, 150),
+            k.opacity(0.6),
+          ]);
+          
+          // Pulsing glow
+          light.onUpdate(() => {
+            light.opacity = 0.4 + Math.sin(k.time() * 8) * 0.3;
+            light.radius = 15 + Math.sin(k.time() * 8) * 5;
+          });
+        }
+        
+        creature.onUpdate(() => {
+          const speed = predator === "swordfish" ? 120 : 60;
+          creature.pos.x += direction * speed * k.dt();
+          creature.pos.y += Math.sin(k.time() * 2 + predatorY) * 20 * k.dt();
+          
+          if (
+            (direction > 0 && creature.pos.x > k.width() + 100) ||
+            (direction < 0 && creature.pos.x < -100)
+          ) {
+            k.destroy(creature);
+          }
+        });
+      }
+
+      // Spawn predators based on depth
+      k.loop(6, () => {
+        if (depthRef.current > 100 && Math.random() > 0.6) {
+          createAmbientPredator();
+        }
+      });
+
+      // Treasure Chest System
+      function showTreasureChest(x: number, y: number) {
+        const chest = k.add([
+          k.sprite("chest", { anim: "closed" }),
+          k.pos(x, y + 40),
+          k.anchor("center"),
+          k.scale(3),
+          k.opacity(0),
+          k.z(25),
+        ]);
+        
+        // Fade in
+        let fadeIn = 0;
+        const fadeInInterval = setInterval(() => {
+          fadeIn += 0.1;
+          chest.opacity = Math.min(fadeIn, 1);
+          if (fadeIn >= 1) clearInterval(fadeInInterval);
+        }, 50);
+        
+        // Opening sequence
+        setTimeout(() => {
+          chest.play("opening");
+          
+          setTimeout(() => {
+            chest.play("open");
+            
+            // Spawn coin particles
+            for (let i = 0; i < 15; i++) {
+              setTimeout(() => createCoinParticle(x, y + 40), i * 30);
+            }
+          }, 400);
+        }, 500);
+        
+        // Fade out after animation
+        setTimeout(() => {
+          let fadeOut = 1;
+          const fadeOutInterval = setInterval(() => {
+            fadeOut -= 0.1;
+            chest.opacity = Math.max(fadeOut, 0);
+            if (fadeOut <= 0) {
+              clearInterval(fadeOutInterval);
+              k.destroy(chest);
+            }
+          }, 50);
+        }, 2000);
+      }
+
+      function createCoinParticle(x: number, y: number) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 80 + Math.random() * 80;
+        
+        const coin = k.add([
+          k.sprite("coin"),
+          k.pos(x, y),
+          k.anchor("center"),
+          k.scale(2),
+          k.opacity(1),
+          k.rotate(0),
+          k.z(26),
+          k.lifespan(1.5),
+        ]);
+        
+        coin.onUpdate(() => {
+          coin.pos.x += Math.cos(angle) * speed * k.dt();
+          coin.pos.y += Math.sin(angle) * speed * k.dt() - 50 * k.dt(); // Upward bias
+          coin.opacity -= k.dt() * 0.7;
+          coin.angle += 360 * k.dt(); // Spinning coin
+        });
+      }
+
+      // Particle effects (legacy gold circles)
       function createTreasureParticles(x: number, y: number) {
         for (let i = 0; i < 30; i++) {
           const angle = (Math.PI * 2 * i) / 30;
           const speed = 100 + Math.random() * 100;
-
+          
           const particle = k.add([
             k.circle(3),
             k.pos(x, y),
@@ -464,25 +638,36 @@ export default function OceanScene({
         }
       }
 
-      // Death animation
+      // Death animation - WITH VARIETY!
       function triggerDeathAnimation() {
         console.log('[CANVAS] Triggering death animation!');
         isAnimating = true;
         animationType = 'death';
         divingSpeed = 0;
 
+        // Choose predator based on current depth
+        const predatorChoice = getDepthPredator(depthRef.current) || "shark";
+        
         const direction = Math.random() > 0.5 ? 1 : -1;
         const startX = direction > 0 ? -100 : k.width() + 100;
 
         const creature = k.add([
-          k.sprite("shark", { anim: "swim" }),
+          k.sprite(predatorChoice, { anim: "swim" }),
           k.pos(startX, diver.pos.y),
           k.anchor("center"),
           k.z(25),
           k.scale(direction * 3, 3),
         ]);
 
-        messageDisplay.text = "⚠️ DANGER!";
+        // Custom death messages per predator
+        const deathMessages: Record<string, string> = {
+          shark: "⚠️ SHARK ATTACK!",
+          sawshark: "⚠️ SAWSHARK!",
+          swordfish: "⚠️ IMPALED!",
+          seaangler: "⚠️ LURED TO DEATH!",
+        };
+        
+        messageDisplay.text = deathMessages[predatorChoice] || "⚠️ DANGER!";
         messageDisplay.color = k.rgb(255, 50, 50);
         messageOpacity = 1;
 
@@ -726,6 +911,7 @@ export default function OceanScene({
           messageDisplay.color = k.rgb(255, 215, 0);
           messageOpacity = 1;
           createTreasureParticles(diver.pos.x, diver.pos.y);
+          showTreasureChest(diver.pos.x, diver.pos.y); // Show animated chest!
         } else if (survivedRef.current === false && !isAnimating && animationType === 'idle') {
           console.log('[CANVAS] 💀 Death triggered! Playing attack animation');
           triggerDeathAnimation();
