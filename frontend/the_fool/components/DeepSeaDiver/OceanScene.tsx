@@ -92,53 +92,68 @@ export default function OceanScene({
     kRef.current = k;
     initializedRef.current = true;
 
-    // Load sprites
-    console.log('[CANVAS] 📦 Loading sprites...');
+    // Load sprites with proper frame slicing
+    console.log('[CANVAS] 📦 Loading sprites with frame data...');
+    
+    // Diver: 224x128 = 7 columns × 4 rows of 32x32 frames (28 frames total)
     k.loadSprite("diver", "/sprites/diver.png", {
       sliceX: 7,
       sliceY: 4,
       anims: {
         idle: { from: 0, to: 1, loop: true, speed: 3 },
-        swim: { from: 2, to: 5, loop: true, speed: 8 },
+        swim: { from: 7, to: 13, loop: true, speed: 8 },
       },
     });
-    k.loadSprite("shark", "/sprites/shark.png");
-    k.loadSprite("fish", "/sprites/fish1.png");
-    k.loadSprite("seaweed", "/sprites/seaweed.png");
-    k.loadSprite("coral", "/sprites/corals.png", { sliceX: 4, sliceY: 1 });
-    k.loadSprite("rock", "/sprites/rock.png", { sliceX: 4, sliceY: 4 });
-    k.loadSprite("bubble", "/sprites/bubble.png");
-    k.loadSprite("treasure", "/sprites/treasure.png", { sliceX: 4, sliceY: 1 });
-    console.log('[CANVAS] ✅ Sprites loaded!');
-
-    // Load sprites
-    console.log('[CANVAS] 📦 Loading sprites...');
-    k.loadSprite("diver", "/sprites/diver.png", {
-      sliceX: 7, // Diver spritesheet has 7 frames (224px / 32px)
-      sliceY: 4, // 4 rows (128px / 32px)
+    
+    // Shark: 256x64 = 8 columns × 2 rows of 32x32 frames (16 frames total)
+    k.loadSprite("shark", "/sprites/shark.png", {
+      sliceX: 8,
+      sliceY: 2,
       anims: {
-        idle: { from: 0, to: 1, loop: true, speed: 3 },
-        swim: { from: 2, to: 5, loop: true, speed: 8 },
-        dive: { from: 6, to: 6 },
+        swim: { from: 0, to: 7, loop: true, speed: 8 },
       },
     });
-    k.loadSprite("shark", "/sprites/shark.png");
-    k.loadSprite("fish", "/sprites/fish1.png");
-    k.loadSprite("seaweed", "/sprites/seaweed.png");
+    
+    // Fish1: 128x64 = 8 columns × 4 rows of 16x16 frames (32 frames total)
+    k.loadSprite("fish", "/sprites/fish1.png", {
+      sliceX: 8,
+      sliceY: 4,
+      anims: {
+        swim: { from: 0, to: 7, loop: true, speed: 10 },
+      },
+    });
+    
+    // Seaweed: 192x256 = 12 columns × 16 rows of 16x16 frames
+    k.loadSprite("seaweed", "/sprites/seaweed.png", {
+      sliceX: 12,
+      sliceY: 16,
+    });
+    
+    // Coral: 64x112 = 4 columns × 7 rows of 16x16 frames (28 frames total)
     k.loadSprite("coral", "/sprites/corals.png", {
       sliceX: 4,
+      sliceY: 7,
+    });
+    
+    // Rock/Tiles: 176x208 = 11 columns × 13 rows of 16x16 frames
+    k.loadSprite("rock", "/sprites/rock.png", {
+      sliceX: 11,
+      sliceY: 13,
+    });
+    
+    // Bubble: 80x8 = 10 frames of 8x8
+    k.loadSprite("bubble", "/sprites/bubble.png", {
+      sliceX: 10,
       sliceY: 1,
     });
-    k.loadSprite("rock", "/sprites/rock.png", {
-      sliceX: 4,
+    
+    // Treasure/Chest: 48x64 = 3 columns × 4 rows of 16x16 frames
+    k.loadSprite("treasure", "/sprites/treasure.png", {
+      sliceX: 3,
       sliceY: 4,
     });
-    k.loadSprite("bubble", "/sprites/bubble.png");
-    k.loadSprite("treasure", "/sprites/treasure.png", {
-      sliceX: 4,
-      sliceY: 1,
-    });
-    console.log('[CANVAS] ✅ Sprites loaded!');
+    
+    console.log('[CANVAS] ✅ Sprites loaded with correct frame data!');
 
     // CENTRALIZED Animation state (not per-object!)
     let diverY = k.height() / 2 - 100;
@@ -186,9 +201,10 @@ export default function OceanScene({
 
       // Far Layer - Rocks (using sprites)
       const farLayer = { objects: [] as any[], speed: 0.3 };
+      const totalRockFrames = 11 * 13; // 143 frames total
       for (let i = 0; i < 8; i++) {
         const rock = k.add([
-          k.sprite("rock", { frame: Math.floor(Math.random() * 16) }),
+          k.sprite("rock", { frame: Math.floor(Math.random() * totalRockFrames) }),
           k.pos(Math.random() * k.width(), Math.random() * k.height() * 2 - k.height()),
           k.anchor("center"),
           k.scale(2 + Math.random() * 2),
@@ -201,9 +217,10 @@ export default function OceanScene({
 
       // Mid Layer - Seaweed (using sprites)
       const midLayer = { objects: [] as any[], speed: 0.6 };
+      const totalSeaweedFrames = 12 * 16; // 192 frames total
       for (let i = 0; i < 12; i++) {
         const kelp = k.add([
-          k.sprite("seaweed"),
+          k.sprite("seaweed", { frame: Math.floor(Math.random() * totalSeaweedFrames) }),
           k.pos(Math.random() * k.width(), Math.random() * k.height() * 2 - k.height()),
           k.anchor("top"),
           k.scale(2 + Math.random()),
@@ -216,9 +233,10 @@ export default function OceanScene({
 
       // Fore Layer - Coral (using sprites)
       const foreLayer = { objects: [] as any[], speed: 1.2 };
+      const totalCoralFrames = 4 * 7; // 28 frames total
       for (let i = 0; i < 15; i++) {
         const coral = k.add([
-          k.sprite("coral", { frame: Math.floor(Math.random() * 4) }),
+          k.sprite("coral", { frame: Math.floor(Math.random() * totalCoralFrames) }),
           k.pos(Math.random() * k.width(), Math.random() * k.height() * 2 - k.height()),
           k.anchor("center"),
           k.scale(1.5 + Math.random()),
@@ -356,11 +374,11 @@ export default function OceanScene({
         const startX = direction > 0 ? -50 : k.width() + 50;
 
         const fish = k.add([
-          k.sprite("fish"),
+          k.sprite("fish", { anim: "swim" }),
           k.pos(startX, fishY),
           k.anchor("center"),
           k.z(7),
-          k.scale((direction > 0 ? 2 : -2) + Math.random(), 2 + Math.random()),
+          k.scale(direction > 0 ? 2 : -2, 2),
           k.opacity(lightLevel * 0.8),
         ]);
 
@@ -436,7 +454,7 @@ export default function OceanScene({
         const startX = direction > 0 ? -100 : k.width() + 100;
 
         const creature = k.add([
-          k.sprite("shark"),
+          k.sprite("shark", { anim: "swim" }),
           k.pos(startX, diver.pos.y),
           k.anchor("center"),
           k.z(25),
