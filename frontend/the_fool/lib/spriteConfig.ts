@@ -181,6 +181,14 @@ export const SPRITE_CONFIGS: SpriteConfig[] = [
       spin: { from: 0, to: 7, loop: true, speed: 12 },
     },
   },
+  {
+    name: "treasure",
+    file: "/sprites/treasure.png",
+    sliceX: 1,
+    sliceY: 1,
+    frameSize: { w: 48, h: 64 },
+    totalFrames: 1,
+  },
 ];
 
 // Helper function to get sprite config by name

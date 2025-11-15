@@ -304,11 +304,10 @@ export default function OceanScene({
       ]);
 
       const treasureBag = k.add([
-        k.circle(15),
-        k.pos(diverX, diverY + 30),
+        k.sprite("treasure"),
+        k.pos(diverX, diverY + 35),
         k.anchor("center"),
-        k.color(255, 215, 0),
-        k.outline(2, k.rgb(200, 170, 0)),
+        k.scale(1.2),
         k.opacity(1),
         k.rotate(0),
         k.z(20),
@@ -800,13 +799,13 @@ export default function OceanScene({
         // ===== TREASURE ANIMATION LOGIC =====
         if (animationType === 'treasure') {
           treasurePulseTime += k.dt() * 8;
-          const baseSize = 15;
-          const sizeMultiplier = 1 + Math.min(treasureRef.current / 1000, 2);
-          treasureBag.radius = (baseSize * sizeMultiplier) + Math.sin(treasurePulseTime) * 5;
+          const baseScale = 1.2;
+          const sizeMultiplier = 1 + Math.min(treasureRef.current / 1000, 0.5);
+          treasureBag.scale = k.vec2((baseScale * sizeMultiplier) + Math.sin(treasurePulseTime) * 0.2);
 
           if (treasurePulseTime > Math.PI * 4) {
             console.log('[CANVAS] ✅ Treasure animation complete!');
-            treasureBag.radius = baseSize * sizeMultiplier;
+            treasureBag.scale = k.vec2(baseScale * sizeMultiplier);
             isAnimating = false;
             animationType = 'idle';
             messageOpacity = 0;
@@ -840,9 +839,9 @@ export default function OceanScene({
 
         // Update treasure bag size
         if (animationType !== 'treasure') {
-          const baseSize = 15;
-          const sizeMultiplier = 1 + Math.min(treasureRef.current / 1000, 2);
-          treasureBag.radius = baseSize * sizeMultiplier;
+          const baseScale = 1.2;
+          const sizeMultiplier = 1 + Math.min(treasureRef.current / 1000, 0.5);
+          treasureBag.scale = k.vec2(baseScale * sizeMultiplier);
         }
 
         // Update light rays
