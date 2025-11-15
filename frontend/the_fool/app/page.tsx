@@ -39,6 +39,7 @@ export default function Home() {
   const [survived, setSurvived] = useState<boolean | undefined>(undefined);
   const [showBettingCard, setShowBettingCard] = useState(true);
   const [showHUD, setShowHUD] = useState(false);
+  const [animationMessage, setAnimationMessage] = useState<string>('');
   
   // Debug mode states
   const [debugMode, setDebugMode] = useState(false); // House wallet debug
@@ -191,11 +192,13 @@ export default function Home() {
     try {
       // STEP 1: Start diving animation
       setIsDiving(true);
+      setAnimationMessage('DIVING...');
       console.log('[GAME] 🎬 Starting diving animation (2.5s)...');
       
       // Wait for diving animation (2.5 seconds as defined in OceanScene)
       await new Promise((resolve) => setTimeout(resolve, 2500));
       setIsDiving(false);
+      setAnimationMessage('');
       
       // STEP 2: Call server to determine result
       console.log('[GAME] 🎲 Calling server for dive result...');
@@ -220,9 +223,15 @@ export default function Home() {
 
       // STEP 3: Show result animation
       setSurvived(result.survived);
+      if (result.survived) {
+        setAnimationMessage('TREASURE FOUND!');
+      } else {
+        setAnimationMessage('DROWNED!');
+      }
       
       // Wait for result animation to play
       await new Promise((resolve) => setTimeout(resolve, 2000));
+      setAnimationMessage('');
 
       // STEP 4: Update game state
       if (result.survived) {
@@ -320,6 +329,7 @@ export default function Home() {
 
     setIsProcessing(true);
     setShouldSurface(true); // Trigger surfacing animation
+    setAnimationMessage('SURFACING!');
 
     try {
       const result = await surfaceWithTreasure(
@@ -335,6 +345,7 @@ export default function Home() {
       });
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
+      setAnimationMessage('');
 
       if (result.success) {
         console.log(`[GAME] ✅ Surface successful!`, {
@@ -399,6 +410,20 @@ export default function Home() {
           debugMode={kaplayDebug}
         />
       </div>
+
+      {/* Animation Message Overlay (NES Style) */}
+      {animationMessage && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+          <div className="nes-container is-dark" style={{ 
+            backgroundColor: 'rgba(33, 37, 41, 0.9)',
+            padding: '24px 48px',
+            fontSize: '32px',
+            animation: 'pulse 1s ease-in-out infinite'
+          }}>
+            {animationMessage}
+          </div>
+        </div>
+      )}
 
       {/* Betting Card (On Beach - Right Side) */}
       {showBettingCard && (

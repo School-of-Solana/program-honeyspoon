@@ -5,7 +5,8 @@ import kaplay from "kaplay";
 import type { KAPLAYCtx } from "kaplay";
 import { getDepthZone } from "@/lib/gameLogic";
 import type { Shipwreck } from "@/lib/types";
-import { SPRITE_CONFIGS, getSpriteConfig } from "@/lib/spriteConfig";
+import { SPRITE_CONFIGS } from "@/lib/spriteConfig";
+import * as CONST from "./sceneConstants";
 
 interface OceanSceneProps {
   depth: number;
@@ -13,10 +14,11 @@ interface OceanSceneProps {
   oxygenLevel: number;
   isDiving: boolean;
   survived?: boolean;
-  shouldSurface?: boolean; // NEW: Only surface when player cashes out
+  shouldSurface?: boolean;
   lastShipwreck?: Shipwreck;
   onAnimationComplete?: () => void;
   debugMode?: boolean;
+  animationMessage?: string; // NEW: Pass messages from React instead of Kaplay text
 }
 
 export default function OceanScene({
@@ -136,7 +138,6 @@ export default function OceanScene({
     const diverX = k.width() / 2;
     let isAnimating = false;
     let animationType: 'idle' | 'diving' | 'treasure' | 'death' = 'idle';
-    let messageOpacity = 0;
     let divingSpeed = 0;
 
     // Diving animation timing (centralized)
@@ -942,15 +943,7 @@ export default function OceanScene({
 
       // Treasure bag removed - cleaner underwater view with just diver
 
-      // Message display
-      const messageDisplay = k.add([
-        k.text("", { size: 48 }),
-        k.pos(k.width() / 2, k.height() / 2 - 100),
-        k.anchor("center"),
-        k.color(255, 255, 255),
-        k.opacity(0),
-        k.z(100),
-      ]);
+      // Message display removed - now handled by React overlay
 
       // Speed lines
       const speedLines: any[] = [];
@@ -1261,9 +1254,7 @@ export default function OceanScene({
           seaangler: "LURED TO DEATH!",
         };
 
-        messageDisplay.text = deathMessages[predatorChoice] || "DANGER!";
-        messageDisplay.color = k.rgb(255, 50, 50);
-        messageOpacity = 1;
+        // Message now handled by React overlay
 
         let attackComplete = false;
         creature.onUpdate(() => {
@@ -1285,8 +1276,7 @@ export default function OceanScene({
               k.lifespan(0.3),
             ]);
 
-            messageDisplay.text = "DROWNED!";
-            messageOpacity = 1;
+            // Message now handled by React overlay
 
             diver.onUpdate(() => {
               diver.pos.y += 100 * k.dt();
@@ -1411,7 +1401,6 @@ export default function OceanScene({
             console.log('[CANVAS] ✅ Diving animation complete!');
             isAnimating = false;
             animationType = 'idle';
-            messageOpacity = 0;
             divingSpeed = 0;
             divingElapsed = 0;
 
@@ -1430,7 +1419,6 @@ export default function OceanScene({
             // Stay underwater - don't surface automatically
             isAnimating = false;
             animationType = 'idle';
-            messageOpacity = 0;
             treasurePulseTime = 0;
           }
         }
@@ -1466,13 +1454,7 @@ export default function OceanScene({
           obj.opacity = 0.08 * lightLevel * (1 - divingSpeed / 300);
         });
 
-        // Fade message
-        if (messageOpacity > 0) {
-          messageDisplay.opacity = messageOpacity;
-          messageOpacity -= k.dt() * 0.4;
-        } else {
-          messageDisplay.opacity = 0;
-        }
+        // Message fading removed - now handled by React overlay
 
         // ===== ANIMATION TRIGGERS =====
         // Check for surfacing request (player cashed out)
@@ -1484,17 +1466,11 @@ export default function OceanScene({
           isAnimating = true;
           animationType = 'diving';
           divingElapsed = 0;
-          messageDisplay.text = "DIVING...";
-          messageDisplay.color = k.rgb(100, 200, 255);
-          messageOpacity = 1;
         } else if (survivedRef.current === true && !isAnimating && animationType === 'idle') {
           console.log('[CANVAS] 💰 Treasure found! Playing success animation');
           isAnimating = true;
           animationType = 'treasure';
           treasurePulseTime = 0;
-          messageDisplay.text = "TREASURE!";
-          messageDisplay.color = k.rgb(255, 215, 0);
-          messageOpacity = 1;
           createTreasureParticles(diver.pos.x, diver.pos.y);
           showTreasureChest(diver.pos.x, diver.pos.y); // Show animated chest!
         } else if (survivedRef.current === false && !isAnimating && animationType === 'idle') {

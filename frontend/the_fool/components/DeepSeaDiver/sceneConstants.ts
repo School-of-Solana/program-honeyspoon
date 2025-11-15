@@ -1,0 +1,290 @@
+/**
+ * Scene Constants - All magic numbers extracted for maintainability
+ */
+
+// ===== ANIMATION TIMINGS =====
+export const ANIMATION_TIMINGS = {
+  DIVING_DURATION: 2.5, // seconds
+  TREASURE_PULSE_CYCLES: 4, // Math.PI * 4
+  DEATH_DELAY: 3.0, // seconds after attack
+  FADE_IN_DURATION: 0.8, // seconds
+  SURFACING_DURATION: 3.0, // seconds
+  JUMP_DURATION: 1.0, // seconds
+  CHEST_FADE_IN: 0.1, // opacity increment per interval
+  CHEST_OPEN_DELAY: 500, // ms
+  CHEST_ANIMATION_DELAY: 400, // ms
+  CHEST_FADE_OUT_START: 2000, // ms
+  COIN_SPAWN_INTERVAL: 30, // ms between coins
+  BUBBLE_SPAWN_INTERVAL: 0.15, // seconds
+  FADE_INTERVAL: 50, // ms
+} as const;
+
+// ===== SPEEDS & VELOCITIES =====
+export const SPEEDS = {
+  DIVING_MAX: 400,
+  DIVING_ACCELERATION: {
+    RAMP_UP: 0.3, // first 30% of dive
+    RAMP_DOWN: 0.2, // last 20% of dive
+  },
+  BUBBLE_RISE: 40,
+  BUBBLE_HORIZONTAL: 30,
+  BUBBLE_FADE: 0.5,
+  FISH_BASE: 50,
+  FISH_VERTICAL_WAVE: 15,
+  JELLYFISH_VERTICAL: 15,
+  JELLYFISH_HORIZONTAL: 30,
+  PREDATOR_BASE: 60,
+  PREDATOR_FAST: 120, // swordfish
+  CREATURE_ATTACK: 300,
+  CREATURE_RETREAT: 150,
+  DIVER_SINK: 100,
+  DIVER_FADE: 0.5,
+  SEAGULL_BASE: 50,
+  SEAGULL_VERTICAL_WAVE: 20,
+  COIN_BASE: 80,
+  COIN_RANDOM: 80,
+  COIN_UPWARD: 50,
+  COIN_FADE: 0.7,
+  PARTICLE_BASE: 100,
+  PARTICLE_RANDOM: 100,
+  SPEED_LINE_MULTIPLIER: 1.5,
+} as const;
+
+// ===== Z-INDEX LAYERS =====
+export const Z_LAYERS = {
+  BACKGROUND: 0,
+  SKY: 1,
+  PARALLAX_FAR: 2,
+  SUN: 2,
+  BEACH: 1,
+  LIGHT_RAYS: 3,
+  PARALLAX_MID: 4,
+  WATER_SURFACE: 5,
+  SEAGULL: 4,
+  PARALLAX_NEAR: 6,
+  FOAM: 7,
+  FISH: 7,
+  JELLYFISH: 6,
+  CORAL_FOREGROUND: 8,
+  PREDATOR: 9,
+  BUBBLES: 15,
+  BOAT: 18,
+  CHEST: 18, // behind diver
+  DIVER: 20,
+  SPEED_LINES: 25,
+  PARTICLE: 25,
+  COIN: 26,
+  ATTACK_FLASH: 99,
+  MESSAGE: 100,
+  FADE_OVERLAY: 200,
+  TRANSITION_OVERLAY: 300,
+} as const;
+
+// ===== LAYOUT POSITIONS (as fractions of screen size) =====
+export const LAYOUT = {
+  DIVER_X: 0.5, // center horizontally
+  DIVER_Y_OFFSET: 100, // pixels from center
+  BOAT_X: 0.25, // left side (UI on right)
+  SKY_HEIGHT: 0.6,
+  SUN_X: 0.8,
+  SUN_Y: 0.15,
+  BEACH_START_Y: 0.6,
+  BEACH_BASE_X: 0.45,
+  BEACH_DIAGONAL_WIDTH: 0.15,
+  PALM_X: 0.85,
+  PALM_Y: 0.63,
+  WATER_SURFACE_Y: 0.6,
+  SURFACING_START_Y: 0.8,
+} as const;
+
+// ===== SCALES & SIZES =====
+export const SCALES = {
+  DIVER: 2.5,
+  BOAT_HULL: { width: 140, height: 20 },
+  BOAT_MAST: { width: 4, height: 50 },
+  BOAT_FLAG: { width: 30, height: 20 },
+  SUN_RADIUS: 50,
+  SUN_RAY_LENGTH: 80,
+  SUN_RAY_WIDTH: 8,
+  CLOUD_BASE: 20,
+  SEAGULL_SIZE: 10,
+  PALM_TRUNK: { width: 15, height: 80 },
+  PALM_LEAF: { width: 40, height: 15 },
+  SHELL_SIZE: 10,
+  ROCK_SIZE: { min: 12, max: 20 },
+  WATER_LINE_HEIGHT: 4,
+  WAVE_AMPLITUDE: 40,
+  WAVE_FREQUENCY: 0.008,
+  BUBBLE_SCALE: { min: 1.5, max: 3 },
+  FISH_SCALE_SMALL: 2,
+  FISH_SCALE_LARGE: 1.5,
+  JELLYFISH_SCALE: 2,
+  PREDATOR_SCALE: 2.5,
+  CREATURE_SCALE: 3,
+  CHEST_SCALE: 3,
+  COIN_SCALE: { min: 2, max: 3 },
+  LIGHT_CIRCLE: 15,
+} as const;
+
+// ===== PARALLAX SETTINGS =====
+export const PARALLAX = {
+  LAYERS: [
+    { speed: -30, sprite: 'seaweed', frames: 96, count: 10, scale: [2, 3], opacity: [0.3, 0.5], z: Z_LAYERS.PARALLAX_FAR },
+    { speed: -80, sprite: 'corals', frames: 28, count: 12, scale: [1.5, 2.5], opacity: [0.5, 0.7], z: Z_LAYERS.PARALLAX_MID },
+    { speed: -150, sprite: 'seaweed', frames: 96, count: 15, scale: [2.5, 3.5], opacity: [0.7, 0.9], z: Z_LAYERS.PARALLAX_NEAR },
+  ],
+  IDLE_SPEED_MULTIPLIER: 0.1,
+} as const;
+
+// ===== SPAWN RATES & INTERVALS =====
+export const SPAWN_RATES = {
+  FISH_INTERVAL: 1.5, // seconds
+  FISH_CHANCE: 0.3, // 70% chance
+  JELLYFISH_INTERVAL: 4, // seconds
+  JELLYFISH_CHANCE: 0.5, // 50% chance
+  PREDATOR_INTERVAL: 6, // seconds
+  PREDATOR_CHANCE: 0.6, // 40% chance
+  PREDATOR_MIN_DEPTH: 100, // meters
+  BUBBLE_INTERVAL: 0.3, // seconds
+  BUBBLE_CHANCE: 0.5, // 50% chance
+  COIN_COUNT: 15,
+  PARTICLE_COUNT: 30,
+  LIGHT_RAY_COUNT: 5,
+  SUN_RAY_COUNT: 8,
+  SPLASH_PARTICLE_COUNT: 20,
+  SPEED_LINE_COUNT: 30,
+  CLOUD_COUNT: 3,
+  SEAGULL_COUNT: 3,
+} as const;
+
+// ===== COLORS =====
+export const COLORS = {
+  BACKGROUND_OCEAN: [20, 40, 80] as [number, number, number],
+  SKY: [135, 206, 250] as [number, number, number],
+  SUN: [255, 220, 100] as [number, number, number],
+  SUN_RAY: [255, 240, 150] as [number, number, number],
+  WATER_SURFACE: [100, 150, 255] as [number, number, number],
+  BEACH: [194, 178, 128] as [number, number, number],
+  FOAM: [255, 255, 255] as [number, number, number],
+  BOAT_HULL: [101, 67, 33] as [number, number, number],
+  BOAT_DECK: [139, 90, 43] as [number, number, number],
+  BOAT_FLAG: [200, 50, 50] as [number, number, number],
+  ANCHOR_ROPE: [150, 120, 80] as [number, number, number],
+  PALM_TRUNK: [101, 67, 33] as [number, number, number],
+  PALM_LEAF: [34, 139, 34] as [number, number, number],
+  ROCK: [100, 100, 100] as [number, number, number],
+  SHELL: [255, 240, 220] as [number, number, number],
+  CLOUD: [255, 255, 255] as [number, number, number],
+  SEAGULL: [255, 255, 255] as [number, number, number],
+  BUBBLE: [150, 200, 255] as [number, number, number],
+  LIGHT_RAY: [255, 255, 200] as [number, number, number],
+  SPEED_LINE: [150, 200, 255] as [number, number, number],
+  SPLASH: [150, 200, 255] as [number, number, number],
+  PARTICLE_GOLD: [255, 215, 0] as [number, number, number],
+  ATTACK_FLASH: [255, 0, 0] as [number, number, number],
+  FADE_BLACK: [0, 0, 0] as [number, number, number],
+  GLOW_YELLOW: [255, 255, 150] as [number, number, number],
+} as const;
+
+// ===== OPACITY VALUES =====
+export const OPACITY = {
+  FOAM: 0.6,
+  CLOUD: 0.8,
+  LIGHT_RAY_BASE: 0.08,
+  LIGHT_RAY_MIN: 0.3,
+  BUBBLE_BASE: 0.8,
+  BUBBLE_POP: 0.3,
+  FISH_BASE: 0.8,
+  PREDATOR_BASE: 0.8,
+  ATTACK_FLASH: 0.8,
+  FADE_OVERLAY_START: 0.8,
+  GLOW_MIN: 0.4,
+  GLOW_RANGE: 0.3,
+} as const;
+
+// ===== PHYSICS & MOTION =====
+export const MOTION = {
+  BOAT_BOB_AMPLITUDE: 8,
+  BOAT_BOB_SPEED: 1.5,
+  BOAT_ROCK_AMPLITUDE: 2,
+  BOAT_ROCK_SPEED: 1.2,
+  DIVER_BOB_AMPLITUDE: 10,
+  DIVER_BOB_SPEED: 2,
+  FISH_WAVE_SPEED: 2,
+  JELLYFISH_WAVE_SPEED: 2,
+  PREDATOR_WAVE_AMPLITUDE: 20,
+  PREDATOR_WAVE_SPEED: 2,
+  CREATURE_SHAKE_AMPLITUDE: 10,
+  CREATURE_SHAKE_SPEED: 20,
+  SUN_RAY_ROTATION_SPEED: 20,
+  SEAGULL_WAVE_SPEED: 3,
+  JUMP_ARC_HEIGHT: 50,
+  JUMP_HORIZONTAL_SPEED: 30,
+  JUMP_ROTATION_DEGREES: 90,
+  GLOW_PULSE_SPEED: 8,
+  GLOW_RADIUS_VARIATION: 5,
+} as const;
+
+// ===== DEPTH THRESHOLDS (for predator spawning) =====
+export const DEPTH_ZONES = {
+  SAFE: 0,
+  SHARK_START: 100,
+  SHARK_END: 200,
+  SAWSHARK_END: 400,
+  SWORDFISH_END: 600,
+  ABYSS: 600,
+} as const;
+
+// ===== DARKNESS PROGRESSION =====
+export const DARKNESS = {
+  BASE_OPACITY: 0.1,
+  DEPTH_DIVISOR: 1000,
+  DEPTH_MULTIPLIER: 0.7,
+  MAX_OPACITY: 0.8,
+} as const;
+
+// ===== BOUNDARIES & WRAP POINTS =====
+export const BOUNDARIES = {
+  SPAWN_OFFSET: 100, // pixels off-screen
+  DESPAWN_OFFSET: 50, // pixels off-screen
+  ATTACK_DISTANCE: 50, // pixels
+  BUBBLE_WRAP_OFFSET: 50,
+  JELLYFISH_WRAP_OFFSET: 50,
+} as const;
+
+// ===== DECORATIVE ELEMENTS POSITIONS =====
+export const DECORATIONS = {
+  ROCKS: [
+    { x: 0.50, y: 0.68, size: 20 },
+    { x: 0.62, y: 0.75, size: 15 },
+    { x: 0.75, y: 0.78, size: 18 },
+    { x: 0.88, y: 0.82, size: 12 },
+  ],
+  SHELLS: [
+    { x: 0.52, y: 0.65 },
+    { x: 0.64, y: 0.70 },
+    { x: 0.72, y: 0.76 },
+    { x: 0.80, y: 0.80 },
+    { x: 0.92, y: 0.85 },
+  ],
+  CLOUDS: [
+    { x: 0.2, y: 0.15, scale: 1 },
+    { x: 0.5, y: 0.25, scale: 0.8 },
+    { x: 0.75, y: 0.12, scale: 1.2 },
+  ],
+  SEAGULLS: [
+    { x: 0.3, y: 0.2, speed: 50 },
+    { x: 0.6, y: 0.15, speed: 60 },
+    { x: 0.1, y: 0.25, speed: 45 },
+  ],
+} as const;
+
+// ===== SPEED LINE SETTINGS =====
+export const SPEED_LINES = {
+  WIDTH_MIN: 2,
+  WIDTH_RANDOM: 3,
+  HEIGHT_MIN: 20,
+  HEIGHT_RANDOM: 40,
+  OPACITY_DIVISOR: 200,
+  MAX_OPACITY: 0.8,
+} as const;
