@@ -1,20 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Pirata_One } from "next/font/google";
+import { Press_Start_2P } from "next/font/google";
 import "./globals.css";
+import "nes.css/css/nes.min.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const pirataOne = Pirata_One({
+const pressStart2P = Press_Start_2P({
   weight: "400",
-  variable: "--font-treasure",
+  variable: "--font-nes",
   subsets: ["latin"],
 });
 
@@ -31,7 +22,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${pirataOne.variable} antialiased`}
+        className={`${pressStart2P.variable} antialiased`}
+        style={{ fontFamily: 'var(--font-nes), monospace' }}
       >
         {children}
       </body>
