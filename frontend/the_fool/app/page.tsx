@@ -31,14 +31,12 @@ export default function Home() {
     walletBalance: 0,
   });
 
-  const [betAmount, setBetAmount] = useState(100);
-  const [betError, setBetError] = useState("");
+  const betAmount = GAME_CONFIG.FIXED_BET; // Fixed bet amount for simplified gameplay
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastShipwreck, setLastShipwreck] = useState<Shipwreck | undefined>();
   const [survived, setSurvived] = useState<boolean | undefined>(undefined);
   const [showBettingCard, setShowBettingCard] = useState(true);
   const [showHUD, setShowHUD] = useState(false);
-  const [maxBetAllowed, setMaxBetAllowed] = useState<number>(GAME_CONFIG.MAX_BET);
   
   // Debug mode state
   const [debugMode, setDebugMode] = useState(false);
@@ -64,7 +62,6 @@ export default function Home() {
         walletBalance: walletInfo.balance 
       }));
       
-      setMaxBetAllowed(Math.min(walletInfo.balance, walletInfo.maxBet, GAME_CONFIG.MAX_BET));
       setHouseWalletInfo(houseStatus);
     };
     
@@ -95,29 +92,24 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // Validate bet
-  const handleBetChange = (amount: number) => {
-    const walletBalance = gameState.walletBalance || 0;
-    
-    if (amount < GAME_CONFIG.MIN_BET) {
-      setBetError(`Minimum bet is $${GAME_CONFIG.MIN_BET}`);
-    } else if (amount > walletBalance) {
-      setBetError(`Insufficient balance. You have $${walletBalance}`);
-    } else if (amount > maxBetAllowed) {
-      setBetError(`Maximum bet is $${maxBetAllowed}`);
-    } else {
-      setBetError("");
-    }
-    setBetAmount(amount);
-  };
-
   // Start new game
   const handleStartGame = async () => {
-    if (betAmount < GAME_CONFIG.MIN_BET || betAmount > maxBetAllowed) {
+    // Check if user has enough balance for fixed bet
+    if (betAmount > (gameState.walletBalance || 0)) {
+      console.error('[GAME] ❌ Insufficient balance', {
+        betAmount,
+        walletBalance: gameState.walletBalance,
+        needed: betAmount - (gameState.walletBalance || 0)
+      });
       return;
     }
 
-    console.log(`[GAME] Starting new game with bet: $${betAmount}`);
+    console.log(`[GAME] 🎮 Starting new game`, {
+      betAmount,
+      userId,
+      sessionId: gameState.sessionId,
+      walletBalance: gameState.walletBalance
+    });
 
     setIsProcessing(true);
 
@@ -126,13 +118,23 @@ export default function Home() {
       const result = await startGame(betAmount, userId, gameState.sessionId);
       
       if (!result.success) {
-        setBetError(result.error || "Failed to start game");
+        console.error('[GAME] ❌ Failed to start game', {
+          error: result.error,
+          betAmount,
+          userId
+        });
         setIsProcessing(false);
         return;
       }
 
+      console.log('[GAME] ✅ Game started successfully', { sessionId: result.sessionId });
+
       // Update wallet balance
       const walletInfo = await getWalletInfo(userId);
+      console.log('[GAME] 💰 Wallet updated', {
+        newBalance: walletInfo.balance,
+        totalWagered: walletInfo.totalWagered
+      });
 
       // Hide betting card with animation
       setShowBettingCard(false);
@@ -155,33 +157,44 @@ export default function Home() {
         setLastShipwreck(undefined);
         setSurvived(undefined);
         setIsProcessing(false);
-        console.log('[GAME] Game started, HUD visible');
+        console.log('[GAME] 🎮 HUD visible, game active', {
+          diveNumber: 1,
+          treasure: betAmount,
+          depth: 0
+        });
       }, 500);
     } catch (error) {
-      console.error("Failed to start game:", error);
-      setBetError("Failed to start game. Please try again.");
+      console.error("[GAME] ❌ Exception during start:", error);
       setIsProcessing(false);
     }
   };
 
   // Dive deeper
   const handleDiveDeeper = async () => {
-    if (isProcessing) return;
+    if (isProcessing) {
+      console.warn('[GAME] ⚠️ Dive blocked - already processing');
+      return;
+    }
 
-    console.log(`[GAME] Dive initiated - Dive #${gameState.diveNumber}, Current treasure: $${gameState.currentTreasure}`);
+    console.log(`[GAME] 🤿 Dive initiated`, {
+      diveNumber: gameState.diveNumber,
+      currentTreasure: gameState.currentTreasure,
+      depth: gameState.depth,
+      sessionId: gameState.sessionId
+    });
 
     setIsProcessing(true);
 
     try {
       // STEP 1: Start diving animation
       setIsProcessing(true);
-      console.log('[GAME] Starting diving animation...');
+      console.log('[GAME] 🎬 Starting diving animation (2.5s)...');
       
       // Wait for diving animation (2.5 seconds as defined in OceanScene)
       await new Promise((resolve) => setTimeout(resolve, 2500));
       
       // STEP 2: Call server to determine result
-      console.log('[GAME] Calling server...');
+      console.log('[GAME] 🎲 Calling server for dive result...');
       const result = await performDive(
         gameState.diveNumber,
         gameState.currentTreasure,
@@ -189,7 +202,15 @@ export default function Home() {
         gameState.userId
       );
 
-      console.log(`[GAME] Server response received - Survived: ${result.survived}, Roll: ${result.randomRoll}, Threshold: ${result.threshold}`);
+      console.log(`[GAME] 📊 Server response`, {
+        survived: result.survived,
+        randomRoll: result.randomRoll,
+        threshold: result.threshold,
+        survivalProb: `${(result.survivalProbability * 100).toFixed(1)}%`,
+        multiplier: `${result.multiplier.toFixed(2)}x`,
+        newTreasure: result.totalTreasure,
+        depth: result.depth
+      });
 
       // STEP 3: Show result animation
       setSurvived(result.survived);
@@ -199,7 +220,12 @@ export default function Home() {
 
       // STEP 4: Update game state
       if (result.survived) {
-        console.log(`[GAME] Dive successful! New treasure: $${result.totalTreasure}, Depth: ${result.depth}m`);
+        console.log(`[GAME] ✅ Dive successful!`, {
+          newTreasure: result.totalTreasure,
+          depth: result.depth,
+          multiplierApplied: result.multiplier,
+          nextDive: gameState.diveNumber + 1
+        });
         
         setGameState((prev) => ({
           ...prev,
@@ -214,21 +240,34 @@ export default function Home() {
 
         if (result.shipwreck) {
           setLastShipwreck(result.shipwreck);
-          console.log(`[GAME] Shipwreck discovered: ${result.shipwreck.name}`);
+          console.log(`[GAME] 🚢 Shipwreck discovered`, {
+            name: result.shipwreck.name,
+            depth: result.shipwreck.depth,
+            treasureValue: result.shipwreck.treasureValue
+          });
         }
         
         // Reset survived state for next dive
         setTimeout(() => setSurvived(undefined), 100);
       } else {
-        console.log(`[GAME] DROWNED at ${result.depth}m - Game Over`);
+        console.log(`[GAME] 💀 DROWNED - Game Over`, {
+          depth: result.depth,
+          diveNumber: gameState.diveNumber,
+          lostTreasure: gameState.currentTreasure,
+          initialBet: gameState.initialBet
+        });
 
         // Update wallet balance
         const walletInfo = await getWalletInfo(userId);
+        console.log('[GAME] 💰 Wallet after loss', {
+          newBalance: walletInfo.balance,
+          totalLost: walletInfo.totalLost
+        });
 
         // Wait for death animation
         await new Promise((resolve) => setTimeout(resolve, 3000));
 
-        console.log('[GAME] Resetting to betting screen');
+        console.log('[GAME] 🔄 Resetting to betting screen');
 
         // Reset and show betting card again
         setShowHUD(false);
@@ -244,12 +283,11 @@ export default function Home() {
         }));
         setLastShipwreck(undefined);
         setSurvived(undefined);
-        setMaxBetAllowed(Math.min(walletInfo.balance, walletInfo.maxBet, GAME_CONFIG.MAX_BET));
         
         setTimeout(() => setShowBettingCard(true), 500);
       }
     } catch (error) {
-      console.error("Dive failed:", error);
+      console.error("[GAME] ❌ Exception during dive:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -257,9 +295,22 @@ export default function Home() {
 
   // Surface with treasure
   const handleSurface = async () => {
-    if (isProcessing || gameState.currentTreasure <= 0) return;
+    if (isProcessing) {
+      console.warn('[GAME] ⚠️ Surface blocked - already processing');
+      return;
+    }
+    if (gameState.currentTreasure <= 0) {
+      console.warn('[GAME] ⚠️ Surface blocked - no treasure');
+      return;
+    }
 
-    console.log(`[GAME] Surfacing with $${gameState.currentTreasure} treasure`);
+    console.log(`[GAME] 🏄 Surfacing`, {
+      treasure: gameState.currentTreasure,
+      initialBet: gameState.initialBet,
+      profit: gameState.currentTreasure - gameState.initialBet,
+      diveNumber: gameState.diveNumber,
+      depth: gameState.depth
+    });
 
     setIsProcessing(true);
 
@@ -270,17 +321,31 @@ export default function Home() {
         gameState.userId
       );
 
+      console.log('[GAME] 💰 Surface result', {
+        success: result.success,
+        finalAmount: result.finalAmount,
+        profit: result.profit
+      });
+
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       if (result.success) {
-        console.log(`[GAME] Surface successful! Final amount: $${result.finalAmount}, Profit: $${result.profit}`);
+        console.log(`[GAME] ✅ Surface successful!`, {
+          finalAmount: result.finalAmount,
+          profit: result.profit,
+          profitPercent: `${((result.profit / gameState.initialBet) * 100).toFixed(1)}%`
+        });
 
         // Update wallet balance
         const walletInfo = await getWalletInfo(userId);
+        console.log('[GAME] 💰 Wallet after win', {
+          newBalance: walletInfo.balance,
+          totalWon: walletInfo.totalWon
+        });
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        console.log('[GAME] Resetting to betting screen');
+        console.log('[GAME] 🔄 Resetting to betting screen');
 
         // Reset and show betting card
         setShowHUD(false);
@@ -296,12 +361,11 @@ export default function Home() {
         }));
         setLastShipwreck(undefined);
         setSurvived(undefined);
-        setMaxBetAllowed(Math.min(walletInfo.balance, walletInfo.maxBet, GAME_CONFIG.MAX_BET));
         
         setTimeout(() => setShowBettingCard(true), 500);
       }
     } catch (error) {
-      console.error("Surface failed:", error);
+      console.error("[GAME] ❌ Exception during surface:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -358,50 +422,31 @@ export default function Home() {
                   ${gameState.walletBalance || 0}
                 </span>
               </div>
-              {maxBetAllowed < GAME_CONFIG.MAX_BET && (
-                <p className="text-xs text-orange-400 mt-2">
-                  Max bet limited to ${maxBetAllowed} (wallet/house limit)
-                </p>
-              )}
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-white font-medium mb-2 text-sm">
-                  💰 Place Your Bet
-                </label>
-                <input
-                  type="number"
-                  value={betAmount}
-                  onChange={(e) => handleBetChange(Number(e.target.value))}
-                  min={GAME_CONFIG.MIN_BET}
-                  max={GAME_CONFIG.MAX_BET}
-                  className="w-full px-4 py-3 rounded-lg bg-blue-950 text-white text-xl font-bold border-2 border-blue-600 focus:outline-none focus:border-yellow-400 transition-colors"
-                />
-                {betError && (
-                  <p className="text-red-400 text-xs mt-1">{betError}</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                {[10, 25, 50, 100, 250, 500].map((amount) => (
-                  <button
-                    key={amount}
-                    onClick={() => handleBetChange(amount)}
-                    className="px-3 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg font-bold text-sm transition-all transform hover:scale-105"
-                  >
-                    ${amount}
-                  </button>
-                ))}
+              {/* Fixed Bet Amount Display */}
+              <div className="bg-blue-950/70 rounded-lg p-4 border-2 border-yellow-500">
+                <div className="text-center">
+                  <p className="text-blue-300 text-sm mb-2">Fixed Bet Amount</p>
+                  <p className="text-4xl font-bold text-yellow-400">${betAmount}</p>
+                  <p className="text-xs text-blue-300 mt-2">per round</p>
+                </div>
               </div>
 
               <button
                 onClick={handleStartGame}
-                disabled={!!betError}
+                disabled={betAmount > (gameState.walletBalance || 0)}
                 className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
               >
-                🤿 START DIVING
+                🤿 START DIVING (${betAmount})
               </button>
+              
+              {betAmount > (gameState.walletBalance || 0) && (
+                <p className="text-red-400 text-xs text-center">
+                  Insufficient balance. Need ${betAmount}, have ${gameState.walletBalance || 0}
+                </p>
+              )}
 
               <p className="text-xs text-blue-300 text-center">
                 Press Start to submerge into the depths

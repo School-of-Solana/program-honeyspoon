@@ -10,7 +10,7 @@ const userWallets = new Map<string, UserWallet>();
 const transactions: Transaction[] = [];
 const activeSessions = new Map<string, GameSession>();
 let houseWallet: HouseWallet = {
-  balance: 50000, // $50,000 house bankroll
+  balance: 500000, // $500,000 house bankroll (increased for better coverage)
   totalPaidOut: 0,
   totalReceived: 0,
   reservedFunds: 0,

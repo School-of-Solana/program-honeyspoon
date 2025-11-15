@@ -34,13 +34,15 @@ export default function OceanScene({
   
   // Update refs when props change
   useEffect(() => {
-    console.log('[CANVAS PROPS UPDATE]', {
-      isDiving,
-      survived,
-      depth,
-      treasureValue,
-      timestamp: Date.now()
-    });
+    const changes = [];
+    if (isDivingRef.current !== isDiving) changes.push(`isDiving: ${isDivingRef.current} → ${isDiving}`);
+    if (survivedRef.current !== survived) changes.push(`survived: ${survivedRef.current} → ${survived}`);
+    if (depthRef.current !== depth) changes.push(`depth: ${depthRef.current}m → ${depth}m`);
+    if (treasureRef.current !== treasureValue) changes.push(`treasure: $${treasureRef.current} → $${treasureValue}`);
+    
+    if (changes.length > 0) {
+      console.log('[CANVAS] 📊 Props changed:', changes.join(', '));
+    }
     
     isDivingRef.current = isDiving;
     survivedRef.current = survived;
@@ -494,15 +496,17 @@ export default function OceanScene({
       k.onUpdate(() => {
         const now = Date.now();
         
-        // Log state every 2 seconds
-        if (now - lastLogTime > 2000) {
-          console.log('[CANVAS STATE]', {
+        // Log state every 3 seconds (reduced frequency)
+        if (now - lastLogTime > 3000) {
+          console.log('[CANVAS] 🎮 State update', {
+            animation: animationType,
+            isAnimating,
             isDiving: isDivingRef.current,
             survived: survivedRef.current,
-            isAnimating,
-            animationType,
-            divingSpeed,
-            divingElapsed: divingElapsed.toFixed(2),
+            depth: `${depthRef.current}m`,
+            treasure: `$${treasureRef.current}`,
+            divingSpeed: `${divingSpeed.toFixed(0)}px/s`,
+            divingProgress: `${((divingElapsed / 2.5) * 100).toFixed(0)}%`
           });
           lastLogTime = now;
         }
@@ -643,8 +647,7 @@ export default function OceanScene({
 
         // ===== ANIMATION TRIGGERS =====
         if (isDivingRef.current && !isAnimating && animationType === 'idle') {
-          console.log('[CANVAS] ✅ Conditions met for diving animation!');
-          console.log('[CANVAS] Triggering diving animation!');
+          console.log('[CANVAS] 🤿 Starting dive animation (2.5s)');
           isAnimating = true;
           animationType = 'diving';
           divingElapsed = 0;
@@ -652,8 +655,7 @@ export default function OceanScene({
           messageDisplay.color = k.rgb(100, 200, 255);
           messageOpacity = 1;
         } else if (survivedRef.current === true && !isAnimating && animationType === 'idle') {
-          console.log('[CANVAS] ✅ Conditions met for treasure animation!');
-          console.log('[CANVAS] Triggering treasure animation!');
+          console.log('[CANVAS] 💰 Treasure found! Playing success animation');
           isAnimating = true;
           animationType = 'treasure';
           treasurePulseTime = 0;
@@ -662,7 +664,7 @@ export default function OceanScene({
           messageOpacity = 1;
           createTreasureParticles(diver.pos.x, diver.pos.y);
         } else if (survivedRef.current === false && !isAnimating && animationType === 'idle') {
-          console.log('[CANVAS] ✅ Conditions met for death animation!');
+          console.log('[CANVAS] 💀 Death triggered! Playing attack animation');
           triggerDeathAnimation();
         }
       });

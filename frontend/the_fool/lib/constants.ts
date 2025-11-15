@@ -13,6 +13,7 @@ export const GAME_CONFIG = {
   // Betting limits
   MIN_BET: 10,
   MAX_BET: 500,
+  FIXED_BET: 50, // Single fixed bet amount for simplified gameplay
 
   // Depth mechanics
   STARTING_DEPTH: 0, // Surface level
