@@ -39,8 +39,9 @@ export default function Home() {
   const [showBettingCard, setShowBettingCard] = useState(true);
   const [showHUD, setShowHUD] = useState(false);
   
-  // Debug mode state
-  const [debugMode, setDebugMode] = useState(false);
+  // Debug mode states
+  const [debugMode, setDebugMode] = useState(false); // House wallet debug
+  const [kaplayDebug, setKaplayDebug] = useState(false); // Kaplay debug mode
   const [houseWalletInfo, setHouseWalletInfo] = useState({
     balance: 0,
     reservedFunds: 0,
@@ -388,6 +389,7 @@ export default function Home() {
           isDiving={isDiving}
           survived={survived}
           lastShipwreck={lastShipwreck}
+          debugMode={kaplayDebug}
         />
       </div>
 
@@ -543,33 +545,48 @@ export default function Home() {
           {/* Bottom: Action Buttons */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-6 pointer-events-auto">
             <div className="max-w-4xl mx-auto">
-              {/* Stats Panel */}
+              {/* Stats Panel with Debug Toggle */}
               <div className="bg-black/60 backdrop-blur-sm rounded-lg p-4 mb-4 border border-blue-500/30">
-                <div className="grid grid-cols-4 gap-4 text-center text-white">
-                  <div>
-                    <div className="text-xs text-gray-400 mb-1">SURVIVAL</div>
-                    <div className="text-lg font-bold text-green-400">
-                      {(currentDiveStats.survivalProbability * 100).toFixed(1)}%
+                <div className="flex justify-between items-start mb-2">
+                  <div className="grid grid-cols-4 gap-4 text-center text-white flex-1">
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">SURVIVAL</div>
+                      <div className="text-lg font-bold text-green-400">
+                        {(currentDiveStats.survivalProbability * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">MULTIPLIER</div>
+                      <div className="text-lg font-bold text-yellow-400">
+                        {currentDiveStats.multiplier.toFixed(2)}x
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">POTENTIAL</div>
+                      <div className="text-lg font-bold text-purple-400">
+                        ${Math.floor(gameState.currentTreasure * currentDiveStats.multiplier)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-400 mb-1">ZONE</div>
+                      <div className="text-lg font-bold text-blue-400">
+                        {currentDiveStats.depthZone.name}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-400 mb-1">MULTIPLIER</div>
-                    <div className="text-lg font-bold text-yellow-400">
-                      {currentDiveStats.multiplier.toFixed(2)}x
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-400 mb-1">POTENTIAL</div>
-                    <div className="text-lg font-bold text-purple-400">
-                      ${Math.floor(gameState.currentTreasure * currentDiveStats.multiplier)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-400 mb-1">ZONE</div>
-                    <div className="text-lg font-bold text-blue-400">
-                      {currentDiveStats.depthZone.name}
-                    </div>
-                  </div>
+                  
+                  {/* Kaplay Debug Toggle */}
+                  <button
+                    onClick={() => setKaplayDebug(!kaplayDebug)}
+                    className={`ml-4 px-3 py-2 rounded text-xs font-medium transition-colors ${
+                      kaplayDebug 
+                        ? 'bg-green-600 text-white border-2 border-green-400' 
+                        : 'bg-gray-700 text-gray-300 border-2 border-gray-600 hover:bg-gray-600'
+                    }`}
+                    title="Toggle Kaplay Debug Mode (shows hitboxes, FPS, etc.)"
+                  >
+                    {kaplayDebug ? '🔧 DEBUG ON' : '🔧 DEBUG'}
+                  </button>
                 </div>
               </div>
 

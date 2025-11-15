@@ -15,6 +15,7 @@ interface OceanSceneProps {
   survived?: boolean;
   lastShipwreck?: Shipwreck;
   onAnimationComplete?: () => void;
+  debugMode?: boolean;
 }
 
 export default function OceanScene({
@@ -22,6 +23,7 @@ export default function OceanScene({
   treasureValue,
   isDiving,
   survived,
+  debugMode = false,
 }: OceanSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const kRef = useRef<KAPLAYCtx | null>(null);
@@ -84,7 +86,7 @@ export default function OceanScene({
       width: window.innerWidth,
       height: window.innerHeight,
       background: [20, 40, 80],
-      debug: false,
+      debug: debugMode,
       stretch: true,
       letterbox: false,
     });
@@ -680,6 +682,20 @@ export default function OceanScene({
       }
     };
   }, []);
+
+  // Toggle Kaplay debug mode
+  useEffect(() => {
+    if (!kRef.current) return;
+    
+    // Kaplay's debug mode can be toggled via debug.inspect
+    if (debugMode) {
+      console.log('[CANVAS] 🔧 Debug mode enabled');
+      (kRef.current as any).debug.inspect = true;
+    } else {
+      console.log('[CANVAS] 🔧 Debug mode disabled');
+      (kRef.current as any).debug.inspect = false;
+    }
+  }, [debugMode]);
 
   // Trigger animations when props change
   useEffect(() => {
