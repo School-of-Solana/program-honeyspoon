@@ -90,6 +90,54 @@ export default function OceanScene({
     kRef.current = k;
     initializedRef.current = true;
 
+    // Load sprites
+    console.log('[CANVAS] 📦 Loading sprites...');
+    k.loadSprite("diver", "/sprites/diver.png", {
+      sliceX: 7,
+      sliceY: 4,
+      anims: {
+        idle: { from: 0, to: 1, loop: true, speed: 3 },
+        swim: { from: 2, to: 5, loop: true, speed: 8 },
+      },
+    });
+    k.loadSprite("shark", "/sprites/shark.png");
+    k.loadSprite("fish", "/sprites/fish1.png");
+    k.loadSprite("seaweed", "/sprites/seaweed.png");
+    k.loadSprite("coral", "/sprites/corals.png", { sliceX: 4, sliceY: 1 });
+    k.loadSprite("rock", "/sprites/rock.png", { sliceX: 4, sliceY: 4 });
+    k.loadSprite("bubble", "/sprites/bubble.png");
+    k.loadSprite("treasure", "/sprites/treasure.png", { sliceX: 4, sliceY: 1 });
+    console.log('[CANVAS] ✅ Sprites loaded!');
+
+    // Load sprites
+    console.log('[CANVAS] 📦 Loading sprites...');
+    k.loadSprite("diver", "/sprites/diver.png", {
+      sliceX: 7, // Diver spritesheet has 7 frames (224px / 32px)
+      sliceY: 4, // 4 rows (128px / 32px)
+      anims: {
+        idle: { from: 0, to: 1, loop: true, speed: 3 },
+        swim: { from: 2, to: 5, loop: true, speed: 8 },
+        dive: { from: 6, to: 6 },
+      },
+    });
+    k.loadSprite("shark", "/sprites/shark.png");
+    k.loadSprite("fish", "/sprites/fish1.png");
+    k.loadSprite("seaweed", "/sprites/seaweed.png");
+    k.loadSprite("coral", "/sprites/corals.png", {
+      sliceX: 4,
+      sliceY: 1,
+    });
+    k.loadSprite("rock", "/sprites/rock.png", {
+      sliceX: 4,
+      sliceY: 4,
+    });
+    k.loadSprite("bubble", "/sprites/bubble.png");
+    k.loadSprite("treasure", "/sprites/treasure.png", {
+      sliceX: 4,
+      sliceY: 1,
+    });
+    console.log('[CANVAS] ✅ Sprites loaded!');
+
     // CENTRALIZED Animation state (not per-object!)
     let diverY = k.height() / 2 - 100;
     const diverX = k.width() / 2;
@@ -134,14 +182,14 @@ export default function OceanScene({
       // PARALLAX LAYERS
       const parallaxLayers: { objects: any[], speed: number }[] = [];
 
-      // Far Layer - Rocks
+      // Far Layer - Rocks (using sprites)
       const farLayer = { objects: [] as any[], speed: 0.3 };
       for (let i = 0; i < 8; i++) {
         const rock = k.add([
-          k.rect(40 + Math.random() * 60, 60 + Math.random() * 80),
+          k.sprite("rock", { frame: Math.floor(Math.random() * 16) }),
           k.pos(Math.random() * k.width(), Math.random() * k.height() * 2 - k.height()),
           k.anchor("center"),
-          k.color(40, 40, 60),
+          k.scale(2 + Math.random() * 2),
           k.opacity(0.4),
           k.z(2),
         ]);
@@ -149,15 +197,14 @@ export default function OceanScene({
       }
       parallaxLayers.push(farLayer);
 
-      // Mid Layer - Kelp
+      // Mid Layer - Seaweed (using sprites)
       const midLayer = { objects: [] as any[], speed: 0.6 };
       for (let i = 0; i < 12; i++) {
-        const kelpHeight = 100 + Math.random() * 200;
         const kelp = k.add([
-          k.rect(8, kelpHeight),
+          k.sprite("seaweed"),
           k.pos(Math.random() * k.width(), Math.random() * k.height() * 2 - k.height()),
           k.anchor("top"),
-          k.color(20, 80 + Math.random() * 40, 30),
+          k.scale(2 + Math.random()),
           k.opacity(0.6),
           k.z(5),
         ]);
@@ -165,14 +212,14 @@ export default function OceanScene({
       }
       parallaxLayers.push(midLayer);
 
-      // Fore Layer - Coral
+      // Fore Layer - Coral (using sprites)
       const foreLayer = { objects: [] as any[], speed: 1.2 };
-      const coralTypes = ["🪸", "🌿", "🍄", "🪨"];
       for (let i = 0; i < 15; i++) {
         const coral = k.add([
-          k.text(coralTypes[Math.floor(Math.random() * coralTypes.length)], { size: 24 + Math.random() * 16 }),
+          k.sprite("coral", { frame: Math.floor(Math.random() * 4) }),
           k.pos(Math.random() * k.width(), Math.random() * k.height() * 2 - k.height()),
           k.anchor("center"),
+          k.scale(1.5 + Math.random()),
           k.opacity(0.7 + Math.random() * 0.3),
           k.z(8),
         ]);
@@ -225,44 +272,14 @@ export default function OceanScene({
         k.z(10),
       ]);
 
-      // DIVER
+      // DIVER (using sprite)
       const diver = k.add([
-        k.circle(20),
+        k.sprite("diver", { anim: "idle" }),
         k.pos(diverX, diverY),
         k.anchor("center"),
-        k.color(255, 200, 100),
-        k.outline(3, k.rgb(200, 150, 50)),
+        k.scale(2), // Scale up 32x32 sprite to 64x64
         k.opacity(1),
         k.z(20),
-      ]);
-
-      const helmet = k.add([
-        k.circle(15),
-        k.pos(diverX, diverY - 15),
-        k.anchor("center"),
-        k.color(150, 150, 200),
-        k.outline(2, k.rgb(100, 100, 150)),
-        k.opacity(1),
-        k.z(21),
-      ]);
-
-      const visor = k.add([
-        k.circle(5),
-        k.pos(diverX - 3, diverY - 18),
-        k.anchor("center"),
-        k.color(200, 220, 255),
-        k.opacity(0.6),
-        k.z(22),
-      ]);
-
-      const tank = k.add([
-        k.rect(25, 40),
-        k.pos(diverX + 20, diverY),
-        k.anchor("center"),
-        k.color(100, 100, 100),
-        k.outline(2, k.rgb(50, 50, 50)),
-        k.opacity(1),
-        k.z(19),
       ]);
 
       const treasureBag = k.add([
@@ -330,20 +347,18 @@ export default function OceanScene({
         }
       });
 
-      // Fish
+      // Fish (using sprites)
       function createFish() {
         const fishY = 100 + Math.random() * 400;
         const direction = Math.random() > 0.5 ? 1 : -1;
         const startX = direction > 0 ? -50 : k.width() + 50;
-        const fishTypes = ["🐟", "🐠", "🐡", "🐙"];
-        const fishType = fishTypes[Math.floor(Math.random() * fishTypes.length)];
 
         const fish = k.add([
-          k.text(fishType, { size: 20 + Math.random() * 16 }),
+          k.sprite("fish"),
           k.pos(startX, fishY),
           k.anchor("center"),
           k.z(7),
-          k.scale(direction > 0 ? 1 : -1, 1),
+          k.scale((direction > 0 ? 2 : -2) + Math.random(), 2 + Math.random()),
           k.opacity(lightLevel * 0.8),
         ]);
 
@@ -415,17 +430,15 @@ export default function OceanScene({
         animationType = 'death';
         divingSpeed = 0;
 
-        const creatureTypes = ["🦈", "🦑", "🐙"];
-        const creatureType = creatureTypes[Math.floor(Math.random() * creatureTypes.length)];
         const direction = Math.random() > 0.5 ? 1 : -1;
         const startX = direction > 0 ? -100 : k.width() + 100;
 
         const creature = k.add([
-          k.text(creatureType, { size: 64 }),
+          k.sprite("shark"),
           k.pos(startX, diver.pos.y),
           k.anchor("center"),
           k.z(25),
-          k.scale(direction, 1),
+          k.scale(direction * 3, 3),
         ]);
 
         messageDisplay.text = "⚠️ DANGER!";
@@ -458,14 +471,6 @@ export default function OceanScene({
             diver.onUpdate(() => {
               diver.pos.y += 100 * k.dt();
               diver.opacity -= k.dt() * 0.5;
-            });
-            helmet.onUpdate(() => {
-              helmet.pos.y += 100 * k.dt();
-              helmet.opacity -= k.dt() * 0.5;
-            });
-            tank.onUpdate(() => {
-              tank.pos.y += 100 * k.dt();
-              tank.opacity -= k.dt() * 0.5;
             });
             treasureBag.onUpdate(() => {
               treasureBag.pos.y += 150 * k.dt();
@@ -612,14 +617,8 @@ export default function OceanScene({
         if (!isAnimating && animationType === 'idle') {
           const bobAmount = Math.sin(k.time() * 2) * 10;
           diver.pos.y = diverY + bobAmount;
-          helmet.pos.y = diverY - 15 + bobAmount;
-          tank.pos.y = diverY + bobAmount;
           treasureBag.pos.y = diverY + 30 + bobAmount;
         }
-
-        // Update visor position
-        visor.pos.x = helmet.pos.x - 3;
-        visor.pos.y = helmet.pos.y - 3;
 
         // Update treasure bag size
         if (animationType !== 'treasure') {

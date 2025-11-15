@@ -8,7 +8,8 @@ import {
   surfaceWithTreasure, 
   generateSessionId, 
   startGame,
-  getWalletInfo 
+  getWalletInfo,
+  getHouseStatus
 } from "./actions/gameActions";
 import type { GameState, Shipwreck, DiveStats } from "@/lib/types";
 import { GAME_CONFIG } from "@/lib/constants";
@@ -38,12 +39,23 @@ export default function Home() {
   const [showBettingCard, setShowBettingCard] = useState(true);
   const [showHUD, setShowHUD] = useState(false);
   const [maxBetAllowed, setMaxBetAllowed] = useState<number>(GAME_CONFIG.MAX_BET);
+  
+  // Debug mode state
+  const [debugMode, setDebugMode] = useState(false);
+  const [houseWalletInfo, setHouseWalletInfo] = useState({
+    balance: 0,
+    reservedFunds: 0,
+    availableFunds: 0,
+    totalPaidOut: 0,
+    totalReceived: 0,
+  });
 
   // Initialize session and wallet on mount
   useEffect(() => {
     const initializeSession = async () => {
       const sessionId = await generateSessionId();
       const walletInfo = await getWalletInfo(userId);
+      const houseStatus = await getHouseStatus();
       
       setGameState((prev) => ({ 
         ...prev, 
@@ -53,10 +65,35 @@ export default function Home() {
       }));
       
       setMaxBetAllowed(Math.min(walletInfo.balance, walletInfo.maxBet, GAME_CONFIG.MAX_BET));
+      setHouseWalletInfo(houseStatus);
     };
     
     initializeSession();
   }, [userId]);
+
+  // Update house wallet info periodically in debug mode
+  useEffect(() => {
+    if (!debugMode) return;
+    
+    const interval = setInterval(async () => {
+      const houseStatus = await getHouseStatus();
+      setHouseWalletInfo(houseStatus);
+    }, 2000); // Update every 2 seconds
+    
+    return () => clearInterval(interval);
+  }, [debugMode]);
+
+  // Keyboard shortcut to toggle debug mode (Ctrl+Shift+D)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        setDebugMode(prev => !prev);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
 
   // Validate bet
   const handleBetChange = (amount: number) => {
@@ -295,9 +332,19 @@ export default function Home() {
         }`}>
           <div className="bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 rounded-2xl shadow-2xl p-8 border-4 border-blue-400 backdrop-blur-sm bg-opacity-95 max-w-md">
             <div className="text-center mb-6">
-              <h1 className="text-4xl font-bold text-white mb-2">
-                🌊 ABYSS FORTUNE
-              </h1>
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1"></div>
+                <h1 className="text-4xl font-bold text-white">
+                  🌊 ABYSS FORTUNE
+                </h1>
+                <button
+                  onClick={() => setDebugMode(!debugMode)}
+                  className="text-xs text-blue-400 hover:text-blue-200 px-2 py-1 bg-blue-950 rounded border border-blue-700"
+                  title="Toggle debug mode (Ctrl+Shift+D)"
+                >
+                  🔧
+                </button>
+              </div>
               <p className="text-blue-200 text-sm">
                 Dive for treasure • 15% House Edge • Infinite Depths
               </p>
@@ -392,6 +439,58 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* Debug Mode: House Wallet Info */}
+            {debugMode && (
+              <div className="max-w-7xl mx-auto mt-4 bg-red-900/80 border-2 border-red-500 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-red-200 font-bold text-sm uppercase">
+                    🔧 DEBUG MODE - House Wallet
+                  </span>
+                  <button
+                    onClick={() => setDebugMode(false)}
+                    className="text-red-300 hover:text-white text-xs px-2 py-1 bg-red-800 rounded"
+                  >
+                    Close
+                  </button>
+                </div>
+                <div className="grid grid-cols-5 gap-3 text-white text-xs">
+                  <div className="bg-black/40 rounded p-2">
+                    <div className="text-gray-400 mb-1">Balance</div>
+                    <div className="font-bold text-green-400">
+                      ${houseWalletInfo.balance.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="bg-black/40 rounded p-2">
+                    <div className="text-gray-400 mb-1">Reserved</div>
+                    <div className="font-bold text-orange-400">
+                      ${houseWalletInfo.reservedFunds.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="bg-black/40 rounded p-2">
+                    <div className="text-gray-400 mb-1">Available</div>
+                    <div className="font-bold text-blue-400">
+                      ${houseWalletInfo.availableFunds.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="bg-black/40 rounded p-2">
+                    <div className="text-gray-400 mb-1">Paid Out</div>
+                    <div className="font-bold text-red-400">
+                      ${houseWalletInfo.totalPaidOut.toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="bg-black/40 rounded p-2">
+                    <div className="text-gray-400 mb-1">Received</div>
+                    <div className="font-bold text-purple-400">
+                      ${houseWalletInfo.totalReceived.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-red-200">
+                  Press <kbd className="px-1 py-0.5 bg-red-800 rounded">Ctrl+Shift+D</kbd> to toggle debug mode
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Bottom: Action Buttons */}

@@ -10,7 +10,13 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "test:unit": "tsx --test tests/unit/*.test.ts",
+    "test:unit:wallet": "tsx --test tests/unit/walletLogic.test.ts tests/unit/walletStore.test.ts",
+    "test:unit:game": "tsx --test tests/unit/gameLogic.test.ts",
+    "test:unit:integration": "tsx --test tests/unit/walletGameIntegration.test.ts",
+    "test:unit:server": "tsx --test tests/unit/serverActions.test.ts",
+    "test:unit:edge": "tsx --test tests/unit/edgeCases.test.ts"
   },
   "dependencies": {
     "kaplay": "^3001.0.19",
@@ -27,6 +33,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }
