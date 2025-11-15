@@ -23,18 +23,18 @@ export default function OceanScene({
   treasureValue,
   isDiving,
   survived,
-  debugMode = false,
+  debugMode = true,
 }: OceanSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const kRef = useRef<KAPLAYCtx | null>(null);
   const initializedRef = useRef<boolean>(false);
-  
+
   // Use refs to track prop changes inside Kaplay closures
   const isDivingRef = useRef(isDiving);
   const survivedRef = useRef(survived);
   const depthRef = useRef(depth);
   const treasureRef = useRef(treasureValue);
-  
+
   // Update refs when props change
   useEffect(() => {
     const changes = [];
@@ -42,11 +42,11 @@ export default function OceanScene({
     if (survivedRef.current !== survived) changes.push(`survived: ${survivedRef.current} → ${survived}`);
     if (depthRef.current !== depth) changes.push(`depth: ${depthRef.current}m → ${depth}m`);
     if (treasureRef.current !== treasureValue) changes.push(`treasure: $${treasureRef.current} → $${treasureValue}`);
-    
+
     if (changes.length > 0) {
       console.log('[CANVAS] 📊 Props changed:', changes.join(', '));
     }
-    
+
     isDivingRef.current = isDiving;
     survivedRef.current = survived;
     depthRef.current = depth;
@@ -55,18 +55,18 @@ export default function OceanScene({
 
   useEffect(() => {
     console.log('[CANVAS] 🎬 OceanScene useEffect triggered');
-    
+
     if (!canvasRef.current) {
       console.log('[CANVAS] ❌ No canvas ref!');
       return;
     }
-    
+
     // Only initialize Kaplay once
     if (initializedRef.current && kRef.current) {
       console.log('[CANVAS] ⏭️  Already initialized, skipping');
       return;
     }
-    
+
     // Clean up previous instance (in case of hot reload)
     if (kRef.current) {
       console.log('[CANVAS] 🧹 Cleaning up previous instance');
@@ -79,7 +79,7 @@ export default function OceanScene({
     }
 
     console.log('[CANVAS] 🎨 Initializing Kaplay...');
-    
+
     // Initialize Kaplay (fullscreen) - only once
     const k = kaplay({
       canvas: canvasRef.current,
@@ -97,7 +97,7 @@ export default function OceanScene({
 
     // Load all sprites dynamically from config
     console.log('[CANVAS] 📦 Loading sprites from config...');
-    
+
     SPRITE_CONFIGS.forEach((sprite) => {
       k.loadSprite(sprite.name, sprite.file, {
         sliceX: sprite.sliceX,
@@ -106,7 +106,7 @@ export default function OceanScene({
       });
       console.log(`[CANVAS] ✅ Loaded ${sprite.name} (${sprite.sliceX}×${sprite.sliceY} = ${sprite.totalFrames} frames)`);
     });
-    
+
     // Legacy aliases for existing code
     k.loadSprite("fish", "/sprites/fish1.png", {
       sliceX: 8,
@@ -123,7 +123,7 @@ export default function OceanScene({
       sliceX: 4,
       sliceY: 7,
     });
-    
+
     console.log('[CANVAS] ✅ All sprites loaded!');
 
     // CENTRALIZED Animation state (not per-object!)
@@ -133,18 +133,18 @@ export default function OceanScene({
     let animationType: 'idle' | 'diving' | 'treasure' | 'death' = 'idle';
     let messageOpacity = 0;
     let divingSpeed = 0;
-    
+
     // Diving animation timing (centralized)
     let divingElapsed = 0;
     const divingDuration = 2.5;
-    
+
     // Treasure animation timing
     let treasurePulseTime = 0;
 
     // Create main scene
     k.scene("ocean", () => {
       console.log('[CANVAS] 🎮 Ocean scene created!');
-      
+
       // Get depth zone for colors
       let currentZone = getDepthZone(depth);
       let bgColor = hexToRgb(currentZone.color);
@@ -167,61 +167,106 @@ export default function OceanScene({
         k.z(1),
       ]);
 
-      // PARALLAX LAYERS
-      const parallaxLayers: { objects: any[], speed: number }[] = [];
-
-      // Get sprite configs for correct frame counts
-      const tilesConfig = SPRITE_CONFIGS.find(s => s.name === 'tiles');
-      const seaweedConfig = SPRITE_CONFIGS.find(s => s.name === 'seaweed');
-      const coralsConfig = SPRITE_CONFIGS.find(s => s.name === 'corals');
-
-      // Far Layer - Rocks (using sprites)
-      const farLayer = { objects: [] as any[], speed: 0.3 };
-      const totalRockFrames = tilesConfig?.totalFrames || 143;
-      for (let i = 0; i < 8; i++) {
-        const rock = k.add([
-          k.sprite("rock", { frame: Math.floor(Math.random() * totalRockFrames) }),
-          k.pos(Math.random() * k.width(), Math.random() * k.height() * 2 - k.height()),
-          k.anchor("center"),
-          k.scale(2 + Math.random() * 2),
-          k.opacity(0.4),
-          k.z(2),
-        ]);
-        farLayer.objects.push(rock);
+      // INFINITE PARALLAX SCROLLING LAYERS
+      // Based on: https://jslegenddev.substack.com/p/how-to-implement-infinite-parallax
+      // Technique: Each layer has 2 parts that loop infinitely
+      
+      const CANVAS_HEIGHT = k.height();
+      
+      interface ParallaxLayer {
+        speed: number;
+        parts: Array<{
+          container: any; // Container object that holds all sprites
+          y: number; // Current Y position
+        }>;
       }
-      parallaxLayers.push(farLayer);
-
-      // Mid Layer - Seaweed (using sprites)
-      const midLayer = { objects: [] as any[], speed: 0.6 };
-      const totalSeaweedFrames = seaweedConfig?.totalFrames || 96; // ✅ Fixed: was 12*16=192, now 96
-      for (let i = 0; i < 12; i++) {
-        const kelp = k.add([
-          k.sprite("seaweed", { frame: Math.floor(Math.random() * totalSeaweedFrames) }),
-          k.pos(Math.random() * k.width(), Math.random() * k.height() * 2 - k.height()),
-          k.anchor("top"),
-          k.scale(2 + Math.random()),
-          k.opacity(0.6),
-          k.z(5),
+      
+      // Helper: Create a container with random sprites
+      function createLayerPart(
+        spriteName: string,
+        frames: number,
+        count: number,
+        scaleRange: [number, number],
+        opacityRange: [number, number],
+        zIndex: number,
+        yOffset: number = 0
+      ) {
+        const container = k.add([
+          k.pos(0, yOffset),
+          k.z(zIndex),
         ]);
-        midLayer.objects.push(kelp);
+        
+        for (let i = 0; i < count; i++) {
+          const sprite = container.add([
+            k.sprite(spriteName, { frame: Math.floor(Math.random() * frames) }),
+            k.pos(Math.random() * k.width(), Math.random() * CANVAS_HEIGHT),
+            k.anchor("center"),
+            k.scale(scaleRange[0] + Math.random() * (scaleRange[1] - scaleRange[0])),
+            k.opacity(opacityRange[0] + Math.random() * (opacityRange[1] - opacityRange[0])),
+          ]);
+        }
+        
+        return container;
       }
-      parallaxLayers.push(midLayer);
 
-      // Fore Layer - Coral (using sprites)
-      const foreLayer = { objects: [] as any[], speed: 1.2 };
-      const totalCoralFrames = coralsConfig?.totalFrames || 28;
-      for (let i = 0; i < 15; i++) {
-        const coral = k.add([
-          k.sprite("coral", { frame: Math.floor(Math.random() * totalCoralFrames) }),
-          k.pos(Math.random() * k.width(), Math.random() * k.height() * 2 - k.height()),
-          k.anchor("center"),
-          k.scale(1.5 + Math.random()),
-          k.opacity(0.7 + Math.random() * 0.3),
-          k.z(8),
-        ]);
-        foreLayer.objects.push(coral);
-      }
-      parallaxLayers.push(foreLayer);
+      const parallaxLayers: ParallaxLayer[] = [
+        // Layer 1: Far background - Rocks (slowest, darkest)
+        {
+          speed: -20,
+          parts: [
+            {
+              container: createLayerPart("rock", 143, 6, [2, 3.5], [0.3, 0.4], 2, 0),
+              y: 0,
+            },
+            {
+              container: createLayerPart("rock", 143, 6, [2, 3.5], [0.3, 0.4], 2, -CANVAS_HEIGHT),
+              y: -CANVAS_HEIGHT,
+            },
+          ],
+        },
+        // Layer 2: Mid background - Seaweed
+        {
+          speed: -50,
+          parts: [
+            {
+              container: createLayerPart("seaweed", 96, 8, [1.5, 2.5], [0.5, 0.7], 4, 0),
+              y: 0,
+            },
+            {
+              container: createLayerPart("seaweed", 96, 8, [1.5, 2.5], [0.5, 0.7], 4, -CANVAS_HEIGHT),
+              y: -CANVAS_HEIGHT,
+            },
+          ],
+        },
+        // Layer 3: Near mid - Rocks (smaller, faster)
+        {
+          speed: -100,
+          parts: [
+            {
+              container: createLayerPart("rock", 143, 10, [1, 2], [0.5, 0.6], 6, 0),
+              y: 0,
+            },
+            {
+              container: createLayerPart("rock", 143, 10, [1, 2], [0.5, 0.6], 6, -CANVAS_HEIGHT),
+              y: -CANVAS_HEIGHT,
+            },
+          ],
+        },
+        // Layer 4: Foreground - Corals (fastest, brightest)
+        {
+          speed: -200,
+          parts: [
+            {
+              container: createLayerPart("coral", 28, 12, [1.5, 2.5], [0.7, 0.9], 8, 0),
+              y: 0,
+            },
+            {
+              container: createLayerPart("coral", 28, 12, [1.5, 2.5], [0.7, 0.9], 8, -CANVAS_HEIGHT),
+              y: -CANVAS_HEIGHT,
+            },
+          ],
+        },
+      ];
 
       // Debris
       const debrisTypes = ["🍂", "💀", "⚓", "🏺", "📦", "🔱"];
@@ -382,7 +427,7 @@ export default function OceanScene({
         for (let i = 0; i < 30; i++) {
           const angle = (Math.PI * 2 * i) / 30;
           const speed = 100 + Math.random() * 100;
-          
+
           const particle = k.add([
             k.circle(3),
             k.pos(x, y),
@@ -486,10 +531,10 @@ export default function OceanScene({
 
       // ======= CENTRALIZED MAIN UPDATE LOOP =======
       let lastLogTime = 0;
-      
+
       k.onUpdate(() => {
         const now = Date.now();
-        
+
         // Log state every 3 seconds (reduced frequency)
         if (now - lastLogTime > 3000) {
           console.log('[CANVAS] 🎮 State update', {
@@ -509,7 +554,7 @@ export default function OceanScene({
         currentZone = getDepthZone(depthRef.current);
         bgColor = hexToRgb(currentZone.color);
         lightLevel = currentZone.light;
-        
+
         bg.color = k.rgb(
           bgColor.r * lightLevel,
           bgColor.g * lightLevel,
@@ -522,7 +567,7 @@ export default function OceanScene({
         if (animationType === 'diving') {
           divingElapsed += k.dt();
           const progress = Math.min(divingElapsed / divingDuration, 1);
-          
+
           // Acceleration curve
           let acceleration;
           if (progress < 0.3) {
@@ -536,23 +581,30 @@ export default function OceanScene({
           const maxSpeed = 400;
           divingSpeed = maxSpeed * acceleration;
 
-          // Update parallax layers
+          // Update infinite parallax layers
+          // Move each layer, and when first part goes off-screen, move it behind second part
           parallaxLayers.forEach(layer => {
-            layer.objects.forEach(obj => {
-              obj.pos.y += divingSpeed * layer.speed * k.dt();
-              
-              if (obj.pos.y > k.height() + 200) {
-                obj.pos.y = -200;
-                obj.pos.x = Math.random() * k.width();
-              }
-            });
+            // Check if first part has scrolled off the bottom
+            if (layer.parts[1].y > 0) {
+              // Move first part above second part
+              layer.parts[0].y = layer.parts[1].y - CANVAS_HEIGHT;
+              layer.parts[0].container.pos.y = layer.parts[0].y;
+              // Swap parts array (second becomes first, first becomes second)
+              layer.parts.push(layer.parts.shift()!);
+            }
+            
+            // Move both parts down based on diving speed and layer speed
+            layer.parts[0].y += divingSpeed * (layer.speed / 100) * k.dt();
+            layer.parts[1].y += divingSpeed * (layer.speed / 100) * k.dt();
+            layer.parts[0].container.pos.y = layer.parts[0].y;
+            layer.parts[1].container.pos.y = layer.parts[1].y;
           });
 
           // Update speed lines
           speedLines.forEach(line => {
             line.opacity = Math.min(divingSpeed / 200, 0.8);
             line.pos.y += (divingSpeed * 1.5) * k.dt();
-            
+
             if (line.pos.y > k.height() + 50) {
               line.pos.y = -50;
               line.pos.x = Math.random() * k.width();
@@ -587,7 +639,7 @@ export default function OceanScene({
             messageOpacity = 0;
             divingSpeed = 0;
             divingElapsed = 0;
-            
+
             speedLines.forEach(line => {
               line.opacity = 0;
             });
@@ -611,11 +663,28 @@ export default function OceanScene({
           }
         }
 
-        // ===== IDLE STATE - Gentle bobbing =====
+        // ===== IDLE STATE - Gentle bobbing & slow parallax =====
         if (!isAnimating && animationType === 'idle') {
           const bobAmount = Math.sin(k.time() * 2) * 10;
           diver.pos.y = diverY + bobAmount;
           treasureBag.pos.y = diverY + 30 + bobAmount;
+          
+          // Slow continuous parallax scroll when idle
+          parallaxLayers.forEach(layer => {
+            // Check if first part has scrolled off the bottom
+            if (layer.parts[1].y > 0) {
+              layer.parts[0].y = layer.parts[1].y - CANVAS_HEIGHT;
+              layer.parts[0].container.pos.y = layer.parts[0].y;
+              layer.parts.push(layer.parts.shift()!);
+            }
+            
+            // Slow scroll at 10% speed
+            const idleSpeed = layer.speed * 0.1;
+            layer.parts[0].y += idleSpeed * k.dt();
+            layer.parts[1].y += idleSpeed * k.dt();
+            layer.parts[0].container.pos.y = layer.parts[0].y;
+            layer.parts[1].container.pos.y = layer.parts[1].y;
+          });
         }
 
         // Update treasure bag size
@@ -686,7 +755,7 @@ export default function OceanScene({
   // Toggle Kaplay debug mode
   useEffect(() => {
     if (!kRef.current) return;
-    
+
     // Kaplay's debug mode can be toggled via debug.inspect
     if (debugMode) {
       console.log('[CANVAS] 🔧 Debug mode enabled');
@@ -707,10 +776,10 @@ export default function OceanScene({
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
       : { r: 74, g: 144, b: 226 };
   }
 

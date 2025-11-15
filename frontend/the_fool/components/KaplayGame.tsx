@@ -15,7 +15,7 @@ export default function KaplayGame() {
       width: 800,
       height: 600,
       background: [135, 206, 235], // Sky blue
-      debug: false,
+      debug: true,
     });
 
     // Game state
@@ -149,7 +149,7 @@ export default function KaplayGame() {
           const angle = Math.random() * Math.PI * 2;
           const speed = 100 + Math.random() * 200;
           const velocityVec = k.Vec2.fromAngle(angle).scale(speed);
-          
+
           const particle = k.add([
             k.circle(4),
             k.pos(k.width() / 2, 200),
