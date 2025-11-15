@@ -268,20 +268,8 @@ export default function OceanScene({
         },
       ];
 
-      // Debris
-      const debrisTypes = ["🍂", "💀", "⚓", "🏺", "📦", "🔱"];
+      // Debris removed (emojis looked bad) - keeping empty array for compatibility
       const debrisList: any[] = [];
-      for (let i = 0; i < 20; i++) {
-        const debris = k.add([
-          k.text(debrisTypes[Math.floor(Math.random() * debrisTypes.length)], { size: 16 + Math.random() * 12 }),
-          k.pos(Math.random() * k.width(), Math.random() * k.height() - 100),
-          k.anchor("center"),
-          k.opacity(0.5 + Math.random() * 0.3),
-          k.rotate(Math.random() * 360),
-          k.z(6),
-        ]);
-        debrisList.push({ obj: debris, driftSpeed: (Math.random() - 0.5) * 20 });
-      }
 
       // Light rays
       const lightRays: any[] = [];
@@ -303,15 +291,7 @@ export default function OceanScene({
         }
       }
 
-      // Surface waves
-      const surfaceWaves = k.add([
-        k.text("~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~", { size: 24 }),
-        k.pos(k.width() / 2, 30),
-        k.anchor("center"),
-        k.color(100, 150, 255),
-        k.opacity(1 - depth / 200),
-        k.z(10),
-      ]);
+      // Surface waves removed (text looked bad with parallax)
 
       // DIVER (using sprite)
       const diver = k.add([
@@ -358,19 +338,18 @@ export default function OceanScene({
         speedLines.push(line);
       }
 
-      // Bubbles
+      // Bubbles - USING ANIMATED SPRITES!
       function createBubble(x?: number, y?: number) {
         const bubbleX = x !== undefined ? x : diver.pos.x + (Math.random() - 0.5) * 30;
         const bubbleY = y !== undefined ? y : diver.pos.y - 10;
-        const size = 2 + Math.random() * 6;
+        const scale = 1.5 + Math.random() * 1.5;
 
         const bubble = k.add([
-          k.circle(size),
+          k.sprite("bubble", { frame: Math.floor(Math.random() * 10) }), // Random bubble frame
           k.pos(bubbleX, bubbleY),
           k.anchor("center"),
-          k.color(150, 200, 255),
-          k.opacity(0.7),
-          k.outline(1, k.rgb(200, 230, 255)),
+          k.scale(scale),
+          k.opacity(0.8),
           k.z(15),
           k.lifespan(3),
         ]);
@@ -378,7 +357,12 @@ export default function OceanScene({
         bubble.onUpdate(() => {
           bubble.pos.y -= (60 + divingSpeed) * k.dt();
           bubble.pos.x += Math.sin(k.time() * 3 + bubbleY) * 30 * k.dt();
-          bubble.opacity -= k.dt() * 0.3;
+          bubble.opacity -= k.dt() * 0.27;
+          
+          // Pop animation when fading out
+          if (bubble.opacity < 0.3) {
+            bubble.play("pop");
+          }
         });
       }
 
@@ -619,23 +603,7 @@ export default function OceanScene({
           });
         }
 
-        for (let i = 0; i < 10; i++) {
-          setTimeout(() => {
-            const sparkle = k.add([
-              k.text("✨", { size: 24 }),
-              k.pos(x + (Math.random() - 0.5) * 100, y + (Math.random() - 0.5) * 100),
-              k.anchor("center"),
-              k.opacity(1),
-              k.z(26),
-              k.lifespan(0.5),
-            ]);
-
-            sparkle.onUpdate(() => {
-              sparkle.pos.y -= 50 * k.dt();
-              sparkle.opacity -= k.dt() * 2;
-            });
-          }, i * 50);
-        }
+        // Sparkles removed (emoji looked bad) - coin particles are better
       }
 
       // Death animation - WITH VARIETY!
@@ -661,13 +629,13 @@ export default function OceanScene({
 
         // Custom death messages per predator
         const deathMessages: Record<string, string> = {
-          shark: "⚠️ SHARK ATTACK!",
-          sawshark: "⚠️ SAWSHARK!",
-          swordfish: "⚠️ IMPALED!",
-          seaangler: "⚠️ LURED TO DEATH!",
+          shark: "SHARK ATTACK!",
+          sawshark: "SAWSHARK!",
+          swordfish: "IMPALED!",
+          seaangler: "LURED TO DEATH!",
         };
         
-        messageDisplay.text = deathMessages[predatorChoice] || "⚠️ DANGER!";
+        messageDisplay.text = deathMessages[predatorChoice] || "DANGER!";
         messageDisplay.color = k.rgb(255, 50, 50);
         messageOpacity = 1;
 
@@ -691,7 +659,7 @@ export default function OceanScene({
               k.lifespan(0.3),
             ]);
 
-            messageDisplay.text = "💀 DROWNED!";
+            messageDisplay.text = "DROWNED!";
             messageOpacity = 1;
 
             diver.onUpdate(() => {
@@ -899,7 +867,7 @@ export default function OceanScene({
           isAnimating = true;
           animationType = 'diving';
           divingElapsed = 0;
-          messageDisplay.text = "⬇️ DIVING...";
+          messageDisplay.text = "DIVING...";
           messageDisplay.color = k.rgb(100, 200, 255);
           messageOpacity = 1;
         } else if (survivedRef.current === true && !isAnimating && animationType === 'idle') {
@@ -907,7 +875,7 @@ export default function OceanScene({
           isAnimating = true;
           animationType = 'treasure';
           treasurePulseTime = 0;
-          messageDisplay.text = "💰 TREASURE!";
+          messageDisplay.text = "TREASURE!";
           messageDisplay.color = k.rgb(255, 215, 0);
           messageOpacity = 1;
           createTreasureParticles(diver.pos.x, diver.pos.y);

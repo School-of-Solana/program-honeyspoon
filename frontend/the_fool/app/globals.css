@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
+/* Treasure Map Deadhand Font */
+@font-face {
+  font-family: 'Treasure Map Deadhand';
+  src: url('/fonts/TreasureMapDeadhand-yBRZ.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-treasure: 'Treasure Map Deadhand', cursive, serif;
 }
 
 @theme inline {
@@ -10,6 +20,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-treasure: var(--font-treasure);
 }
 
 @media (prefers-color-scheme: dark) {

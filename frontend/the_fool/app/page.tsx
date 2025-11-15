@@ -402,15 +402,15 @@ export default function Home() {
             <div className="text-center mb-6">
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1"></div>
-                <h1 className="text-4xl font-bold text-white">
-                  🌊 ABYSS FORTUNE
+                <h1 className="text-4xl font-bold text-white" style={{ fontFamily: 'var(--font-treasure)' }}>
+                  ABYSS FORTUNE
                 </h1>
                 <button
                   onClick={() => setDebugMode(!debugMode)}
                   className="text-xs text-blue-400 hover:text-blue-200 px-2 py-1 bg-blue-950 rounded border border-blue-700"
                   title="Toggle debug mode (Ctrl+Shift+D)"
                 >
-                  🔧
+                  DEBUG
                 </button>
               </div>
               <p className="text-blue-200 text-sm">
@@ -421,8 +421,8 @@ export default function Home() {
             {/* Wallet Balance */}
             <div className="mb-6 p-4 bg-blue-950/50 rounded-lg border-2 border-blue-600">
               <div className="flex justify-between items-center">
-                <span className="text-blue-300 text-sm font-medium">💰 Your Balance</span>
-                <span className="text-2xl font-bold text-yellow-400">
+                <span className="text-blue-300 text-sm font-medium" style={{ fontFamily: 'var(--font-treasure)' }}>Your Balance</span>
+                <span className="text-2xl font-bold text-yellow-400" style={{ fontFamily: 'var(--font-treasure)' }}>
                   ${gameState.walletBalance || 0}
                 </span>
               </div>
@@ -442,8 +442,9 @@ export default function Home() {
                 onClick={handleStartGame}
                 disabled={betAmount > (gameState.walletBalance || 0)}
                 className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
+                style={{ fontFamily: 'var(--font-treasure)' }}
               >
-                🤿 START DIVING (${betAmount})
+                START DIVING (${betAmount})
               </button>
               
               {betAmount > (gameState.walletBalance || 0) && (
@@ -494,7 +495,7 @@ export default function Home() {
               <div className="max-w-7xl mx-auto mt-4 bg-red-900/80 border-2 border-red-500 rounded-lg p-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-red-200 font-bold text-sm uppercase">
-                    🔧 DEBUG MODE - House Wallet
+                    DEBUG MODE - House Wallet
                   </span>
                   <button
                     onClick={() => setDebugMode(false)}
@@ -585,7 +586,7 @@ export default function Home() {
                     }`}
                     title="Toggle Kaplay Debug Mode (shows hitboxes, FPS, etc.)"
                   >
-                    {kaplayDebug ? '🔧 DEBUG ON' : '🔧 DEBUG'}
+                    {kaplayDebug ? 'DEBUG ON' : 'DEBUG'}
                   </button>
                 </div>
               </div>
@@ -596,15 +597,17 @@ export default function Home() {
                   onClick={handleDiveDeeper}
                   disabled={isProcessing}
                   className="flex-1 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl"
+                  style={{ fontFamily: 'var(--font-treasure)' }}
                 >
-                  {isProcessing ? '🌊 DIVING...' : '⬇️ DIVE DEEPER'}
+                  {isProcessing ? 'DIVING...' : 'DIVE DEEPER'}
                 </button>
                 <button
                   onClick={handleSurface}
                   disabled={isProcessing}
                   className="flex-1 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl font-bold text-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-xl"
+                  style={{ fontFamily: 'var(--font-treasure)' }}
                 >
-                  ⬆️ SURFACE NOW
+                  SURFACE NOW
                 </button>
               </div>
             </div>
