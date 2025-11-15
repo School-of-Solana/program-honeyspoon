@@ -141,9 +141,279 @@ export default function OceanScene({
     // Treasure animation timing
     let treasurePulseTime = 0;
 
-    // Create main scene
-    k.scene("ocean", () => {
-      console.log('[CANVAS] 🎮 Ocean scene created!');
+    // ===== BEACH/SURFACE SCENE =====
+    k.scene("beach", () => {
+      console.log('[CANVAS] 🏖️ Beach scene created!');
+      
+      // Sky gradient
+      k.add([
+        k.rect(k.width(), k.height() * 0.6),
+        k.pos(0, 0),
+        k.color(135, 206, 250), // Sky blue
+        k.z(0),
+      ]);
+      
+      // Sun
+      const sun = k.add([
+        k.circle(50),
+        k.pos(k.width() * 0.8, k.height() * 0.15),
+        k.color(255, 220, 100),
+        k.z(2),
+      ]);
+      
+      // Rotating sun rays
+      for (let i = 0; i < 8; i++) {
+        const angle = (Math.PI * 2 * i) / 8;
+        const rayLength = 80;
+        const sunRay = k.add([
+          k.rect(8, rayLength),
+          k.pos(sun.pos.x, sun.pos.y),
+          k.anchor("bot"),
+          k.rotate(angle * (180 / Math.PI)),
+          k.color(255, 240, 150),
+          k.opacity(0.6),
+          k.z(2),
+        ]);
+        
+        sunRay.onUpdate(() => {
+          sunRay.angle += 20 * k.dt();
+        });
+      }
+      
+      // Water surface line
+      k.add([
+        k.rect(k.width(), 4),
+        k.pos(0, k.height() * 0.6),
+        k.color(100, 150, 255),
+        k.z(5),
+      ]);
+      
+      // Beach/sand
+      k.add([
+        k.rect(k.width(), k.height() * 0.4),
+        k.pos(0, k.height() * 0.6),
+        k.color(194, 178, 128), // Sandy color
+        k.z(1),
+      ]);
+      
+      // Animated waves at water surface
+      for (let i = 0; i < 5; i++) {
+        const baseY = k.height() * 0.6;
+        const wave = k.add([
+          k.rect(k.width() / 5 + 50, 3),
+          k.pos(i * (k.width() / 5), baseY),
+          k.color(80, 140, 255),
+          k.opacity(0.7),
+          k.z(6),
+        ]);
+        
+        wave.onUpdate(() => {
+          wave.pos.y = baseY + Math.sin(k.time() * 2 + i * 0.5) * 5;
+        });
+      }
+      
+      // Diver at surface (bobbing)
+      const diver = k.add([
+        k.sprite("diver", { anim: "idle" }),
+        k.pos(k.width() / 2, k.height() * 0.55),
+        k.anchor("center"),
+        k.scale(2),
+        k.z(20),
+      ]);
+      
+      diver.onUpdate(() => {
+        diver.pos.y = k.height() * 0.55 + Math.sin(k.time() * 2) * 5;
+      });
+      
+      // Bubbles from diver
+      k.loop(0.3, () => {
+        if (Math.random() > 0.5) {
+          const bubble = k.add([
+            k.sprite("bubble", { frame: Math.floor(Math.random() * 10) }),
+            k.pos(diver.pos.x + (Math.random() - 0.5) * 30, diver.pos.y),
+            k.anchor("center"),
+            k.scale(1.5),
+            k.opacity(0.8),
+            k.z(15),
+            k.lifespan(2),
+          ]);
+          
+          bubble.onUpdate(() => {
+            bubble.pos.y -= 40 * k.dt();
+            bubble.opacity -= k.dt() * 0.5;
+          });
+        }
+      });
+      
+      // Message: "Ready to Dive!"
+      k.add([
+        k.text("Ready to Dive!", { size: 48, font: "TreasureMapDeadhand" }),
+        k.pos(k.width() / 2, k.height() * 0.25),
+        k.anchor("center"),
+        k.color(255, 255, 255),
+        k.z(100),
+      ]);
+      
+      // Transition to diving when game starts
+      k.onUpdate(() => {
+        if (isDivingRef.current) {
+          console.log('[CANVAS] 🤿 Transitioning to diving scene...');
+          k.go("diving");
+        }
+      });
+    });
+
+    // ===== SURFACING SCENE =====
+    k.scene("surfacing", (data: { treasure?: number } = {}) => {
+      console.log('[CANVAS] 🌊 Surfacing scene created! Treasure:', data.treasure);
+      
+      let surfacingProgress = 0;
+      const surfacingDuration = 3.0; // 3 seconds to surface
+      
+      // Start with underwater colors, transition to surface
+      const underwaterColor = hexToRgb(getDepthZone(depthRef.current).color);
+      const surfaceColor = { r: 135, g: 206, b: 250 };
+      
+      const bg = k.add([
+        k.rect(k.width(), k.height()),
+        k.pos(0, 0),
+        k.color(underwaterColor.r, underwaterColor.g, underwaterColor.b),
+        k.z(0),
+      ]);
+      
+      // Sky (starts hidden)
+      const sky = k.add([
+        k.rect(k.width(), k.height() * 0.6),
+        k.pos(0, 0),
+        k.color(135, 206, 250),
+        k.opacity(0),
+        k.z(1),
+      ]);
+      
+      // Sun (starts hidden)
+      const sun = k.add([
+        k.circle(50),
+        k.pos(k.width() * 0.8, k.height() * 0.15),
+        k.color(255, 220, 100),
+        k.opacity(0),
+        k.z(2),
+      ]);
+      
+      // Beach (starts hidden)
+      const beach = k.add([
+        k.rect(k.width(), k.height() * 0.4),
+        k.pos(0, k.height() * 0.6),
+        k.color(194, 178, 128),
+        k.opacity(0),
+        k.z(1),
+      ]);
+      
+      // Diver rising
+      const diver = k.add([
+        k.sprite("diver", { anim: "swim" }),
+        k.pos(k.width() / 2, k.height() * 0.8),
+        k.anchor("center"),
+        k.scale(2),
+        k.z(20),
+      ]);
+      
+      // Treasure bag
+      const treasureBag = k.add([
+        k.sprite("treasure"),
+        k.pos(k.width() / 2, k.height() * 0.8 + 35),
+        k.anchor("center"),
+        k.scale(1.5),
+        k.z(20),
+      ]);
+      
+      // Message
+      const message = k.add([
+        k.text("SURFACING!", { size: 48 }),
+        k.pos(k.width() / 2, k.height() / 2 - 100),
+        k.anchor("center"),
+        k.color(100, 255, 200),
+        k.opacity(1),
+        k.z(100),
+      ]);
+      
+      // Bubble trail
+      k.loop(0.1, () => {
+        const bubble = k.add([
+          k.sprite("bubble", { frame: Math.floor(Math.random() * 10) }),
+          k.pos(diver.pos.x + (Math.random() - 0.5) * 40, diver.pos.y + 30),
+          k.anchor("center"),
+          k.scale(2),
+          k.opacity(0.8),
+          k.z(15),
+          k.lifespan(2),
+        ]);
+        
+        bubble.onUpdate(() => {
+          bubble.pos.y += 150 * k.dt(); // Bubbles move down relative to diver
+          bubble.opacity -= k.dt() * 0.5;
+        });
+      });
+      
+      // Speed lines
+      const speedLines: any[] = [];
+      for (let i = 0; i < 30; i++) {
+        const line = k.add([
+          k.rect(2 + Math.random() * 3, 20 + Math.random() * 40),
+          k.pos(Math.random() * k.width(), Math.random() * k.height()),
+          k.anchor("center"),
+          k.color(150, 200, 255),
+          k.opacity(0.6),
+          k.z(25),
+        ]);
+        speedLines.push(line);
+      }
+      
+      k.onUpdate(() => {
+        surfacingProgress += k.dt() / surfacingDuration;
+        
+        // Move diver upward
+        const targetY = k.height() * 0.55;
+        const startY = k.height() * 0.8;
+        diver.pos.y = startY + (targetY - startY) * surfacingProgress;
+        treasureBag.pos.y = diver.pos.y + 35;
+        
+        // Fade in surface elements
+        sky.opacity = surfacingProgress;
+        sun.opacity = surfacingProgress;
+        beach.opacity = surfacingProgress;
+        
+        // Blend background colors
+        bg.color = k.rgb(
+          underwaterColor.r * (1 - surfacingProgress) + surfaceColor.r * surfacingProgress,
+          underwaterColor.g * (1 - surfacingProgress) + surfaceColor.g * surfacingProgress,
+          underwaterColor.b * (1 - surfacingProgress) + surfaceColor.b * surfacingProgress
+        );
+        
+        // Fade message
+        message.opacity = 1 - surfacingProgress;
+        
+        // Move speed lines
+        speedLines.forEach(line => {
+          line.pos.y += 300 * k.dt();
+          line.opacity = 0.6 * (1 - surfacingProgress);
+          
+          if (line.pos.y > k.height() + 50) {
+            line.pos.y = -50;
+            line.pos.x = Math.random() * k.width();
+          }
+        });
+        
+        // Complete surfacing
+        if (surfacingProgress >= 1) {
+          console.log('[CANVAS] ✅ Surfacing complete! Returning to beach...');
+          k.go("beach");
+        }
+      });
+    });
+
+    // ===== DIVING/UNDERWATER SCENE =====
+    k.scene("diving", () => {
+      console.log('[CANVAS] 🤿 Diving scene created!');
 
       // Get depth zone for colors
       let currentZone = getDepthZone(depth);
@@ -804,12 +1074,9 @@ export default function OceanScene({
           treasureBag.scale = k.vec2((baseScale * sizeMultiplier) + Math.sin(treasurePulseTime) * 0.2);
 
           if (treasurePulseTime > Math.PI * 4) {
-            console.log('[CANVAS] ✅ Treasure animation complete!');
-            treasureBag.scale = k.vec2(baseScale * sizeMultiplier);
-            isAnimating = false;
-            animationType = 'idle';
-            messageOpacity = 0;
-            treasurePulseTime = 0;
+            console.log('[CANVAS] ✅ Treasure collected! Starting surfacing...');
+            // Transition to surfacing scene
+            k.go("surfacing", { treasure: treasureRef.current });
           }
         }
 
@@ -884,10 +1151,10 @@ export default function OceanScene({
       });
     });
 
-    // Start scene
-    console.log('[CANVAS] 🚀 Starting ocean scene...');
-    k.go("ocean");
-    console.log('[CANVAS] ✅ Ocean scene started!');
+    // Start at beach scene
+    console.log('[CANVAS] 🚀 Starting at beach...');
+    k.go("beach");
+    console.log('[CANVAS] ✅ Beach scene started!');
 
     // Cleanup only on unmount
     return () => {
