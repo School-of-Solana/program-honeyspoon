@@ -1,18 +1,11 @@
 @import "tailwindcss";
 
-/* Treasure Map Deadhand Font */
-@font-face {
-  font-family: 'Treasure Map Deadhand';
-  src: url('/fonts/TreasureMapDeadhand-yBRZ.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
+/* Pirate/Treasure theme font from Google Fonts */
+/* Now using Pirata One - loaded in layout.tsx via next/font/google */
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --font-treasure: 'Treasure Map Deadhand', cursive, serif;
 }
 
 @theme inline {

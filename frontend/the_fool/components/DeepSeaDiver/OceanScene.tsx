@@ -141,6 +141,86 @@ export default function OceanScene({
     // Treasure animation timing
     let treasurePulseTime = 0;
 
+    // Helper function to create a boat using shapes
+    function createBoat(x: number, y: number, zIndex: number = 10) {
+      const boat = k.add([
+        k.pos(x, y),
+        k.anchor("center"),
+        k.rotate(0),
+        k.opacity(1),
+        k.z(zIndex),
+      ]);
+
+      // Boat hull (brown wooden boat)
+      const hull = boat.add([
+        k.polygon([
+          k.vec2(-60, 0),   // Left top
+          k.vec2(-70, 20),  // Left bottom (wider)
+          k.vec2(70, 20),   // Right bottom
+          k.vec2(60, 0),    // Right top
+        ]),
+        k.pos(0, 0),
+        k.color(101, 67, 33), // Dark brown
+        k.outline(3, k.rgb(70, 40, 20)),
+      ]);
+
+      // Deck planks (lighter wood)
+      for (let i = -50; i < 60; i += 15) {
+        boat.add([
+          k.rect(12, 5),
+          k.pos(i, -2),
+          k.color(139, 90, 43), // Lighter brown
+          k.anchor("center"),
+        ]);
+      }
+
+      // Boat rail on left
+      boat.add([
+        k.rect(3, 25),
+        k.pos(-55, -10),
+        k.color(101, 67, 33),
+        k.anchor("center"),
+      ]);
+
+      // Boat rail on right
+      boat.add([
+        k.rect(3, 25),
+        k.pos(55, -10),
+        k.color(101, 67, 33),
+        k.anchor("center"),
+      ]);
+
+      // Mast (thin pole)
+      boat.add([
+        k.rect(4, 50),
+        k.pos(-20, -40),
+        k.color(101, 67, 33),
+        k.anchor("bot"),
+      ]);
+
+      // Small flag/sail (triangular)
+      boat.add([
+        k.polygon([
+          k.vec2(0, 0),
+          k.vec2(30, 10),
+          k.vec2(0, 20),
+        ]),
+        k.pos(-16, -60),
+        k.color(200, 50, 50), // Red flag
+        k.outline(1, k.rgb(150, 30, 30)),
+      ]);
+
+      // Anchor rope coil (decorative circle)
+      boat.add([
+        k.circle(5),
+        k.pos(30, -5),
+        k.color(150, 120, 80),
+        k.outline(2, k.rgb(100, 80, 50)),
+      ]);
+
+      return boat;
+    }
+
     // ===== BEACH/SURFACE SCENE =====
     k.scene("beach", () => {
       console.log('[CANVAS] 🏖️ Beach scene created!');
@@ -212,17 +292,30 @@ export default function OceanScene({
         });
       }
       
-      // Diver at surface (bobbing)
+      // Create boat at water surface
+      const boatBaseY = k.height() * 0.6;
+      const boat = createBoat(k.width() / 2, boatBaseY, 18);
+      
+      // Boat bobbing animation (follows wave motion)
+      boat.onUpdate(() => {
+        boat.pos.y = boatBaseY + Math.sin(k.time() * 1.5) * 8;
+        boat.angle = Math.sin(k.time() * 1.2) * 2; // Gentle rocking
+      });
+      
+      // Diver standing on boat deck
       const diver = k.add([
         k.sprite("diver", { anim: "idle" }),
-        k.pos(k.width() / 2, k.height() * 0.55),
+        k.pos(k.width() / 2, boatBaseY - 15), // Standing on deck
         k.anchor("center"),
         k.scale(2),
+        k.rotate(0),
         k.z(20),
       ]);
       
+      // Diver follows boat movement
       diver.onUpdate(() => {
-        diver.pos.y = k.height() * 0.55 + Math.sin(k.time() * 2) * 5;
+        diver.pos.y = boat.pos.y - 15; // Stay on deck
+        diver.angle = boat.angle * 0.5; // Slight lean with boat
       });
       
       // Bubbles from diver
@@ -308,7 +401,18 @@ export default function OceanScene({
         k.z(1),
       ]);
       
-      // Diver rising
+      // Boat waiting at surface (starts hidden, fades in)
+      const boatBaseY = k.height() * 0.6;
+      const boat = createBoat(k.width() / 2, boatBaseY, 18);
+      boat.opacity = 0;
+      
+      // Boat bobbing animation
+      boat.onUpdate(() => {
+        boat.pos.y = boatBaseY + Math.sin(k.time() * 1.5) * 8;
+        boat.angle = Math.sin(k.time() * 1.2) * 2;
+      });
+      
+      // Diver rising from underwater
       const diver = k.add([
         k.sprite("diver", { anim: "swim" }),
         k.pos(k.width() / 2, k.height() * 0.8),
@@ -371,8 +475,8 @@ export default function OceanScene({
       k.onUpdate(() => {
         surfacingProgress += k.dt() / surfacingDuration;
         
-        // Move diver upward
-        const targetY = k.height() * 0.55;
+        // Move diver upward toward boat
+        const targetY = boatBaseY - 15; // Climbing onto boat deck
         const startY = k.height() * 0.8;
         diver.pos.y = startY + (targetY - startY) * surfacingProgress;
         treasureBag.pos.y = diver.pos.y + 35;
@@ -381,6 +485,7 @@ export default function OceanScene({
         sky.opacity = surfacingProgress;
         sun.opacity = surfacingProgress;
         beach.opacity = surfacingProgress;
+        boat.opacity = surfacingProgress; // Boat fades in as diver surfaces
         
         // Blend background colors
         bg.color = k.rgb(
