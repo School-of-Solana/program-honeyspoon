@@ -256,6 +256,14 @@ export async function cashOut(
     throw new Error("Session does not belong to user");
   }
 
+  // SECURITY: Validate cash-out amount matches session treasure
+  // This prevents client tampering (sending inflated finalValue)
+  if (finalValue !== gameSession.currentTreasure) {
+    throw new Error(
+      `Cash-out amount (${finalValue}) doesn't match session treasure (${gameSession.currentTreasure})`
+    );
+  }
+
   // Get wallets
   const userWallet = getUserWallet(userId);
   const houseWallet = getHouseWallet();

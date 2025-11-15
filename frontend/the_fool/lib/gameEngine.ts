@@ -195,6 +195,14 @@ export function validateBetAmount(
   amount: number,
   config: GameConfig = DEFAULT_CONFIG
 ): { valid: boolean; error?: string } {
+  // Check for invalid numeric values
+  if (!Number.isFinite(amount) || Number.isNaN(amount)) {
+    return {
+      valid: false,
+      error: 'Bet amount must be a valid number'
+    };
+  }
+  
   if (amount < config.minBet) {
     return { 
       valid: false, 
