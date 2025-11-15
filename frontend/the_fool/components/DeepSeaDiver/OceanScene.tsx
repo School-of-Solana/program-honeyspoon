@@ -109,7 +109,7 @@ export default function OceanScene({
         sliceY: sprite.sliceY,
         anims: sprite.anims,
       });
-      console.log(`[CANVAS] ✅ Loaded ${sprite.name} (${sprite.sliceX}×${sprite.sliceY} = ${sprite.totalFrames} frames)`);
+      // console.log(`[CANVAS] ✅ Loaded ${sprite.name} (${sprite.sliceX}×${sprite.sliceY} = ${sprite.totalFrames} frames)`);
     });
 
     // Legacy aliases for existing code
@@ -229,7 +229,7 @@ export default function OceanScene({
     // ===== BEACH/SURFACE SCENE =====
     k.scene("beach", () => {
       console.log('[CANVAS] 🏖️ Beach scene created!');
-      
+
       // Sky gradient
       k.add([
         k.rect(k.width(), k.height() * 0.6),
@@ -237,7 +237,7 @@ export default function OceanScene({
         k.color(135, 206, 250), // Sky blue
         k.z(0),
       ]);
-      
+
       // Sun
       const sun = k.add([
         k.circle(50),
@@ -245,7 +245,7 @@ export default function OceanScene({
         k.color(255, 220, 100),
         k.z(2),
       ]);
-      
+
       // Rotating sun rays
       for (let i = 0; i < 8; i++) {
         const angle = (Math.PI * 2 * i) / 8;
@@ -259,12 +259,12 @@ export default function OceanScene({
           k.opacity(0.6),
           k.z(2),
         ]);
-        
+
         sunRay.onUpdate(() => {
           sunRay.angle += 20 * k.dt();
         });
       }
-      
+
       // Water surface line (matches beach top edge)
       const waterSurfaceY = k.height() * 0.6;
       k.add([
@@ -273,7 +273,7 @@ export default function OceanScene({
         k.color(100, 150, 255),
         k.z(5),
       ]);
-      
+
       // Beach/sand - DIAGONAL with WAVY LEFT EDGE (more water, less beach)
       // Create wavy shoreline using polygon with sine wave on LEFT EDGE
       const beachPoints: any[] = [];
@@ -281,10 +281,10 @@ export default function OceanScene({
       const waveFrequency = 0.008; // Wave density (vertical)
       const beachStartY = waterSurfaceY; // Beach starts at SAME height as water surface
       const beachBaseX = k.width() * 0.45; // Base position (45% from left)
-      
+
       // Top-right corner (start of beach) - at water surface level
       beachPoints.push(k.vec2(beachBaseX + waveAmplitude, beachStartY));
-      
+
       // Wavy LEFT EDGE (water side) - vertical sine wave
       for (let y = beachStartY; y <= k.height(); y += 10) {
         const progress = (y - beachStartY) / (k.height() - beachStartY);
@@ -293,13 +293,13 @@ export default function OceanScene({
         const waveX = baseX + Math.sin(y * waveFrequency) * waveAmplitude; // Add wave
         beachPoints.push(k.vec2(waveX, y));
       }
-      
+
       // Bottom-right corner
       beachPoints.push(k.vec2(k.width(), k.height()));
-      
+
       // Top-right corner (close polygon)
       beachPoints.push(k.vec2(k.width(), beachStartY));
-      
+
       // Create beach polygon with wavy left edge
       k.add([
         k.polygon(beachPoints),
@@ -307,13 +307,13 @@ export default function OceanScene({
         k.color(194, 178, 128), // Sandy color
         k.z(1),
       ]);
-      
+
       // Add foam/wave line along beach LEFT edge (decorative white dots)
       for (let y = beachStartY; y <= k.height(); y += 10) {
         const progress = (y - beachStartY) / (k.height() - beachStartY);
         const baseX = beachBaseX + progress * k.width() * 0.15;
         const waveX = baseX + Math.sin(y * waveFrequency) * waveAmplitude;
-        
+
         k.add([
           k.circle(3),
           k.pos(waveX, y),
@@ -322,13 +322,13 @@ export default function OceanScene({
           k.z(7),
         ]);
       }
-      
+
       // === BEACH DECORATIONS (on diagonal beach) ===
-      
+
       // Palm tree on far right (on beach)
       const palmX = k.width() * 0.85;
       const palmY = k.height() * 0.63; // Adjusted for diagonal beach
-      
+
       // Palm trunk
       k.add([
         k.rect(15, 80),
@@ -337,7 +337,7 @@ export default function OceanScene({
         k.color(101, 67, 33),
         k.z(3),
       ]);
-      
+
       // Palm leaves (6 leaves in circle) - using stretched rectangles
       for (let i = 0; i < 6; i++) {
         const angle = (Math.PI * 2 * i) / 6;
@@ -350,7 +350,7 @@ export default function OceanScene({
           k.z(3),
         ]);
       }
-      
+
       // Rocks on beach (scattered on diagonal beach)
       const rockPositions = [
         { x: 0.50, y: 0.68, size: 20 },
@@ -358,7 +358,7 @@ export default function OceanScene({
         { x: 0.75, y: 0.78, size: 18 },
         { x: 0.88, y: 0.82, size: 12 },
       ];
-      
+
       rockPositions.forEach(rock => {
         k.add([
           k.circle(rock.size),
@@ -368,7 +368,7 @@ export default function OceanScene({
           k.z(2),
         ]);
       });
-      
+
       // Shells on beach (small decorative, on diagonal beach)
       const shellPositions = [
         { x: 0.52, y: 0.65 },
@@ -377,7 +377,7 @@ export default function OceanScene({
         { x: 0.80, y: 0.80 },
         { x: 0.92, y: 0.85 },
       ];
-      
+
       shellPositions.forEach(shell => {
         k.add([
           k.polygon([
@@ -393,19 +393,19 @@ export default function OceanScene({
           k.z(2),
         ]);
       });
-      
+
       // Clouds in sky (fluffy)
       const cloudPositions = [
         { x: 0.2, y: 0.15, scale: 1 },
         { x: 0.5, y: 0.25, scale: 0.8 },
         { x: 0.75, y: 0.12, scale: 1.2 },
       ];
-      
+
       cloudPositions.forEach(cloud => {
         // Cloud made of 3 circles
         const cloudX = k.width() * cloud.x;
         const cloudY = k.height() * cloud.y;
-        
+
         k.add([
           k.circle(20 * cloud.scale),
           k.pos(cloudX, cloudY),
@@ -428,7 +428,7 @@ export default function OceanScene({
           k.z(1),
         ]);
       });
-      
+
       // Flying seagulls
       function createSeagull(startX: number, startY: number, speed: number) {
         const seagull = k.add([
@@ -445,36 +445,36 @@ export default function OceanScene({
           k.outline(1, k.rgb(200, 200, 200)),
           k.z(4),
         ]);
-        
+
         seagull.onUpdate(() => {
           seagull.pos.x += speed * k.dt();
           seagull.pos.y += Math.sin(k.time() * 3 + startX) * 20 * k.dt();
-          
+
           // Wrap around screen
           if (seagull.pos.x > k.width() + 50) {
             seagull.pos.x = -50;
           }
         });
-        
+
         return seagull;
       }
-      
+
       // Spawn 3 seagulls
       createSeagull(k.width() * 0.3, k.height() * 0.2, 50);
       createSeagull(k.width() * 0.6, k.height() * 0.15, 60);
       createSeagull(k.width() * 0.1, k.height() * 0.25, 45);
-      
+
       // Create boat at water surface (LEFT SIDE - UI is on right)
       const boatBaseY = k.height() * 0.6;
       const boatX = k.width() * 0.25; // 25% from left (leaves right side clear for UI)
       const boat = createBoat(boatX, boatBaseY, 18);
-      
+
       // Boat bobbing animation (follows wave motion)
       boat.onUpdate(() => {
         boat.pos.y = boatBaseY + Math.sin(k.time() * 1.5) * 8;
         boat.angle = Math.sin(k.time() * 1.2) * 2; // Gentle rocking
       });
-      
+
       // Diver standing on boat deck
       const diver = k.add([
         k.sprite("diver", { anim: "idle" }),
@@ -484,14 +484,14 @@ export default function OceanScene({
         k.rotate(0),
         k.z(20),
       ]);
-      
+
       // Diver follows boat movement
       diver.onUpdate(() => {
         diver.pos.x = boat.pos.x; // Follow boat X (in case it moves)
         diver.pos.y = boat.pos.y - 15; // Stay on deck
         diver.angle = boat.angle * 0.5; // Slight lean with boat
       });
-      
+
       // Bubbles from diver
       k.loop(0.3, () => {
         if (Math.random() > 0.5) {
@@ -504,21 +504,21 @@ export default function OceanScene({
             k.z(15),
             k.lifespan(2),
           ]);
-          
+
           bubble.onUpdate(() => {
             bubble.pos.y -= 40 * k.dt();
             bubble.opacity -= k.dt() * 0.5;
           });
         }
       });
-      
+
       // Transition to diving with animation when game starts
       let transitionStarted = false;
       k.onUpdate(() => {
         if (isDivingRef.current && !transitionStarted) {
           transitionStarted = true;
           console.log('[CANVAS] 🤿 Starting dive transition...');
-          
+
           // Fade to black overlay
           const fadeOverlay = k.add([
             k.rect(k.width(), k.height()),
@@ -527,22 +527,22 @@ export default function OceanScene({
             k.opacity(0),
             k.z(200),
           ]);
-          
+
           // Diver jumps off boat animation
           let jumpProgress = 0;
           const jumpDuration = 1.0; // 1 second jump
           const originalY = diver.pos.y;
-          
+
           const jumpInterval = k.onUpdate(() => {
             jumpProgress += k.dt() / jumpDuration;
-            
+
             if (jumpProgress < 1) {
               // Parabolic jump arc
               const arc = Math.sin(jumpProgress * Math.PI) * 50;
               diver.pos.y = originalY - arc;
               diver.pos.x -= 30 * k.dt(); // Move left off boat
               diver.angle = jumpProgress * 90; // Rotate during jump
-              
+
               // Fade to black
               fadeOverlay.opacity = jumpProgress * 0.8;
             } else {
@@ -559,21 +559,21 @@ export default function OceanScene({
     // ===== SURFACING SCENE =====
     k.scene("surfacing", (data: { treasure?: number } = {}) => {
       console.log('[CANVAS] 🌊 Surfacing scene created! Treasure:', data.treasure);
-      
+
       let surfacingProgress = 0;
       const surfacingDuration = 3.0; // 3 seconds to surface
-      
+
       // Start with underwater colors, transition to surface
       const underwaterColor = hexToRgb(getDepthZone(depthRef.current).color);
       const surfaceColor = { r: 135, g: 206, b: 250 };
-      
+
       const bg = k.add([
         k.rect(k.width(), k.height()),
         k.pos(0, 0),
         k.color(underwaterColor.r, underwaterColor.g, underwaterColor.b),
         k.z(0),
       ]);
-      
+
       // Sky (starts hidden)
       const sky = k.add([
         k.rect(k.width(), k.height() * 0.6),
@@ -582,7 +582,7 @@ export default function OceanScene({
         k.opacity(0),
         k.z(1),
       ]);
-      
+
       // Sun (starts hidden)
       const sun = k.add([
         k.circle(50),
@@ -591,7 +591,7 @@ export default function OceanScene({
         k.opacity(0),
         k.z(2),
       ]);
-      
+
       // Beach (starts hidden) - DIAGONAL with WAVY LEFT EDGE (matching beach scene)
       const beachPoints: any[] = [];
       const waveAmplitude = 40;
@@ -599,7 +599,7 @@ export default function OceanScene({
       const waterSurfaceY = k.height() * 0.6; // Match water surface
       const beachStartY = waterSurfaceY; // Beach top edge at water level
       const beachBaseX = k.width() * 0.45;
-      
+
       // Create wavy shoreline polygon (same as beach scene)
       beachPoints.push(k.vec2(beachBaseX + waveAmplitude, beachStartY));
       for (let y = beachStartY; y <= k.height(); y += 10) {
@@ -610,7 +610,7 @@ export default function OceanScene({
       }
       beachPoints.push(k.vec2(k.width(), k.height()));
       beachPoints.push(k.vec2(k.width(), beachStartY));
-      
+
       const beach = k.add([
         k.polygon(beachPoints),
         k.pos(0, 0),
@@ -618,19 +618,19 @@ export default function OceanScene({
         k.opacity(0),
         k.z(1),
       ]);
-      
+
       // Boat waiting at surface (LEFT SIDE - in water, starts hidden, fades in)
       const boatBaseY = k.height() * 0.6;
       const boatX = k.width() * 0.25; // 25% from left (in water)
       const boat = createBoat(boatX, boatBaseY, 18);
       boat.opacity = 0;
-      
+
       // Boat bobbing animation
       boat.onUpdate(() => {
         boat.pos.y = boatBaseY + Math.sin(k.time() * 1.5) * 8;
         boat.angle = Math.sin(k.time() * 1.2) * 2;
       });
-      
+
       // Diver rising from underwater (LEFT SIDE - toward boat)
       const diver = k.add([
         k.sprite("diver", { anim: "swim" }),
@@ -639,9 +639,9 @@ export default function OceanScene({
         k.scale(2),
         k.z(20),
       ]);
-      
+
       // Treasure bag removed - cleaner surfacing animation with just diver
-      
+
       // Message
       const message = k.add([
         k.text("SURFACING!", { size: 48 }),
@@ -651,7 +651,7 @@ export default function OceanScene({
         k.opacity(1),
         k.z(100),
       ]);
-      
+
       // Bubble trail
       k.loop(0.1, () => {
         const bubble = k.add([
@@ -663,13 +663,13 @@ export default function OceanScene({
           k.z(15),
           k.lifespan(2),
         ]);
-        
+
         bubble.onUpdate(() => {
           bubble.pos.y += 150 * k.dt(); // Bubbles move down relative to diver
           bubble.opacity -= k.dt() * 0.5;
         });
       });
-      
+
       // Speed lines
       const speedLines: any[] = [];
       for (let i = 0; i < 30; i++) {
@@ -683,43 +683,43 @@ export default function OceanScene({
         ]);
         speedLines.push(line);
       }
-      
+
       k.onUpdate(() => {
         surfacingProgress += k.dt() / surfacingDuration;
-        
+
         // Move diver upward toward boat
         const targetY = boatBaseY - 15; // Climbing onto boat deck
         const startY = k.height() * 0.8;
         diver.pos.y = startY + (targetY - startY) * surfacingProgress;
         // Treasure bag removed - just diver climbing back
-        
+
         // Fade in surface elements
         sky.opacity = surfacingProgress;
         sun.opacity = surfacingProgress;
         beach.opacity = surfacingProgress;
         boat.opacity = surfacingProgress; // Boat fades in as diver surfaces
-        
+
         // Blend background colors
         bg.color = k.rgb(
           underwaterColor.r * (1 - surfacingProgress) + surfaceColor.r * surfacingProgress,
           underwaterColor.g * (1 - surfacingProgress) + surfaceColor.g * surfacingProgress,
           underwaterColor.b * (1 - surfacingProgress) + surfaceColor.b * surfacingProgress
         );
-        
+
         // Fade message
         message.opacity = 1 - surfacingProgress;
-        
+
         // Move speed lines
         speedLines.forEach(line => {
           line.pos.y += 300 * k.dt();
           line.opacity = 0.6 * (1 - surfacingProgress);
-          
+
           if (line.pos.y > k.height() + 50) {
             line.pos.y = -50;
             line.pos.x = Math.random() * k.width();
           }
         });
-        
+
         // Complete surfacing
         if (surfacingProgress >= 1) {
           console.log('[CANVAS] ✅ Surfacing complete! Returning to beach...');
@@ -744,7 +744,7 @@ export default function OceanScene({
         k.color(bgColor.r * lightLevel, bgColor.g * lightLevel, bgColor.b * lightLevel),
         k.z(0),
       ]);
-      
+
       // Fade-in overlay (smooth transition from beach)
       const fadeInOverlay = k.add([
         k.rect(k.width(), k.height()),
@@ -753,7 +753,7 @@ export default function OceanScene({
         k.opacity(0.8),
         k.z(300),
       ]);
-      
+
       // Fade in from black
       let fadeInProgress = 0;
       const fadeInDuration = 0.8; // 0.8 seconds
@@ -766,7 +766,7 @@ export default function OceanScene({
           fadeInOverlay.opacity = 0.8 * (1 - fadeInProgress);
         }
       });
-      
+
       // Splash effect at start (water entry)
       const splashParticles: any[] = [];
       for (let i = 0; i < 20; i++) {
@@ -778,17 +778,17 @@ export default function OceanScene({
           k.opacity(0.8),
           k.z(250),
         ]);
-        
+
         splashParticles.push({ obj: splash, angle, speed: 150 + Math.random() * 100 });
       }
-      
+
       // Animate splash particles
       splashParticles.forEach(({ obj, angle, speed }) => {
         obj.onUpdate(() => {
           obj.pos.x += Math.cos(angle) * speed * k.dt();
           obj.pos.y += Math.sin(angle) * speed * k.dt();
           obj.opacity -= k.dt() * 2;
-          
+
           if (obj.opacity <= 0) {
             k.destroy(obj);
           }
@@ -807,9 +807,9 @@ export default function OceanScene({
       // INFINITE PARALLAX SCROLLING LAYERS
       // Based on: https://jslegenddev.substack.com/p/how-to-implement-infinite-parallax
       // Technique: Each layer has 2 parts that loop infinitely
-      
+
       const CANVAS_HEIGHT = k.height();
-      
+
       interface ParallaxLayer {
         speed: number;
         parts: Array<{
@@ -817,7 +817,7 @@ export default function OceanScene({
           y: number; // Current Y position
         }>;
       }
-      
+
       // Helper: Create a container with random sprites
       function createLayerPart(
         spriteName: string,
@@ -832,7 +832,7 @@ export default function OceanScene({
           k.pos(0, yOffset),
           k.z(zIndex),
         ]);
-        
+
         for (let i = 0; i < count; i++) {
           const sprite = container.add([
             k.sprite(spriteName, { frame: Math.floor(Math.random() * frames) }),
@@ -842,7 +842,7 @@ export default function OceanScene({
             k.opacity(opacityRange[0] + Math.random() * (opacityRange[1] - opacityRange[0])),
           ]);
         }
-        
+
         return container;
       }
 
@@ -986,7 +986,7 @@ export default function OceanScene({
           bubble.pos.y -= (60 + divingSpeed) * k.dt();
           bubble.pos.x += Math.sin(k.time() * 3 + bubbleY) * 30 * k.dt();
           bubble.opacity -= k.dt() * 0.27;
-          
+
           // Pop animation when fading out
           if (bubble.opacity < 0.3) {
             bubble.play("pop");
@@ -1005,11 +1005,11 @@ export default function OceanScene({
         // Use all 3 fish types for variety
         const fishTypes = ["fish1", "fish2", "fish3"];
         const fishType = fishTypes[Math.floor(Math.random() * fishTypes.length)];
-        
+
         const fishY = 100 + Math.random() * 400;
         const direction = Math.random() > 0.5 ? 1 : -1;
         const startX = direction > 0 ? -50 : k.width() + 50;
-        
+
         // fish2 and fish3 are larger (32px vs 16px)
         const scaleMultiplier = fishType === "fish1" ? 2 : 1.5;
 
@@ -1045,7 +1045,7 @@ export default function OceanScene({
       function createJellyfish() {
         const jellyfishY = 100 + Math.random() * 400;
         const jellyfishX = Math.random() * k.width();
-        
+
         const jellyfish = k.add([
           k.sprite("jellyfish", { anim: "float" }),
           k.pos(jellyfishX, jellyfishY),
@@ -1054,12 +1054,12 @@ export default function OceanScene({
           k.scale(2),
           k.opacity(0.7 * lightLevel),
         ]);
-        
+
         jellyfish.onUpdate(() => {
           // Slow vertical drift + sine wave horizontal
           jellyfish.pos.y -= 15 * k.dt();
           jellyfish.pos.x += Math.sin(k.time() * 2 + jellyfishY) * 30 * k.dt();
-          
+
           // Wrap around top
           if (jellyfish.pos.y < -50) {
             jellyfish.pos.y = k.height() + 50;
@@ -1087,11 +1087,11 @@ export default function OceanScene({
       function createAmbientPredator() {
         const predator = getDepthPredator(depthRef.current);
         if (!predator || predator === "shark") return; // Skip shark (used for death)
-        
+
         const direction = Math.random() > 0.5 ? 1 : -1;
         const startX = direction > 0 ? -100 : k.width() + 100;
         const predatorY = 100 + Math.random() * 400;
-        
+
         const creature = k.add([
           k.sprite(predator, { anim: "swim" }),
           k.pos(startX, predatorY),
@@ -1100,7 +1100,7 @@ export default function OceanScene({
           k.scale(direction * 2.5, 2.5),
           k.opacity(0.8 * lightLevel),
         ]);
-        
+
         // Add glowing light for seaangler
         if (predator === "seaangler") {
           const light = creature.add([
@@ -1109,19 +1109,19 @@ export default function OceanScene({
             k.color(255, 255, 150),
             k.opacity(0.6),
           ]);
-          
+
           // Pulsing glow
           light.onUpdate(() => {
             light.opacity = 0.4 + Math.sin(k.time() * 8) * 0.3;
             light.radius = 15 + Math.sin(k.time() * 8) * 5;
           });
         }
-        
+
         creature.onUpdate(() => {
           const speed = predator === "swordfish" ? 120 : 60;
           creature.pos.x += direction * speed * k.dt();
           creature.pos.y += Math.sin(k.time() * 2 + predatorY) * 20 * k.dt();
-          
+
           if (
             (direction > 0 && creature.pos.x > k.width() + 100) ||
             (direction < 0 && creature.pos.x < -100)
@@ -1148,7 +1148,7 @@ export default function OceanScene({
           k.opacity(0),
           k.z(25),
         ]);
-        
+
         // Fade in
         let fadeIn = 0;
         const fadeInInterval = setInterval(() => {
@@ -1156,21 +1156,21 @@ export default function OceanScene({
           chest.opacity = Math.min(fadeIn, 1);
           if (fadeIn >= 1) clearInterval(fadeInInterval);
         }, 50);
-        
+
         // Opening sequence
         setTimeout(() => {
           chest.play("opening");
-          
+
           setTimeout(() => {
             chest.play("open");
-            
+
             // Spawn coin particles
             for (let i = 0; i < 15; i++) {
               setTimeout(() => createCoinParticle(x, y + 40), i * 30);
             }
           }, 400);
         }, 500);
-        
+
         // Fade out after animation
         setTimeout(() => {
           let fadeOut = 1;
@@ -1188,7 +1188,7 @@ export default function OceanScene({
       function createCoinParticle(x: number, y: number) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 80 + Math.random() * 80;
-        
+
         const coin = k.add([
           k.sprite("coin", { anim: "spin" }), // Use spin animation!
           k.pos(x, y),
@@ -1198,7 +1198,7 @@ export default function OceanScene({
           k.z(26),
           k.lifespan(1.5),
         ]);
-        
+
         coin.onUpdate(() => {
           coin.pos.x += Math.cos(angle) * speed * k.dt();
           coin.pos.y += Math.sin(angle) * speed * k.dt() - 50 * k.dt(); // Upward bias
@@ -1211,7 +1211,7 @@ export default function OceanScene({
         for (let i = 0; i < 30; i++) {
           const angle = (Math.PI * 2 * i) / 30;
           const speed = 100 + Math.random() * 100;
-          
+
           const particle = k.add([
             k.circle(3),
             k.pos(x, y),
@@ -1241,7 +1241,7 @@ export default function OceanScene({
 
         // Choose predator based on current depth
         const predatorChoice = getDepthPredator(depthRef.current) || "shark";
-        
+
         const direction = Math.random() > 0.5 ? 1 : -1;
         const startX = direction > 0 ? -100 : k.width() + 100;
 
@@ -1260,7 +1260,7 @@ export default function OceanScene({
           swordfish: "IMPALED!",
           seaangler: "LURED TO DEATH!",
         };
-        
+
         messageDisplay.text = deathMessages[predatorChoice] || "DANGER!";
         messageDisplay.color = k.rgb(255, 50, 50);
         messageOpacity = 1;
@@ -1367,7 +1367,7 @@ export default function OceanScene({
               // Swap parts array
               layer.parts.push(layer.parts.shift()!);
             }
-            
+
             // Move both parts UP (negative direction) based on diving speed and layer speed
             layer.parts[0].y += divingSpeed * (layer.speed / 100) * k.dt();
             layer.parts[1].y += divingSpeed * (layer.speed / 100) * k.dt();
@@ -1439,7 +1439,7 @@ export default function OceanScene({
         if (!isAnimating && animationType === 'idle') {
           const bobAmount = Math.sin(k.time() * 2) * 10;
           diver.pos.y = diverY + bobAmount;
-          
+
           // Slow continuous parallax scroll when idle
           parallaxLayers.forEach(layer => {
             // Check if first part has scrolled off the bottom
@@ -1448,7 +1448,7 @@ export default function OceanScene({
               layer.parts[0].container.pos.y = layer.parts[0].y;
               layer.parts.push(layer.parts.shift()!);
             }
-            
+
             // Slow scroll at 10% speed
             const idleSpeed = layer.speed * 0.1;
             layer.parts[0].y += idleSpeed * k.dt();
