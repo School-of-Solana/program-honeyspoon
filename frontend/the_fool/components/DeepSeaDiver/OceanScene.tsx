@@ -822,58 +822,92 @@ export default function OceanScene({
       }
 
       const parallaxLayers: ParallaxLayer[] = [
-        // Layer 1: Far background - Rocks (slowest, darkest)
+        // Layer 1: Far background - Seaweed (slowest, darkest)
         {
-          speed: -20,
+          speed: CONST.PARALLAX.LAYERS[0].speed,
           parts: [
             {
-              container: createLayerPart("rock", 143, 6, [2, 3.5], [0.3, 0.4], 2, 0),
+              container: createLayerPart(
+                CONST.PARALLAX.LAYERS[0].sprite,
+                CONST.PARALLAX.LAYERS[0].frames,
+                CONST.PARALLAX.LAYERS[0].count,
+                CONST.PARALLAX.LAYERS[0].scale as [number, number],
+                CONST.PARALLAX.LAYERS[0].opacity as [number, number],
+                CONST.PARALLAX.LAYERS[0].z,
+                0
+              ),
               y: 0,
             },
             {
-              container: createLayerPart("rock", 143, 6, [2, 3.5], [0.3, 0.4], 2, -CANVAS_HEIGHT),
+              container: createLayerPart(
+                CONST.PARALLAX.LAYERS[0].sprite,
+                CONST.PARALLAX.LAYERS[0].frames,
+                CONST.PARALLAX.LAYERS[0].count,
+                CONST.PARALLAX.LAYERS[0].scale as [number, number],
+                CONST.PARALLAX.LAYERS[0].opacity as [number, number],
+                CONST.PARALLAX.LAYERS[0].z,
+                -CANVAS_HEIGHT
+              ),
               y: -CANVAS_HEIGHT,
             },
           ],
         },
-        // Layer 2: Mid background - Seaweed
+        // Layer 2: Mid background - Corals
         {
-          speed: -50,
+          speed: CONST.PARALLAX.LAYERS[1].speed,
           parts: [
             {
-              container: createLayerPart("seaweed", 96, 8, [1.5, 2.5], [0.5, 0.7], 4, 0),
+              container: createLayerPart(
+                CONST.PARALLAX.LAYERS[1].sprite,
+                CONST.PARALLAX.LAYERS[1].frames,
+                CONST.PARALLAX.LAYERS[1].count,
+                CONST.PARALLAX.LAYERS[1].scale as [number, number],
+                CONST.PARALLAX.LAYERS[1].opacity as [number, number],
+                CONST.PARALLAX.LAYERS[1].z,
+                0
+              ),
               y: 0,
             },
             {
-              container: createLayerPart("seaweed", 96, 8, [1.5, 2.5], [0.5, 0.7], 4, -CANVAS_HEIGHT),
+              container: createLayerPart(
+                CONST.PARALLAX.LAYERS[1].sprite,
+                CONST.PARALLAX.LAYERS[1].frames,
+                CONST.PARALLAX.LAYERS[1].count,
+                CONST.PARALLAX.LAYERS[1].scale as [number, number],
+                CONST.PARALLAX.LAYERS[1].opacity as [number, number],
+                CONST.PARALLAX.LAYERS[1].z,
+                -CANVAS_HEIGHT
+              ),
               y: -CANVAS_HEIGHT,
             },
           ],
         },
-        // Layer 3: Near mid - Rocks (smaller, faster)
+        // Layer 3: Foreground - Seaweed (taller, faster)
         {
-          speed: -100,
+          speed: CONST.PARALLAX.LAYERS[2].speed,
           parts: [
             {
-              container: createLayerPart("rock", 143, 10, [1, 2], [0.5, 0.6], 6, 0),
+              container: createLayerPart(
+                CONST.PARALLAX.LAYERS[2].sprite,
+                CONST.PARALLAX.LAYERS[2].frames,
+                CONST.PARALLAX.LAYERS[2].count,
+                CONST.PARALLAX.LAYERS[2].scale as [number, number],
+                CONST.PARALLAX.LAYERS[2].opacity as [number, number],
+                CONST.PARALLAX.LAYERS[2].z,
+                0
+              ),
               y: 0,
             },
             {
-              container: createLayerPart("rock", 143, 10, [1, 2], [0.5, 0.6], 6, -CANVAS_HEIGHT),
-              y: -CANVAS_HEIGHT,
-            },
-          ],
-        },
-        // Layer 4: Foreground - Corals (fastest, brightest)
-        {
-          speed: -200,
-          parts: [
-            {
-              container: createLayerPart("coral", 28, 12, [1.5, 2.5], [0.7, 0.9], 8, 0),
-              y: 0,
-            },
-            {
-              container: createLayerPart("coral", 28, 12, [1.5, 2.5], [0.7, 0.9], 8, -CANVAS_HEIGHT),
+              container: createLayerPart(
+                CONST.PARALLAX.LAYERS[2].sprite,
+                CONST.PARALLAX.LAYERS[2].frames,
+                CONST.PARALLAX.LAYERS[2].count,
+                CONST.PARALLAX.LAYERS[2].scale as [number, number],
+                CONST.PARALLAX.LAYERS[2].opacity as [number, number],
+                CONST.PARALLAX.LAYERS[2].z,
+                -CANVAS_HEIGHT
+              ),
               y: -CANVAS_HEIGHT,
             },
           ],
@@ -935,109 +969,102 @@ export default function OceanScene({
 
       // Bubbles - USING ANIMATED SPRITES!
       function createBubble(x?: number, y?: number) {
-        const bubbleX = x !== undefined ? x : diver.pos.x + (Math.random() - 0.5) * 30;
-        const bubbleY = y !== undefined ? y : diver.pos.y - 10;
-        const scale = 1.5 + Math.random() * 1.5;
+        const bubbleX = x !== undefined ? x : diver.pos.x + (Math.random() - 0.5) * CONST.BUBBLE.SPAWN_OFFSET_X;
+        const bubbleY = y !== undefined ? y : diver.pos.y - CONST.BUBBLE.SPAWN_OFFSET_Y;
+        const scale = CONST.BUBBLE.SCALE_BASE + Math.random() * CONST.BUBBLE.SCALE_RANDOM;
 
         const bubble = k.add([
-          k.sprite("bubble", { frame: Math.floor(Math.random() * 10) }), // Random bubble frame
+          k.sprite("bubble", { frame: Math.floor(Math.random() * CONST.BUBBLE.FRAME_COUNT) }),
           k.pos(bubbleX, bubbleY),
           k.anchor("center"),
           k.scale(scale),
-          k.opacity(0.8),
-          k.z(15),
-          k.lifespan(3),
+          k.opacity(CONST.BUBBLE.OPACITY_INITIAL),
+          k.z(CONST.Z_LAYERS.BUBBLES),
+          k.lifespan(CONST.BUBBLE.LIFESPAN),
         ]);
 
         bubble.onUpdate(() => {
-          bubble.pos.y -= (60 + divingSpeed) * k.dt();
-          bubble.pos.x += Math.sin(k.time() * 3 + bubbleY) * 30 * k.dt();
-          bubble.opacity -= k.dt() * 0.27;
+          bubble.pos.y -= (CONST.BUBBLE.RISE_BASE_SPEED + divingSpeed) * k.dt();
+          bubble.pos.x += Math.sin(k.time() * CONST.BUBBLE.HORIZONTAL_WAVE_SPEED + bubbleY) * CONST.BUBBLE.HORIZONTAL_WAVE_AMPLITUDE * k.dt();
+          bubble.opacity -= k.dt() * CONST.BUBBLE.OPACITY_FADE_RATE;
 
           // Pop animation when fading out
-          if (bubble.opacity < 0.3) {
+          if (bubble.opacity < CONST.BUBBLE.OPACITY_POP_THRESHOLD) {
             bubble.play("pop");
           }
         });
       }
 
-      k.loop(0.15, () => {
-        if (!isAnimating && Math.random() > 0.3) {
+      k.loop(CONST.SPAWN_RATES.BUBBLE_INTERVAL, () => {
+        if (!isAnimating && Math.random() > CONST.SPAWN_RATES.BUBBLE_CHANCE) {
           createBubble();
         }
       });
 
       // Fish (using sprites) - WITH VARIETY!
       function createFish() {
-        // Use all 3 fish types for variety
-        const fishTypes = ["fish1", "fish2", "fish3"];
-        const fishType = fishTypes[Math.floor(Math.random() * fishTypes.length)];
-
-        const fishY = 100 + Math.random() * 400;
+        const fishType = CONST.FISH.TYPES[Math.floor(Math.random() * CONST.FISH.TYPES.length)];
+        const fishY = CONST.FISH.SPAWN_Y_MIN + Math.random() * CONST.FISH.SPAWN_Y_RANGE;
         const direction = Math.random() > 0.5 ? 1 : -1;
-        const startX = direction > 0 ? -50 : k.width() + 50;
-
-        // fish2 and fish3 are larger (32px vs 16px)
-        const scaleMultiplier = fishType === "fish1" ? 2 : 1.5;
+        const startX = direction > 0 ? -CONST.FISH.SPAWN_OFFSET : k.width() + CONST.FISH.SPAWN_OFFSET;
+        const scaleMultiplier = fishType === "fish1" ? CONST.FISH.SCALE_SMALL : CONST.FISH.SCALE_LARGE;
 
         const fish = k.add([
           k.sprite(fishType, { anim: "swim" }),
           k.pos(startX, fishY),
           k.anchor("center"),
-          k.z(7),
+          k.z(CONST.Z_LAYERS.FISH),
           k.scale(direction > 0 ? scaleMultiplier : -scaleMultiplier, scaleMultiplier),
-          k.opacity(lightLevel * 0.8),
+          k.opacity(lightLevel * CONST.FISH.OPACITY_BASE),
         ]);
 
         fish.onUpdate(() => {
-          fish.pos.x += direction * 50 * k.dt();
-          fish.pos.y += Math.sin(k.time() * 2 + fishY) * 15 * k.dt();
+          fish.pos.x += direction * CONST.FISH.HORIZONTAL_SPEED * k.dt();
+          fish.pos.y += Math.sin(k.time() * CONST.FISH.VERTICAL_WAVE_SPEED + fishY) * CONST.FISH.VERTICAL_WAVE_AMPLITUDE * k.dt();
 
           if (
-            (direction > 0 && fish.pos.x > k.width() + 50) ||
-            (direction < 0 && fish.pos.x < -50)
+            (direction > 0 && fish.pos.x > k.width() + CONST.FISH.DESPAWN_OFFSET) ||
+            (direction < 0 && fish.pos.x < -CONST.FISH.DESPAWN_OFFSET)
           ) {
             k.destroy(fish);
           }
         });
       }
 
-      k.loop(1.5, () => {
-        if (Math.random() > 0.3 && lightLevel > 0.2) {
+      k.loop(CONST.SPAWN_RATES.FISH_INTERVAL, () => {
+        if (Math.random() > CONST.SPAWN_RATES.FISH_CHANCE && lightLevel > CONST.OPACITY.LIGHT_RAY_MIN) {
           createFish();
         }
       });
 
       // Jellyfish (floating creatures)
       function createJellyfish() {
-        const jellyfishY = 100 + Math.random() * 400;
+        const jellyfishY = CONST.JELLYFISH.SPAWN_Y_MIN + Math.random() * CONST.JELLYFISH.SPAWN_Y_RANGE;
         const jellyfishX = Math.random() * k.width();
 
         const jellyfish = k.add([
           k.sprite("jellyfish", { anim: "float" }),
           k.pos(jellyfishX, jellyfishY),
           k.anchor("center"),
-          k.z(6),
-          k.scale(2),
-          k.opacity(0.7 * lightLevel),
+          k.z(CONST.Z_LAYERS.JELLYFISH),
+          k.scale(CONST.JELLYFISH.SCALE),
+          k.opacity(CONST.JELLYFISH.OPACITY_BASE * lightLevel),
         ]);
 
         jellyfish.onUpdate(() => {
-          // Slow vertical drift + sine wave horizontal
-          jellyfish.pos.y -= 15 * k.dt();
-          jellyfish.pos.x += Math.sin(k.time() * 2 + jellyfishY) * 30 * k.dt();
+          jellyfish.pos.y -= CONST.JELLYFISH.VERTICAL_SPEED * k.dt();
+          jellyfish.pos.x += Math.sin(k.time() * CONST.JELLYFISH.HORIZONTAL_WAVE_SPEED + jellyfishY) * CONST.JELLYFISH.HORIZONTAL_WAVE_AMPLITUDE * k.dt();
 
-          // Wrap around top
-          if (jellyfish.pos.y < -50) {
-            jellyfish.pos.y = k.height() + 50;
+          if (jellyfish.pos.y < -CONST.JELLYFISH.WRAP_OFFSET) {
+            jellyfish.pos.y = k.height() + CONST.JELLYFISH.WRAP_OFFSET;
             jellyfish.pos.x = Math.random() * k.width();
           }
         });
       }
 
       // Spawn jellyfish periodically
-      k.loop(4, () => {
-        if (Math.random() > 0.5 && lightLevel > 0.2) {
+      k.loop(CONST.SPAWN_RATES.JELLYFISH_INTERVAL, () => {
+        if (Math.random() > CONST.SPAWN_RATES.JELLYFISH_CHANCE && lightLevel > CONST.OPACITY.LIGHT_RAY_MIN) {
           createJellyfish();
         }
       });
