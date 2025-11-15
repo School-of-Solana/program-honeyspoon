@@ -13,6 +13,7 @@ interface OceanSceneProps {
   oxygenLevel: number;
   isDiving: boolean;
   survived?: boolean;
+  shouldSurface?: boolean; // NEW: Only surface when player cashes out
   lastShipwreck?: Shipwreck;
   onAnimationComplete?: () => void;
   debugMode?: boolean;
@@ -23,6 +24,7 @@ export default function OceanScene({
   treasureValue,
   isDiving,
   survived,
+  shouldSurface = false,
   debugMode = true,
 }: OceanSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,6 +34,7 @@ export default function OceanScene({
   // Use refs to track prop changes inside Kaplay closures
   const isDivingRef = useRef(isDiving);
   const survivedRef = useRef(survived);
+  const shouldSurfaceRef = useRef(shouldSurface);
   const depthRef = useRef(depth);
   const treasureRef = useRef(treasureValue);
 
@@ -40,6 +43,7 @@ export default function OceanScene({
     const changes = [];
     if (isDivingRef.current !== isDiving) changes.push(`isDiving: ${isDivingRef.current} → ${isDiving}`);
     if (survivedRef.current !== survived) changes.push(`survived: ${survivedRef.current} → ${survived}`);
+    if (shouldSurfaceRef.current !== shouldSurface) changes.push(`shouldSurface: ${shouldSurfaceRef.current} → ${shouldSurface}`);
     if (depthRef.current !== depth) changes.push(`depth: ${depthRef.current}m → ${depth}m`);
     if (treasureRef.current !== treasureValue) changes.push(`treasure: $${treasureRef.current} → $${treasureValue}`);
 
@@ -49,9 +53,10 @@ export default function OceanScene({
 
     isDivingRef.current = isDiving;
     survivedRef.current = survived;
+    shouldSurfaceRef.current = shouldSurface;
     depthRef.current = depth;
     treasureRef.current = treasureValue;
-  }, [isDiving, survived, depth, treasureValue]);
+  }, [isDiving, survived, shouldSurface, depth, treasureValue]);
 
   useEffect(() => {
     console.log('[CANVAS] 🎬 OceanScene useEffect triggered');
@@ -190,22 +195,22 @@ export default function OceanScene({
         k.anchor("center"),
       ]);
 
-      // Mast (thin pole)
+      // Mast (thin pole) - fixed anchor point
       boat.add([
         k.rect(4, 50),
-        k.pos(-20, -40),
+        k.pos(-20, -25), // Position at bottom of mast
         k.color(101, 67, 33),
-        k.anchor("bot"),
+        k.anchor("bot"), // Anchor at bottom of mast
       ]);
 
-      // Small flag/sail (triangular)
+      // Small flag/sail (triangular) - positioned at top of mast
       boat.add([
         k.polygon([
           k.vec2(0, 0),
           k.vec2(30, 10),
           k.vec2(0, 20),
         ]),
-        k.pos(-16, -60),
+        k.pos(-20, -75), // At top of mast (-25 -50 = -75)
         k.color(200, 50, 50), // Red flag
         k.outline(1, k.rgb(150, 30, 30)),
       ]);
@@ -671,14 +676,7 @@ export default function OceanScene({
         k.z(20),
       ]);
       
-      // Treasure bag
-      const treasureBag = k.add([
-        k.sprite("treasure"),
-        k.pos(boatX, k.height() * 0.8 + 35),
-        k.anchor("center"),
-        k.scale(1.5),
-        k.z(20),
-      ]);
+      // Treasure bag removed - cleaner surfacing animation with just diver
       
       // Message
       const message = k.add([
@@ -729,7 +727,7 @@ export default function OceanScene({
         const targetY = boatBaseY - 15; // Climbing onto boat deck
         const startY = k.height() * 0.8;
         diver.pos.y = startY + (targetY - startY) * surfacingProgress;
-        treasureBag.pos.y = diver.pos.y + 35;
+        // Treasure bag removed - just diver climbing back
         
         // Fade in surface elements
         sky.opacity = surfacingProgress;
@@ -978,15 +976,7 @@ export default function OceanScene({
         k.z(20),
       ]);
 
-      const treasureBag = k.add([
-        k.sprite("treasure"),
-        k.pos(diverX, diverY + 35),
-        k.anchor("center"),
-        k.scale(1.2),
-        k.opacity(1),
-        k.rotate(0),
-        k.z(20),
-      ]);
+      // Treasure bag removed - cleaner underwater view with just diver
 
       // Message display
       const messageDisplay = k.add([
@@ -1338,11 +1328,7 @@ export default function OceanScene({
               diver.pos.y += 100 * k.dt();
               diver.opacity -= k.dt() * 0.5;
             });
-            treasureBag.onUpdate(() => {
-              treasureBag.pos.y += 150 * k.dt();
-              treasureBag.angle += 360 * k.dt();
-              treasureBag.opacity -= k.dt() * 0.5;
-            });
+            // Treasure bag removed - cleaner view
 
             creature.onUpdate(() => {
               creature.pos.x += direction * 150 * k.dt();
@@ -1407,18 +1393,18 @@ export default function OceanScene({
           divingSpeed = maxSpeed * acceleration;
 
           // Update infinite parallax layers
-          // Move each layer, and when first part goes off-screen, move it behind second part
+          // Move each layer UP (negative Y) as we dive DOWN
           parallaxLayers.forEach(layer => {
-            // Check if first part has scrolled off the bottom
-            if (layer.parts[1].y > 0) {
-              // Move first part above second part
-              layer.parts[0].y = layer.parts[1].y - CANVAS_HEIGHT;
+            // Check if first part has scrolled off the TOP (negative Y)
+            if (layer.parts[0].y < -CANVAS_HEIGHT) {
+              // Move first part below second part
+              layer.parts[0].y = layer.parts[1].y + CANVAS_HEIGHT;
               layer.parts[0].container.pos.y = layer.parts[0].y;
-              // Swap parts array (second becomes first, first becomes second)
+              // Swap parts array
               layer.parts.push(layer.parts.shift()!);
             }
             
-            // Move both parts down based on diving speed and layer speed
+            // Move both parts UP (negative direction) based on diving speed and layer speed
             layer.parts[0].y += divingSpeed * (layer.speed / 100) * k.dt();
             layer.parts[1].y += divingSpeed * (layer.speed / 100) * k.dt();
             layer.parts[0].container.pos.y = layer.parts[0].y;
@@ -1474,14 +1460,14 @@ export default function OceanScene({
         // ===== TREASURE ANIMATION LOGIC =====
         if (animationType === 'treasure') {
           treasurePulseTime += k.dt() * 8;
-          const baseScale = 1.2;
-          const sizeMultiplier = 1 + Math.min(treasureRef.current / 1000, 0.5);
-          treasureBag.scale = k.vec2((baseScale * sizeMultiplier) + Math.sin(treasurePulseTime) * 0.2);
 
           if (treasurePulseTime > Math.PI * 4) {
-            console.log('[CANVAS] ✅ Treasure collected! Starting surfacing...');
-            // Transition to surfacing scene
-            k.go("surfacing", { treasure: treasureRef.current });
+            console.log('[CANVAS] ✅ Treasure animation complete! Staying underwater for next dive...');
+            // Stay underwater - don't surface automatically
+            isAnimating = false;
+            animationType = 'idle';
+            messageOpacity = 0;
+            treasurePulseTime = 0;
           }
         }
 
@@ -1489,7 +1475,6 @@ export default function OceanScene({
         if (!isAnimating && animationType === 'idle') {
           const bobAmount = Math.sin(k.time() * 2) * 10;
           diver.pos.y = diverY + bobAmount;
-          treasureBag.pos.y = diverY + 30 + bobAmount;
           
           // Slow continuous parallax scroll when idle
           parallaxLayers.forEach(layer => {
@@ -1509,12 +1494,7 @@ export default function OceanScene({
           });
         }
 
-        // Update treasure bag size
-        if (animationType !== 'treasure') {
-          const baseScale = 1.2;
-          const sizeMultiplier = 1 + Math.min(treasureRef.current / 1000, 0.5);
-          treasureBag.scale = k.vec2(baseScale * sizeMultiplier);
-        }
+        // Treasure bag removed - cleaner underwater view
 
         // Update light rays
         lightRays.forEach(({ obj, offset }) => {
@@ -1531,7 +1511,11 @@ export default function OceanScene({
         }
 
         // ===== ANIMATION TRIGGERS =====
-        if (isDivingRef.current && !isAnimating && animationType === 'idle') {
+        // Check for surfacing request (player cashed out)
+        if (shouldSurfaceRef.current && !isAnimating && animationType === 'idle') {
+          console.log('[CANVAS] 🌊 Player cashed out! Transitioning to surfacing...');
+          k.go("surfacing", { treasure: treasureRef.current });
+        } else if (isDivingRef.current && !isAnimating && animationType === 'idle') {
           console.log('[CANVAS] 🤿 Starting dive animation (2.5s)');
           isAnimating = true;
           animationType = 'diving';

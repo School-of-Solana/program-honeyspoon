@@ -34,6 +34,7 @@ export default function Home() {
   const betAmount = GAME_CONFIG.FIXED_BET; // Fixed bet amount for simplified gameplay
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDiving, setIsDiving] = useState(false); // Separate state for diving animation
+  const [shouldSurface, setShouldSurface] = useState(false); // Only surface when player cashes out
   const [lastShipwreck, setLastShipwreck] = useState<Shipwreck | undefined>();
   const [survived, setSurvived] = useState<boolean | undefined>(undefined);
   const [showBettingCard, setShowBettingCard] = useState(true);
@@ -146,7 +147,7 @@ export default function Home() {
         setGameState({
           isPlaying: true,
           diveNumber: 1,
-          currentTreasure: betAmount,
+          currentTreasure: 0,
           initialBet: betAmount,
           depth: 0,
           oxygenLevel: 100,
@@ -198,9 +199,11 @@ export default function Home() {
       
       // STEP 2: Call server to determine result
       console.log('[GAME] 🎲 Calling server for dive result...');
+      // For first dive, use initialBet as the value to multiply; subsequent dives use accumulated treasure
+      const valueToMultiply = gameState.currentTreasure === 0 ? gameState.initialBet : gameState.currentTreasure;
       const result = await performDive(
         gameState.diveNumber,
-        gameState.currentTreasure,
+        valueToMultiply,
         gameState.sessionId,
         gameState.userId
       );
@@ -316,6 +319,7 @@ export default function Home() {
     });
 
     setIsProcessing(true);
+    setShouldSurface(true); // Trigger surfacing animation
 
     try {
       const result = await surfaceWithTreasure(
@@ -364,6 +368,7 @@ export default function Home() {
         }));
         setLastShipwreck(undefined);
         setSurvived(undefined);
+        setShouldSurface(false); // Reset surface trigger
         
         setTimeout(() => setShowBettingCard(true), 500);
       }
@@ -371,6 +376,7 @@ export default function Home() {
       console.error("[GAME] ❌ Exception during surface:", error);
     } finally {
       setIsProcessing(false);
+      setShouldSurface(false); // Reset surface trigger
     }
   };
 
@@ -388,6 +394,7 @@ export default function Home() {
           oxygenLevel={gameState.oxygenLevel}
           isDiving={isDiving}
           survived={survived}
+          shouldSurface={shouldSurface}
           lastShipwreck={lastShipwreck}
           debugMode={kaplayDebug}
         />

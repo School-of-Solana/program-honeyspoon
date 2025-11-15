@@ -103,7 +103,7 @@ export async function startGameSession(
     sessionId,
     userId,
     initialBet: betAmount,
-    currentTreasure: betAmount, // Initial value = bet amount
+    currentTreasure: 0, // Start at 0, first dive will multiply the bet amount
     diveNumber: 1, // Round 1
     isActive: true,
     reservedPayout: maxPayout,
