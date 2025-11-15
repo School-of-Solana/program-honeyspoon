@@ -464,22 +464,6 @@ export default function OceanScene({
       createSeagull(k.width() * 0.6, k.height() * 0.15, 60);
       createSeagull(k.width() * 0.1, k.height() * 0.25, 45);
       
-      // Animated waves at water surface
-      for (let i = 0; i < 5; i++) {
-        const baseY = k.height() * 0.6;
-        const wave = k.add([
-          k.rect(k.width() / 5 + 50, 3),
-          k.pos(i * (k.width() / 5), baseY),
-          k.color(80, 140, 255),
-          k.opacity(0.7),
-          k.z(6),
-        ]);
-        
-        wave.onUpdate(() => {
-          wave.pos.y = baseY + Math.sin(k.time() * 2 + i * 0.5) * 5;
-        });
-      }
-      
       // Create boat at water surface (LEFT SIDE - UI is on right)
       const boatBaseY = k.height() * 0.6;
       const boatX = k.width() * 0.25; // 25% from left (leaves right side clear for UI)
@@ -489,26 +473,6 @@ export default function OceanScene({
       boat.onUpdate(() => {
         boat.pos.y = boatBaseY + Math.sin(k.time() * 1.5) * 8;
         boat.angle = Math.sin(k.time() * 1.2) * 2; // Gentle rocking
-      });
-      
-      // Ripples around boat hull
-      k.loop(0.8, () => {
-        const ripple = k.add([
-          k.circle(10),
-          k.pos(boatX + (Math.random() - 0.5) * 100, boatBaseY + 15),
-          k.anchor("center"),
-          k.outline(2, k.rgb(100, 150, 255)),
-          k.opacity(0.6),
-          k.z(7),
-        ]);
-        
-        ripple.onUpdate(() => {
-          ripple.radius += 40 * k.dt();
-          ripple.opacity -= k.dt() * 0.5;
-          if (ripple.opacity <= 0) {
-            k.destroy(ripple);
-          }
-        });
       });
       
       // Diver standing on boat deck
