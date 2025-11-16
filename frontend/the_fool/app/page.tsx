@@ -209,7 +209,7 @@ export default function Home() {
           initialBet: betAmount,
           depth: 0,
           oxygenLevel: 100,
-          sessionId: gameState.sessionId,
+          sessionId: result.sessionId!, // ✅ Use new PDA session ID from server
           userId: gameState.userId,
           discoveredShipwrecks: [],
           walletBalance: walletInfo.balance,
@@ -222,6 +222,7 @@ export default function Home() {
           diveNumber: 1,
           treasure: betAmount,
           depth: 0,
+          sessionId: result.sessionId, // Log the new session ID
         });
       }, 500);
     } catch (error) {
