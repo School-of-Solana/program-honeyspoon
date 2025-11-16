@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import OceanScene from "@/components/DeepSeaDiver/OceanScene";
+import DebugWalletPanel from "@/components/DebugWalletPanel";
 import { GameErrorBoundary } from "@/components/DeepSeaDiver/GameErrorBoundary";
 import { calculateDiveStats } from "@/lib/gameLogic";
 import {
@@ -944,6 +945,11 @@ export default function Home() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Debug Wallet Panel (only in development with ?debug=true) */}
+        {process.env.NODE_ENV === "development" && (
+          <DebugWalletPanel />
         )}
       </div>
     </GameErrorBoundary>

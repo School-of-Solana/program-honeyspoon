@@ -1,13 +1,15 @@
 /**
- * LocalGameChain - In-memory implementation of GameChainPort
+ * LocalGameChain - localStorage-backed implementation of GameChainPort
  * 
  * This implementation simulates the Anchor contract behavior exactly.
  * Every validation, error, and state transition mirrors the on-chain contract.
  * 
+ * NEW: Uses localStorage to persist wallet balances (simulates Solana wallets)
+ * 
  * Purpose:
  * - Testing without deploying to blockchain
  * - Development before contract is ready
- * - Fast unit tests
+ * - Fast unit tests with realistic wallet behavior
  * 
  * IMPORTANT: This must behave identically to SolanaGameChain
  */
@@ -22,50 +24,185 @@ import {
 import { GameError } from "./GameErrors";
 import { mockHouseVaultPDA, mockSessionPDA } from "../solana/pdas";
 
+// localStorage keys
+const STORAGE_KEYS = {
+  WALLETS: 'local_chain_wallets',
+  VAULTS: 'local_chain_vaults',
+  SESSIONS: 'local_chain_sessions',
+  COUNTER: 'local_chain_session_counter',
+};
+
 /**
- * Local in-memory implementation that simulates the Anchor contract
+ * Wallet data stored in localStorage
+ */
+interface WalletStorage {
+  [address: string]: string; // address -> lamports (as string for JSON)
+}
+
+/**
+ * Local localStorage-backed implementation that simulates the Anchor contract
  */
 export class LocalGameChain implements GameChainPort {
   // In-memory state mimicking on-chain accounts
   private houseVaults = new Map<string, HouseVaultState>();
   private sessions = new Map<string, GameSessionState>();
-  private userBalances = new Map<string, bigint>(); // Simulate SOL balances
   private sessionCounter = 0; // For unique session nonces
 
   constructor(
     private readonly initialHouseBalance: bigint = BigInt(500_000_000_000_000) // 500k SOL in lamports
-  ) {}
+  ) {
+    // Load persisted state from localStorage
+    this.loadState();
+  }
+
+  // ===== localStorage persistence methods =====
 
   /**
-   * Helper: Get user balance (creates if doesn't exist)
+   * Load state from localStorage
+   */
+  private loadState(): void {
+    if (typeof window === 'undefined') return; // SSR safety
+
+    try {
+      // Load session counter
+      const counterStr = localStorage.getItem(STORAGE_KEYS.COUNTER);
+      if (counterStr) {
+        this.sessionCounter = parseInt(counterStr, 10);
+      }
+
+      // Load vaults
+      const vaultsStr = localStorage.getItem(STORAGE_KEYS.VAULTS);
+      if (vaultsStr) {
+        const vaults = JSON.parse(vaultsStr);
+        Object.entries(vaults).forEach(([key, value]) => {
+          this.houseVaults.set(key, value as HouseVaultState);
+        });
+      }
+
+      // Load sessions
+      const sessionsStr = localStorage.getItem(STORAGE_KEYS.SESSIONS);
+      if (sessionsStr) {
+        const sessions = JSON.parse(sessionsStr);
+        Object.entries(sessions).forEach(([key, value]: [string, any]) => {
+          // Convert lamport strings back to bigint
+          const session: GameSessionState = {
+            ...value,
+            betAmount: BigInt(value.betAmount),
+            currentTreasure: BigInt(value.currentTreasure),
+            maxPayout: BigInt(value.maxPayout),
+          };
+          this.sessions.set(key, session);
+        });
+      }
+
+      console.log('[CHAIN] ✅ Loaded state from localStorage');
+    } catch (error) {
+      console.warn('[CHAIN] ⚠️ Failed to load state from localStorage:', error);
+    }
+  }
+
+  /**
+   * Save state to localStorage
+   */
+  private saveState(): void {
+    if (typeof window === 'undefined') return; // SSR safety
+
+    try {
+      // Save session counter
+      localStorage.setItem(STORAGE_KEYS.COUNTER, String(this.sessionCounter));
+
+      // Save vaults
+      const vaultsObj: Record<string, HouseVaultState> = {};
+      this.houseVaults.forEach((value, key) => {
+        vaultsObj[key] = value;
+      });
+      localStorage.setItem(STORAGE_KEYS.VAULTS, JSON.stringify(vaultsObj));
+
+      // Save sessions (convert bigints to strings for JSON)
+      const sessionsObj: Record<string, any> = {};
+      this.sessions.forEach((value, key) => {
+        sessionsObj[key] = {
+          ...value,
+          betAmount: value.betAmount.toString(),
+          currentTreasure: value.currentTreasure.toString(),
+          maxPayout: value.maxPayout.toString(),
+        };
+      });
+      localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessionsObj));
+    } catch (error) {
+      console.warn('[CHAIN] ⚠️ Failed to save state to localStorage:', error);
+    }
+  }
+
+  /**
+   * Load wallets from localStorage
+   */
+  private loadWallets(): WalletStorage {
+    if (typeof window === 'undefined') return {};
+
+    try {
+      const walletsStr = localStorage.getItem(STORAGE_KEYS.WALLETS);
+      return walletsStr ? JSON.parse(walletsStr) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * Save wallets to localStorage
+   */
+  private saveWallets(wallets: WalletStorage): void {
+    if (typeof window === 'undefined') return;
+
+    try {
+      localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
+    } catch (error) {
+      console.warn('[CHAIN] ⚠️ Failed to save wallets:', error);
+    }
+  }
+
+  /**
+   * Helper: Get user balance from localStorage
    */
   private getUserBalance(user: string): bigint {
-    if (!this.userBalances.has(user)) {
+    const wallets = this.loadWallets();
+    
+    if (!wallets[user]) {
       // New users start with 1000 SOL in lamports
-      this.userBalances.set(user, BigInt(1_000_000_000_000));
+      const initialBalance = BigInt(1_000_000_000_000);
+      wallets[user] = initialBalance.toString();
+      this.saveWallets(wallets);
+      console.log(`[CHAIN] 💰 Created new wallet for ${user.substring(0, 12)}...: 1000 SOL`);
+      return initialBalance;
     }
-    return this.userBalances.get(user)!;
+    
+    return BigInt(wallets[user]);
   }
 
   /**
-   * Helper: Set user balance
+   * Helper: Set user balance in localStorage
    */
   private setUserBalance(user: string, balance: bigint): void {
-    this.userBalances.set(user, balance);
+    const wallets = this.loadWallets();
+    wallets[user] = balance.toString();
+    this.saveWallets(wallets);
   }
 
   /**
-   * Helper: Get vault balance
+   * Helper: Get vault balance from localStorage
    */
   private getVaultBalance(vaultPda: string): bigint {
-    return this.userBalances.get(vaultPda) || BigInt(0);
+    const wallets = this.loadWallets();
+    return wallets[vaultPda] ? BigInt(wallets[vaultPda]) : BigInt(0);
   }
 
   /**
-   * Helper: Set vault balance
+   * Helper: Set vault balance in localStorage
    */
   private setVaultBalance(vaultPda: string, balance: bigint): void {
-    this.userBalances.set(vaultPda, balance);
+    const wallets = this.loadWallets();
+    wallets[vaultPda] = balance.toString();
+    this.saveWallets(wallets);
   }
 
   // ===== Contract instruction implementations =====
@@ -91,9 +228,12 @@ export class LocalGameChain implements GameChainPort {
     };
 
     this.houseVaults.set(vaultPda, state);
-
+    
     // Initialize vault balance
     this.setVaultBalance(vaultPda, this.initialHouseBalance);
+
+    // Persist to localStorage
+    this.saveState();
 
     return { vaultPda, state };
   }
@@ -114,6 +254,9 @@ export class LocalGameChain implements GameChainPort {
 
     // Toggle lock
     vault.locked = !vault.locked;
+
+    // Persist to localStorage
+    this.saveState();
 
     return vault;
   }
@@ -184,7 +327,10 @@ export class LocalGameChain implements GameChainPort {
     };
 
     this.sessions.set(sessionPda, state);
-
+    
+    // Persist to localStorage
+    this.saveState();
+    
     return { sessionPda, state };
   }
 
@@ -228,7 +374,10 @@ export class LocalGameChain implements GameChainPort {
     // Update session (mimic contract)
     session.currentTreasure = params.newTreasureLamports;
     session.diveNumber = params.newDiveNumber;
-
+    
+    // Persist to localStorage
+    this.saveState();
+    
     return session;
   }
 
@@ -326,7 +475,10 @@ export class LocalGameChain implements GameChainPort {
 
     // Update session status (mimic contract)
     session.status = SessionStatus.CashedOut;
-
+    
+    // Persist to localStorage
+    this.saveState();
+    
     return {
       finalTreasureLamports: session.currentTreasure,
       state: session,
@@ -359,29 +511,65 @@ export class LocalGameChain implements GameChainPort {
     return a - b;
   }
 
-  // ===== Testing helpers (not part of contract interface) =====
+  // ===== Testing/Debug helpers (not part of contract interface) =====
 
   /**
-   * Set user balance (for testing)
+   * Set user balance (for testing/debug)
    */
   setTestUserBalance(user: string, balance: bigint): void {
-    this.userBalances.set(user, balance);
+    this.setUserBalance(user, balance);
+    console.log(`[CHAIN] 💰 Set balance for ${user.substring(0, 12)}...: ${balance.toString()} lamports`);
   }
 
   /**
-   * Get user balance (for testing)
+   * Get user balance (for testing/debug)
    */
   getTestUserBalance(user: string): bigint {
     return this.getUserBalance(user);
   }
 
   /**
+   * Top up user balance (for debug UI)
+   */
+  topUpUserBalance(user: string, amount: bigint): bigint {
+    const current = this.getUserBalance(user);
+    const newBalance = current + amount;
+    this.setUserBalance(user, newBalance);
+    console.log(`[CHAIN] 💵 Topped up ${user.substring(0, 12)}...: +${amount.toString()} lamports`);
+    return newBalance;
+  }
+
+  /**
+   * Top up vault balance (for debug UI)
+   */
+  topUpVaultBalance(vaultPda: string, amount: bigint): bigint {
+    const current = this.getVaultBalance(vaultPda);
+    const newBalance = current + amount;
+    this.setVaultBalance(vaultPda, newBalance);
+    console.log(`[CHAIN] 💵 Topped up vault ${vaultPda.substring(0, 12)}...: +${amount.toString()} lamports`);
+    return newBalance;
+  }
+
+  /**
+   * Get all wallet balances (for debug UI)
+   */
+  getAllWallets(): WalletStorage {
+    return this.loadWallets();
+  }
+
+  /**
    * Reset all state (for testing)
    */
   resetState(): void {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEYS.WALLETS);
+      localStorage.removeItem(STORAGE_KEYS.VAULTS);
+      localStorage.removeItem(STORAGE_KEYS.SESSIONS);
+      localStorage.removeItem(STORAGE_KEYS.COUNTER);
+    }
     this.houseVaults.clear();
     this.sessions.clear();
-    this.userBalances.clear();
     this.sessionCounter = 0;
+    console.log('[CHAIN] 🔄 Reset all state');
   }
 }
