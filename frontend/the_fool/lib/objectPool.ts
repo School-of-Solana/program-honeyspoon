@@ -21,7 +21,7 @@ export class ObjectPool<T extends GameObj> {
     createFn: () => T,
     resetFn: (obj: T) => void,
     initialSize: number = 10,
-    maxSize: number = 100,
+    maxSize: number = 100
   ) {
     this.createFn = createFn;
     this.resetFn = resetFn;
@@ -68,6 +68,7 @@ export class ObjectPool<T extends GameObj> {
       item.inUse = false;
       // Hide object when returned to pool
       if ("hidden" in obj) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (obj as any).hidden = true;
       }
     }
@@ -92,6 +93,7 @@ export class ObjectPool<T extends GameObj> {
   public clear(): void {
     this.pool.forEach((item) => {
       if ("destroy" in item.obj) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (item.obj as any).destroy();
       }
     });
@@ -117,7 +119,7 @@ export class SpawnManager {
     entityType: string,
     minInterval: number,
     maxActive: number = Infinity,
-    probability: number = 1.0,
+    probability: number = 1.0
   ): boolean {
     const now = Date.now();
     const lastSpawn = this.lastSpawnTimes.get(entityType) || 0;

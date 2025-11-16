@@ -53,7 +53,7 @@ export default function KaplayGame() {
       ]);
 
       // Tube connecting balloon to pump
-      const tube = k.add([
+      const _tube = k.add([
         k.rect(8, 200),
         k.pos(k.width() / 2 - 4, 250),
         k.color(100, 100, 100),
@@ -80,7 +80,7 @@ export default function KaplayGame() {
       ]);
 
       // Pump base
-      const pumpBase = k.add([
+      const _pumpBase = k.add([
         k.rect(100, 40),
         k.pos(k.width() / 2 - 50, 500),
         k.color(150, 150, 150),

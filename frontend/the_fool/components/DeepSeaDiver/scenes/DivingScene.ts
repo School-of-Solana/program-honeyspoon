@@ -42,7 +42,7 @@ export interface DivingSceneState {
  */
 export function createDivingScene(
   config: SceneConfig,
-  state: DivingSceneState,
+  state: DivingSceneState
 ) {
   const { k, hexToRgb } = config;
 
@@ -64,7 +64,7 @@ export function createDivingScene(
       k.color(
         bgColor.r * lightLevel,
         bgColor.g * lightLevel,
-        bgColor.b * lightLevel,
+        bgColor.b * lightLevel
       ),
       k.z(0),
     ]);
@@ -184,7 +184,7 @@ export function createDivingScene(
               CONST.PARALLAX.LAYERS[0].opacity as [number, number],
               CONST.PARALLAX.LAYERS[0].z,
 
-              0,
+              0
             ),
 
             y: 0,
@@ -204,7 +204,7 @@ export function createDivingScene(
               CONST.PARALLAX.LAYERS[0].opacity as [number, number],
               CONST.PARALLAX.LAYERS[0].z,
 
-              -CANVAS_HEIGHT,
+              -CANVAS_HEIGHT
             ),
 
             y: -CANVAS_HEIGHT,
@@ -230,7 +230,7 @@ export function createDivingScene(
               CONST.PARALLAX.LAYERS[1].opacity as [number, number],
               CONST.PARALLAX.LAYERS[1].z,
 
-              0,
+              0
             ),
 
             y: 0,
@@ -250,7 +250,7 @@ export function createDivingScene(
               CONST.PARALLAX.LAYERS[1].opacity as [number, number],
               CONST.PARALLAX.LAYERS[1].z,
 
-              -CANVAS_HEIGHT,
+              -CANVAS_HEIGHT
             ),
 
             y: -CANVAS_HEIGHT,
@@ -276,7 +276,7 @@ export function createDivingScene(
               CONST.PARALLAX.LAYERS[2].opacity as [number, number],
               CONST.PARALLAX.LAYERS[2].z,
 
-              0,
+              0
             ),
 
             y: 0,
@@ -296,7 +296,7 @@ export function createDivingScene(
               CONST.PARALLAX.LAYERS[2].opacity as [number, number],
               CONST.PARALLAX.LAYERS[2].z,
 
-              -CANVAS_HEIGHT,
+              -CANVAS_HEIGHT
             ),
 
             y: -CANVAS_HEIGHT,
@@ -306,6 +306,7 @@ export function createDivingScene(
     ];
 
     // Debris removed (emojis looked bad)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const debrisList: any[] = [];
 
     // Light rays
@@ -345,6 +346,7 @@ export function createDivingScene(
     ]);
 
     // Speed lines
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const speedLines: any[] = [];
     for (let i = 0; i < CONST.SPAWN_RATES.SPEED_LINE_COUNT; i++) {
       const line = k.add([
@@ -352,7 +354,7 @@ export function createDivingScene(
           CONST.SPEED_LINES.WIDTH_MIN +
             Math.random() * CONST.SPEED_LINES.WIDTH_RANDOM,
           CONST.SPEED_LINES.HEIGHT_MIN +
-            Math.random() * CONST.SPEED_LINES.HEIGHT_RANDOM,
+            Math.random() * CONST.SPEED_LINES.HEIGHT_RANDOM
         ),
         k.pos(Math.random() * k.width(), Math.random() * k.height()),
         k.anchor("center"),
@@ -426,12 +428,12 @@ export function createDivingScene(
       bg.color = k.rgb(
         bgColor.r * lightLevel,
         bgColor.g * lightLevel,
-        bgColor.b * lightLevel,
+        bgColor.b * lightLevel
       );
 
       darknessOverlay.opacity = Math.min(
         0.1 + (useGameStore.getState().depth / 1000) * 0.7,
-        0.8,
+        0.8
       );
 
       // Diving animation logic
@@ -439,7 +441,7 @@ export function createDivingScene(
         state.divingElapsed += k.dt();
         const progress = Math.min(
           state.divingElapsed / state.divingDuration,
-          1,
+          1
         );
 
         // Acceleration curve
@@ -499,7 +501,7 @@ export function createDivingScene(
             diver.pos,
             state.divingSpeed,
             diver.pos.x + (Math.random() - 0.5) * 60,
-            diver.pos.y + (Math.random() - 0.5) * 40,
+            diver.pos.y + (Math.random() - 0.5) * 40
           );
         }
 
@@ -525,7 +527,7 @@ export function createDivingScene(
           state.isAnimating = false;
           state.treasurePulseTime = 0;
           console.log(
-            "[CANVAS] ✅ Treasure animation complete - ready for next action",
+            "[CANVAS] ✅ Treasure animation complete - ready for next action"
           );
           // ✅ FIX: Clear survived flag to prevent re-trigger
           useGameStore.getState().setSurvived(undefined);
@@ -540,7 +542,7 @@ export function createDivingScene(
         state.animationType === AnimationType.IDLE
       ) {
         console.log(
-          "[CANVAS] 🌊 Player cashed out! Transitioning to surfacing...",
+          "[CANVAS] 🌊 Player cashed out! Transitioning to surfacing..."
         );
         // Immediately set to animating to prevent duplicate triggers
         state.isAnimating = true;
@@ -568,7 +570,7 @@ export function createDivingScene(
           () => {
             useGameStore.getState().returnToBeach(); // Reset ocean flag so we can dive again
             k.go("beach");
-          },
+          }
         );
       } else if (
         useGameStore.getState().survived === true &&
@@ -606,7 +608,7 @@ export function createDivingScene(
         const bubbleStats = getBubblePoolStats();
         if (bubbleStats.inUse > 0) {
           console.log(
-            `[POOL] Bubbles: ${bubbleStats.inUse}/${bubbleStats.total} in use, ${bubbleStats.available} available`,
+            `[POOL] Bubbles: ${bubbleStats.inUse}/${bubbleStats.total} in use, ${bubbleStats.available} available`
           );
         }
       });

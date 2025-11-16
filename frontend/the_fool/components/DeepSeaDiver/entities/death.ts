@@ -27,7 +27,7 @@ export function triggerDeathAnimation(
   diver: GameObj,
   depth: number,
   state: DeathAnimationState,
-  onComplete: () => void,
+  onComplete: () => void
 ) {
   console.log("[CANVAS] Triggering death animation!");
   state.isAnimating = true;
@@ -49,7 +49,7 @@ export function triggerDeathAnimation(
   ]);
 
   // Custom death messages per predator (unused - handled by React overlay)
-  const deathMessages: Record<string, string> = {
+  const _deathMessages: Record<string, string> = {
     shark: "SHARK ATTACK!",
     sawshark: "SAWSHARK!",
     swordfish: "IMPALED!",
@@ -69,7 +69,7 @@ export function triggerDeathAnimation(
         deathTimer += k.dt();
         if (deathTimer > CONST.DEATH.DELAY_BEFORE_FADE) {
           console.log(
-            "[CANVAS] ✅ Death animation complete! Returning to beach...",
+            "[CANVAS] ✅ Death animation complete! Returning to beach..."
           );
           deathAnimationComplete = true;
           // Fade to black then go to beach
