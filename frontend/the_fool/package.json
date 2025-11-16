@@ -12,7 +12,7 @@
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
-    "test:unit": "tsx --test tests/unit/*.test.ts",
+    "test:unit": "NODE_ENV=test tsx --test tests/unit/*.test.ts",
     "test:unit:wallet": "tsx --test tests/unit/walletLogic.test.ts tests/unit/walletStore.test.ts",
     "test:unit:game": "tsx --test tests/unit/gameLogic.test.ts",
     "test:unit:integration": "tsx --test tests/unit/walletGameIntegration.test.ts",

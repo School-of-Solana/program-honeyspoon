@@ -164,7 +164,14 @@ describe("Session Lifecycle - Illegal Sequences", () => {
       // Arrange: Complete a game with cashout
       await startGameSession(100, userId, sessionId);
       const round1 = await executeRound(1, 100, sessionId, userId, "90");
+      
+      assert.ok(round1.survived, "Round 1 should survive with roll 90");
+      assert.ok(round1.totalValue > 0, `totalValue should be > 0, got: ${round1.totalValue}`);
+      
       const treasureAmount = round1.totalValue;
+      const sessionCheck = getGameSession(sessionId);
+      assert.ok(sessionCheck !== undefined, "Session should exist");
+      console.log(`[DEBUG] Session currentTreasure: ${sessionCheck?.currentTreasure}, treasureAmount: ${treasureAmount}`);
       
       await cashOut(treasureAmount, sessionId, userId);
 

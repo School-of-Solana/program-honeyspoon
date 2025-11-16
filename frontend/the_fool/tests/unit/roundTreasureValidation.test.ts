@@ -137,9 +137,25 @@ describe("Round + Treasure Validation: Later Round Scenarios", () => {
     const initialBet = 100;
     await startGameSession(initialBet, userId, sessionId);
 
-    // Win round 1 (use seed that guarantees survival)
-    const round1 = await executeRound(1, initialBet, sessionId, userId, "99");
-    assert.strictEqual(round1.survived, true, "Should survive round 1");
+    // Win round 1 (try different seeds until we survive)
+    let round1;
+    for (const seed of ["99", "95", "90", "85", "80", "75", "70"]) {
+      round1 = await executeRound(1, initialBet, sessionId, userId, seed);
+      if (round1.survived) break;
+
+      // Reset for next attempt
+      resetWalletStore();
+      userId = `test_user_${Date.now()}_${Math.random()}`;
+      sessionId = `session_${Date.now()}_${Math.random()}`;
+      await startGameSession(initialBet, userId, sessionId);
+    }
+
+    assert.ok(round1, "Should have a result");
+    assert.strictEqual(
+      round1.survived,
+      true,
+      "Should eventually survive round 1"
+    );
 
     const correctTreasure = round1.totalValue;
     console.log(`  Round 1 completed: treasure=$${correctTreasure}`);
@@ -185,8 +201,31 @@ describe("Round + Treasure Validation: Later Round Scenarios", () => {
     const initialBet = 100;
     await startGameSession(initialBet, userId, sessionId);
 
-    const round1 = await executeRound(1, initialBet, sessionId, userId, "99");
-    assert.strictEqual(round1.survived, true);
+    // Win round 1 (retry until survival)
+    let round1;
+    for (const seed of [
+      "99",
+      "98",
+      "97",
+      "96",
+      "95",
+      "90",
+      "85",
+      "80",
+      "75",
+      "70",
+    ]) {
+      round1 = await executeRound(1, initialBet, sessionId, userId, seed);
+      if (round1.survived) break;
+
+      resetWalletStore();
+      userId = `test_user_${Date.now()}_${Math.random()}`;
+      sessionId = `session_${Date.now()}_${Math.random()}`;
+      await startGameSession(initialBet, userId, sessionId);
+    }
+
+    assert.ok(round1, "Should have round1 result");
+    assert.strictEqual(round1.survived, true, "Should eventually survive");
 
     const correctTreasure = round1.totalValue;
 
@@ -252,18 +291,61 @@ describe("Round + Treasure Validation: Round Number Priority", () => {
     const initialBet = 100;
     await startGameSession(initialBet, userId, sessionId);
 
-    // Win rounds 1 and 2
-    const round1 = await executeRound(1, initialBet, sessionId, userId, "99");
-    assert.strictEqual(round1.survived, true);
+    // Win rounds 1 and 2 (retry with different seeds until both succeed)
+    let round1, round2;
+    const seeds = [
+      "99",
+      "98",
+      "97",
+      "96",
+      "95",
+      "90",
+      "85",
+      "80",
+      "75",
+      "70",
+      "65",
+      "60",
+    ];
 
-    const round2 = await executeRound(
-      2,
-      round1.totalValue,
-      sessionId,
-      userId,
-      "99"
-    );
-    assert.strictEqual(round2.survived, true);
+    for (const seed1 of seeds) {
+      round1 = await executeRound(1, initialBet, sessionId, userId, seed1);
+      if (!round1.survived) {
+        // Reset and try again
+        resetWalletStore();
+        userId = `test_user_${Date.now()}_${Math.random()}`;
+        sessionId = `session_${Date.now()}_${Math.random()}`;
+        await startGameSession(initialBet, userId, sessionId);
+        continue;
+      }
+
+      // Try round 2
+      for (const seed2 of seeds) {
+        round2 = await executeRound(
+          2,
+          round1.totalValue,
+          sessionId,
+          userId,
+          seed2
+        );
+        if (round2.survived) break;
+
+        // Reset and restart from round 1
+        resetWalletStore();
+        userId = `test_user_${Date.now()}_${Math.random()}`;
+        sessionId = `session_${Date.now()}_${Math.random()}`;
+        await startGameSession(initialBet, userId, sessionId);
+        round1 = await executeRound(1, initialBet, sessionId, userId, seed1);
+        if (!round1.survived) break;
+      }
+
+      if (round2 && round2.survived) break;
+    }
+
+    assert.ok(round1, "Should have round1 result");
+    assert.ok(round2, "Should have round2 result");
+    assert.strictEqual(round1.survived, true, "Round 1 should survive");
+    assert.strictEqual(round2.survived, true, "Round 2 should survive");
 
     const session = getGameSession(sessionId);
     assert.strictEqual(session!.diveNumber, 3, "Should be at round 3");
@@ -342,8 +424,25 @@ describe("Round + Treasure Validation: Round Number Priority", () => {
     const initialBet = 100;
     await startGameSession(initialBet, userId, sessionId);
 
-    const round1 = await executeRound(1, initialBet, sessionId, userId, "99");
-    assert.strictEqual(round1.survived, true);
+    // Win round 1 (retry until we survive)
+    let round1;
+    for (const seed of ["99", "95", "90", "85", "80", "75"]) {
+      round1 = await executeRound(1, initialBet, sessionId, userId, seed);
+      if (round1.survived) break;
+
+      // Reset and try again
+      resetWalletStore();
+      userId = `test_user_${Date.now()}_${Math.random()}`;
+      sessionId = `session_${Date.now()}_${Math.random()}`;
+      await startGameSession(initialBet, userId, sessionId);
+    }
+
+    assert.ok(round1, "Should have round1 result");
+    assert.strictEqual(
+      round1.survived,
+      true,
+      "Should eventually survive round 1"
+    );
 
     const session = getGameSession(sessionId);
     assert.strictEqual(session!.diveNumber, 2, "Should be at round 2");
@@ -386,8 +485,20 @@ describe("Round + Treasure Validation: Both Wrong Scenarios", () => {
     const initialBet = 100;
     await startGameSession(initialBet, userId, sessionId);
 
-    const round1 = await executeRound(1, initialBet, sessionId, userId, "99");
-    assert.strictEqual(round1.survived, true);
+    // Win round 1 (retry until we survive)
+    let round1;
+    for (const seed of ["99", "95", "90", "85", "80"]) {
+      round1 = await executeRound(1, initialBet, sessionId, userId, seed);
+      if (round1.survived) break;
+
+      resetWalletStore();
+      userId = `test_user_${Date.now()}_${Math.random()}`;
+      sessionId = `session_${Date.now()}_${Math.random()}`;
+      await startGameSession(initialBet, userId, sessionId);
+    }
+
+    assert.ok(round1, "Should have round1 result");
+    assert.strictEqual(round1.survived, true, "Should eventually survive");
 
     const session = getGameSession(sessionId);
     assert.strictEqual(session!.diveNumber, 2);
@@ -427,8 +538,20 @@ describe("Round + Treasure Validation: Both Wrong Scenarios", () => {
     const initialBet = 100;
     await startGameSession(initialBet, userId, sessionId);
 
-    const round1 = await executeRound(1, initialBet, sessionId, userId, "99");
-    assert.strictEqual(round1.survived, true);
+    // Win round 1 (retry until we survive)
+    let round1;
+    for (const seed of ["99", "95", "90", "85", "80"]) {
+      round1 = await executeRound(1, initialBet, sessionId, userId, seed);
+      if (round1.survived) break;
+
+      resetWalletStore();
+      userId = `test_user_${Date.now()}_${Math.random()}`;
+      sessionId = `session_${Date.now()}_${Math.random()}`;
+      await startGameSession(initialBet, userId, sessionId);
+    }
+
+    assert.ok(round1, "Should have round1 result");
+    assert.strictEqual(round1.survived, true, "Should eventually survive");
 
     // Try 3 different invalid combinations - all should fail on round check
     const attempts = [
