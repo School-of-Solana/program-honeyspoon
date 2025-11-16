@@ -11,7 +11,7 @@
  * - Blockchain integration via GameChainPort
  *
  * This can be used for ANY multiplier-based game (diving, space, mining, etc.)
- * 
+ *
  * REFACTORED: Now uses GameChainPort for blockchain abstraction
  */
 
@@ -86,24 +86,38 @@ if (process.env.NODE_ENV === "development") {
  * This is a one-time operation that creates the house vault PDA
  */
 async function ensureHouseVault(): Promise<string> {
-  if (houseVaultPDA) {
-    return houseVaultPDA;
-  }
-
   try {
-    // Check if vault already exists
-    const existingVault = await chain.getHouseVault(HOUSE_AUTHORITY);
+    console.log("[CHAIN] 🏦 ensureHouseVault() called");
+    console.log("[CHAIN] 📊 Current cached PDA:", houseVaultPDA || "(null)");
+
+    // Import PDA derivation function
+    const { mockHouseVaultPDA } = await import("@/lib/solana/pdas");
+
+    // Derive the vault PDA
+    const derivedVaultPDA = mockHouseVaultPDA(HOUSE_AUTHORITY);
+    console.log("[CHAIN] 🔑 Derived vault PDA:", derivedVaultPDA);
+
+    // Check if vault already exists (even if we have a cached PDA)
+    console.log("[CHAIN] 🔍 Checking if vault exists...");
+    const existingVault = await chain.getHouseVault(derivedVaultPDA);
+
     if (existingVault) {
       houseVaultPDA = existingVault.vaultPda;
       console.log("[CHAIN] ✅ House vault already initialized:", houseVaultPDA);
+      console.log("[CHAIN] 📊 Vault state:", {
+        locked: existingVault.locked,
+        totalReserved: existingVault.totalReserved.toString(),
+      });
       return houseVaultPDA;
     }
 
-    // Initialize new vault
+    // Initialize new vault (clear any stale cached PDA first)
+    console.log("[CHAIN] 🆕 Vault doesn't exist - initializing new vault...");
+    houseVaultPDA = null;
     const { vaultPda } = await chain.initHouseVault({
       houseAuthority: HOUSE_AUTHORITY,
     });
-    
+
     houseVaultPDA = vaultPda;
     console.log("[CHAIN] ✅ House vault initialized:", houseVaultPDA);
     return houseVaultPDA;
@@ -200,17 +214,17 @@ export async function startGameSession(
 
     console.log(`[CHAIN] ✅ Session started: ${sessionPda}`);
     return { success: true, sessionId: sessionPda };
-
   } catch (error) {
     console.error("[CHAIN] ❌ Failed to start session:", error);
-    
+
     if (GameError.isGameError(error)) {
       return { success: false, error: error.message };
     }
-    
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to start game session",
+      error:
+        error instanceof Error ? error.message : "Failed to start game session",
     };
   }
 }
@@ -219,7 +233,7 @@ export async function startGameSession(
  * Execute a round (place bet and get result)
  *
  * REFACTORED: Now uses ON-CHAIN RNG via GameChainPort
- * 
+ *
  * CRITICAL SECURITY CHANGE:
  * - Server NO LONGER generates RNG or computes outcomes
  * - Contract now does RNG internally (VRF-based or slot-hash)
@@ -255,15 +269,17 @@ export async function executeRound(
 
   // Get session state from chain
   const sessionState = await chain.getSession(sessionId);
-  
+
   console.log(`[CHAIN] 🔍 Fetched session state:`, {
     found: !!sessionState,
     status: sessionState?.status,
     diveNumber: sessionState?.diveNumber,
     treasureLamports: sessionState?.currentTreasure?.toString(),
-    treasureDollars: sessionState ? lamportsToDollars(sessionState.currentTreasure) : 'N/A',
+    treasureDollars: sessionState
+      ? lamportsToDollars(sessionState.currentTreasure)
+      : "N/A",
   });
-  
+
   if (!sessionState || sessionState.status !== SessionStatus.Active) {
     console.error(`[CHAIN] ❌ Session not found or inactive: ${sessionId}`);
     throw new Error("Invalid or inactive game session");
@@ -271,7 +287,9 @@ export async function executeRound(
 
   // Validate session belongs to user
   if (sessionState.user !== userId) {
-    console.error(`[CHAIN] ❌ Wrong user: session.user=${sessionState.user}, userId=${userId}`);
+    console.error(
+      `[CHAIN] ❌ Wrong user: session.user=${sessionState.user}, userId=${userId}`
+    );
     throw new Error("Session does not belong to user");
   }
 
@@ -284,7 +302,9 @@ export async function executeRound(
 
   // SECURITY: Validate round number matches chain state
   if (roundNumber !== sessionState.diveNumber) {
-    console.error(`[CHAIN] ❌ Round mismatch: expected ${sessionState.diveNumber}, got ${roundNumber}`);
+    console.error(
+      `[CHAIN] ❌ Round mismatch: expected ${sessionState.diveNumber}, got ${roundNumber}`
+    );
     throw new Error(
       `Round number mismatch: chain expects ${sessionState.diveNumber}, client sent ${roundNumber}. Please refresh.`
     );
@@ -293,16 +313,18 @@ export async function executeRound(
   // SECURITY: Validate currentValue matches chain state
   const expectedValue = lamportsToDollars(sessionState.currentTreasure);
   const tolerance = 0.01; // Allow 1 cent difference due to rounding
-  
+
   console.log(`[CHAIN] 🔍 Value validation:`, {
     expectedValue,
     currentValue,
     difference: Math.abs(currentValue - expectedValue),
     tolerance,
   });
-  
+
   if (Math.abs(currentValue - expectedValue) > tolerance) {
-    console.error(`[CHAIN] ❌ Value mismatch: chain=$${expectedValue}, client=$${currentValue}, round=${roundNumber}`);
+    console.error(
+      `[CHAIN] ❌ Value mismatch: chain=$${expectedValue}, client=$${currentValue}, round=${roundNumber}`
+    );
     throw new Error(
       `Current value mismatch: chain has $${expectedValue.toFixed(2)}, client sent $${currentValue.toFixed(2)}. Data corruption detected.`
     );
@@ -311,7 +333,9 @@ export async function executeRound(
   // ===== NEW ON-CHAIN RNG MODEL =====
   // Contract now generates RNG internally and computes outcome
   // Server is just a VIEWER - it calls playRound() and gets the result
-  console.log(`[CHAIN] 🎲 Calling playRound() - contract will determine outcome...`);
+  console.log(
+    `[CHAIN] 🎲 Calling playRound() - contract will determine outcome...`
+  );
 
   try {
     // Call chain to execute round (contract does RNG + outcome computation)
@@ -330,14 +354,17 @@ export async function executeRound(
     });
 
     // Update local session with chain's outcome
-    gameSession.currentTreasure = lamportsToDollars(chainResult.state.currentTreasure);
+    gameSession.currentTreasure = lamportsToDollars(
+      chainResult.state.currentTreasure
+    );
     gameSession.diveNumber = chainResult.state.diveNumber;
 
     if (chainResult.survived) {
       // Player survived
       setGameSession(gameSession);
-      console.log(`[CHAIN] ✅ Round ${roundNumber} survived: $${gameSession.currentTreasure}`);
-
+      console.log(
+        `[CHAIN] ✅ Round ${roundNumber} survived: $${gameSession.currentTreasure}`
+      );
     } else {
       // Player lost (chain already updated status to Lost)
       gameSession.isActive = false;
@@ -387,21 +414,21 @@ export async function executeRound(
       threshold: Math.floor(roundStats.winProbability * 100),
       winProbability: roundStats.winProbability,
       multiplier: roundStats.multiplier,
-      newValue: lamportsToDollars(chainResult.state.currentTreasure) - currentValue,
+      newValue:
+        lamportsToDollars(chainResult.state.currentTreasure) - currentValue,
       totalValue: lamportsToDollars(chainResult.state.currentTreasure),
       roundNumber,
       timestamp: Date.now(),
     };
 
     return result;
-
   } catch (error) {
     console.error("[CHAIN] ❌ Failed to execute round:", error);
-    
+
     if (GameError.isGameError(error)) {
       throw new Error(`Chain error: ${error.message}`);
     }
-    
+
     throw error;
   }
 }
@@ -502,21 +529,22 @@ export async function cashOut(
     setGameSession(gameSession);
     deleteGameSession(sessionId);
 
-    console.log(`[CHAIN] ✅ Cashed out: $${actualFinalAmount} (profit: $${profit})`);
+    console.log(
+      `[CHAIN] ✅ Cashed out: $${actualFinalAmount} (profit: $${profit})`
+    );
 
     return {
       success: true,
       finalAmount: actualFinalAmount,
       profit,
     };
-
   } catch (error) {
     console.error("[CHAIN] ❌ Failed to cash out:", error);
-    
+
     if (GameError.isGameError(error)) {
       throw new Error(`Chain error: ${error.message}`);
     }
-    
+
     throw error;
   }
 }
@@ -599,7 +627,7 @@ async function getChainVaultBalance(vaultPda: string): Promise<bigint> {
   if (!vault) {
     return BigInt(0);
   }
-  
+
   // For now, approximate as reserved funds (will be improved in Phase 7)
   return vault.totalReserved;
 }

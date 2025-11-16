@@ -41,6 +41,13 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
   const [topUpAmount, setTopUpAmount] = useState(1000); // Default $1000
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<DebugTab>("wallets");
+  const [localHouseInfo, setLocalHouseInfo] = useState<HouseWalletInfo>({
+    balance: 0,
+    reservedFunds: 0,
+    availableFunds: 0,
+    totalPaidOut: 0,
+    totalReceived: 0,
+  });
 
   // Get game state from store for debugging
   const kaplayDebug = useGameStore((state) => state.kaplayDebug);
@@ -63,13 +70,33 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
     if (typeof window === "undefined") return;
 
     try {
+      console.log("[DEBUG] 🔄 Loading wallets from localStorage...");
       const walletsStr = localStorage.getItem("local_chain_wallets");
+      const vaultsStr = localStorage.getItem("local_chain_vaults");
+      const sessionsStr = localStorage.getItem("local_chain_sessions");
+
+      console.log("[DEBUG] 📦 localStorage contents:", {
+        walletsLength: walletsStr?.length || 0,
+        vaultsLength: vaultsStr?.length || 0,
+        sessionsLength: sessionsStr?.length || 0,
+        walletsPreview: walletsStr?.substring(0, 100),
+        vaultsPreview: vaultsStr?.substring(0, 100),
+      });
+
       if (!walletsStr) {
+        console.log("[DEBUG] ⚠️ No wallets found in localStorage");
         setWallets([]);
         return;
       }
 
       const walletsData = JSON.parse(walletsStr);
+      console.log("[DEBUG] 📊 Parsed wallet data:", {
+        walletCount: Object.keys(walletsData).length,
+        addresses: Object.keys(walletsData).map(
+          (addr) => addr.substring(0, 20) + "..."
+        ),
+      });
+
       const walletList: WalletInfo[] = Object.entries(walletsData).map(
         ([address, lamports]) => ({
           address,
@@ -85,9 +112,52 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
         return a.address.localeCompare(b.address);
       });
 
+      console.log(
+        "[DEBUG] ✅ Loaded wallets:",
+        walletList.map((w) => ({
+          type: getWalletLabel(w.address),
+          address: w.address.substring(0, 20) + "...",
+          balance: w.balance,
+        }))
+      );
+
       setWallets(walletList);
+
+      // Update local house wallet info from localStorage
+      const vaultAddress = "HOUSE_VAULT_house_authority_main";
+      const vaultBalance = walletsData[vaultAddress]
+        ? lamportsToDollars(BigInt(walletsData[vaultAddress]))
+        : 0;
+
+      // Parse vault state from local_chain_vaults if it exists
+      let reservedFunds = 0;
+      if (vaultsStr) {
+        try {
+          const vaultsData = JSON.parse(vaultsStr);
+          const vaultState = vaultsData[vaultAddress];
+          if (vaultState && vaultState.totalReserved) {
+            reservedFunds = lamportsToDollars(BigInt(vaultState.totalReserved));
+          }
+        } catch (e) {
+          console.warn("[DEBUG] Failed to parse vault state:", e);
+        }
+      }
+
+      setLocalHouseInfo({
+        balance: vaultBalance,
+        reservedFunds: reservedFunds,
+        availableFunds: vaultBalance - reservedFunds,
+        totalPaidOut: 0, // Not tracked in localStorage
+        totalReceived: 0, // Not tracked in localStorage
+      });
+
+      console.log("[DEBUG] 🏦 Updated house info:", {
+        balance: vaultBalance,
+        reservedFunds: reservedFunds,
+        availableFunds: vaultBalance - reservedFunds,
+      });
     } catch (error) {
-      console.error("[DEBUG] Failed to load wallets:", error);
+      console.error("[DEBUG] ❌ Failed to load wallets:", error);
       setWallets([]);
     }
   };
@@ -97,6 +167,10 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
     if (typeof window === "undefined") return;
 
     try {
+      console.log(
+        `[DEBUG] 💵 Topping up wallet: ${address.substring(0, 20)}... with $${topUpAmount}`
+      );
+
       const walletsStr = localStorage.getItem("local_chain_wallets");
       const walletsData = walletsStr ? JSON.parse(walletsStr) : {};
 
@@ -104,30 +178,166 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
       const topUpLamports = dollarsToLamports(topUpAmount);
       const newBalance = currentBalance + topUpLamports;
 
+      console.log(`[DEBUG] 💰 Balance change:`, {
+        address: address.substring(0, 20) + "...",
+        oldBalance: currentBalance.toString(),
+        topUpAmount: topUpLamports.toString(),
+        newBalance: newBalance.toString(),
+      });
+
       walletsData[address] = newBalance.toString();
       localStorage.setItem("local_chain_wallets", JSON.stringify(walletsData));
 
       console.log(
-        `[DEBUG] 💵 Topped up ${address.substring(0, 20)}...: +$${topUpAmount}`
+        `[DEBUG] ✅ Topped up ${address.substring(0, 20)}...: +$${topUpAmount}`
       );
       loadWallets(); // Refresh display
     } catch (error) {
-      console.error("[DEBUG] Failed to top up wallet:", error);
+      console.error("[DEBUG] ❌ Failed to top up wallet:", error);
     }
   };
 
+  // Initialize house vault manually
+  const initializeHouseVault = () => {
+    if (typeof window === "undefined") return;
+
+    console.log("[DEBUG] 🏦 Initializing house vault...");
+
+    const wallets = JSON.parse(
+      localStorage.getItem("local_chain_wallets") || "{}"
+    );
+    const vaultAddress = "HOUSE_VAULT_house_authority_main";
+    const initialBalance = "500000000000000"; // 500k SOL in lamports
+
+    wallets[vaultAddress] = initialBalance;
+    localStorage.setItem("local_chain_wallets", JSON.stringify(wallets));
+
+    // Also create the vault state entry
+    const vaults = JSON.parse(
+      localStorage.getItem("local_chain_vaults") || "{}"
+    );
+    vaults[vaultAddress] = {
+      vaultPda: vaultAddress,
+      houseAuthority: "house_authority_main",
+      locked: false,
+      totalReserved: "0",
+      bump: 255,
+    };
+    localStorage.setItem("local_chain_vaults", JSON.stringify(vaults));
+
+    console.log("[DEBUG] ✅ House vault created:", {
+      address: vaultAddress,
+      balance: initialBalance,
+      balanceSOL: 500000,
+    });
+
+    loadWallets();
+    alert(
+      "House vault initialized with 500,000 SOL! IMPORTANT: Restart your dev server (Ctrl+C and npm run dev) for the server to see it."
+    );
+  };
+
+  // Top up house vault
+  const topUpHouseVault = () => {
+    if (typeof window === "undefined") return;
+
+    console.log("[DEBUG] 💰 Topping up house vault...");
+
+    const wallets = JSON.parse(
+      localStorage.getItem("local_chain_wallets") || "{}"
+    );
+    const vaultAddress = "HOUSE_VAULT_house_authority_main";
+
+    if (!wallets[vaultAddress]) {
+      alert("House vault doesn't exist! Please initialize it first.");
+      return;
+    }
+
+    const currentBalance = BigInt(wallets[vaultAddress]);
+    const addAmount = BigInt(100000) * BigInt(1_000_000_000); // Add 100k SOL in lamports
+    const newBalance = currentBalance + addAmount;
+
+    wallets[vaultAddress] = newBalance.toString();
+    localStorage.setItem("local_chain_wallets", JSON.stringify(wallets));
+
+    console.log("[DEBUG] ✅ House vault topped up:", {
+      oldBalance: currentBalance.toString(),
+      added: addAmount.toString(),
+      newBalance: newBalance.toString(),
+    });
+
+    loadWallets();
+    alert(`House vault topped up with 100,000 SOL!`);
+  };
+
+  // Create user wallet manually
+  const createUserWallet = () => {
+    if (typeof window === "undefined") return;
+
+    console.log("[DEBUG] 👤 Creating user wallet...");
+
+    const wallets = JSON.parse(
+      localStorage.getItem("local_chain_wallets") || "{}"
+    );
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const initialBalance = "1000000000000"; // 1000 SOL in lamports
+
+    wallets[userId] = initialBalance;
+    localStorage.setItem("local_chain_wallets", JSON.stringify(wallets));
+
+    console.log("[DEBUG] ✅ User wallet created:", {
+      userId,
+      balance: initialBalance,
+      balanceSOL: 1000,
+    });
+
+    loadWallets();
+    alert(`User wallet created: ${userId.substring(0, 30)}... with 1,000 SOL!`);
+  };
+
   // Clear all wallets
-  const clearAllWallets = () => {
+  const clearAllWallets = async () => {
     if (typeof window === "undefined") return;
 
     if (confirm("Clear all wallets and reset state? This cannot be undone.")) {
-      localStorage.removeItem("local_chain_wallets");
-      localStorage.removeItem("local_chain_vaults");
-      localStorage.removeItem("local_chain_sessions");
-      localStorage.removeItem("local_chain_session_counter");
-      console.log("[DEBUG] 🔄 Cleared all chain state");
+      console.log("[DEBUG] 🗑️ Starting wallet clear process...");
+
+      // Log before state
+      console.log("[DEBUG] 📊 Before clear:", {
+        wallets: localStorage.getItem("local_chain_wallets")?.substring(0, 100),
+        vaults: localStorage.getItem("local_chain_vaults")?.substring(0, 100),
+        sessions: localStorage
+          .getItem("local_chain_sessions")
+          ?.substring(0, 100),
+        counter: localStorage.getItem("local_chain_session_counter"),
+      });
+
+      // Import resetGameChain function
+      const { resetGameChain } = await import("@/lib/ports");
+
+      // Reset the game chain instance (this will clear localStorage)
+      console.log("[DEBUG] 🔄 Calling resetGameChain()...");
+      resetGameChain();
+
+      // Log after state
+      console.log("[DEBUG] 📊 After clear:", {
+        wallets: localStorage.getItem("local_chain_wallets"),
+        vaults: localStorage.getItem("local_chain_vaults"),
+        sessions: localStorage.getItem("local_chain_sessions"),
+        counter: localStorage.getItem("local_chain_session_counter"),
+      });
+
+      console.log("[DEBUG] ✅ Cleared all chain state");
       loadWallets();
-      alert("All wallets cleared! Refresh the page to start fresh.");
+
+      console.log("[DEBUG] 🔄 Page will reload in 1 second...");
+      alert("All wallets cleared! The page will reload to reinitialize.");
+
+      // Reload the page to create a fresh chain instance
+      setTimeout(() => {
+        console.log("[DEBUG] 🔄 Reloading page now...");
+        window.location.reload();
+      }, 1000);
     }
   };
 
@@ -145,11 +355,18 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
   };
 
   useEffect(() => {
+    console.log("[DEBUG] 🚀 DebugPanel mounted - initial load");
     loadWallets();
 
     // Refresh every 2 seconds
-    const interval = setInterval(loadWallets, 2000);
-    return () => clearInterval(interval);
+    const interval = setInterval(() => {
+      console.log("[DEBUG] ⏰ Auto-refresh wallets (2s interval)");
+      loadWallets();
+    }, 2000);
+    return () => {
+      console.log("[DEBUG] 🛑 DebugPanel unmounting - clearing interval");
+      clearInterval(interval);
+    };
   }, []);
 
   // Tab configurations
@@ -285,29 +502,29 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
             )}
 
             {/* HOUSE TAB */}
-            {activeTab === "house" && houseWalletInfo && (
+            {activeTab === "house" && (
               <div className="space-y-3">
                 <div className="bg-gray-800 rounded-lg p-4">
                   <h4 className="font-mono text-sm text-purple-400 mb-3">
-                    House Vault Status
+                    House Vault Status (localStorage)
                   </h4>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-400">Balance</span>
                       <span className="text-lg font-bold text-green-400">
-                        ${houseWalletInfo.balance.toLocaleString()}
+                        ${localHouseInfo.balance.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-400">Reserved</span>
                       <span className="text-lg font-bold text-orange-400">
-                        ${houseWalletInfo.reservedFunds.toLocaleString()}
+                        ${localHouseInfo.reservedFunds.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-400">Available</span>
                       <span className="text-lg font-bold text-blue-400">
-                        ${houseWalletInfo.availableFunds.toLocaleString()}
+                        ${localHouseInfo.availableFunds.toLocaleString()}
                       </span>
                     </div>
                     <div className="h-px bg-gray-700 my-2"></div>
@@ -316,7 +533,7 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
                         Total Paid Out
                       </span>
                       <span className="text-sm font-mono text-red-400">
-                        ${houseWalletInfo.totalPaidOut.toLocaleString()}
+                        ${localHouseInfo.totalPaidOut.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -324,13 +541,13 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
                         Total Received
                       </span>
                       <span className="text-sm font-mono text-purple-400">
-                        ${houseWalletInfo.totalReceived.toLocaleString()}
+                        ${localHouseInfo.totalReceived.toLocaleString()}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="text-xs text-gray-500 text-center font-mono">
-                  Auto-refreshes every 2 seconds
+                  Auto-refreshes every 2 seconds from localStorage
                 </div>
               </div>
             )}
@@ -478,6 +695,37 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
           <div className="border-t border-gray-700 p-4 space-y-2">
             {activeTab === "wallets" && (
               <>
+                {/* Warning banner */}
+                {wallets.length > 0 && (
+                  <div className="bg-yellow-900/50 border border-yellow-600 rounded p-2 text-xs text-yellow-200 font-mono">
+                    ⚠️ After changing wallets, restart dev server:
+                    <br />
+                    <code className="text-yellow-100">
+                      Ctrl+C → npm run dev
+                    </code>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={initializeHouseVault}
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded font-mono text-xs transition-colors"
+                  >
+                    🏦 Init Vault
+                  </button>
+                  <button
+                    onClick={topUpHouseVault}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded font-mono text-xs transition-colors"
+                  >
+                    💰 +100k SOL
+                  </button>
+                </div>
+                <button
+                  onClick={createUserWallet}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-mono text-sm transition-colors"
+                >
+                  👤 Create User Wallet
+                </button>
                 <button
                   onClick={loadWallets}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-mono text-sm transition-colors"
@@ -488,7 +736,7 @@ export default function DebugPanel({ houseWalletInfo }: DebugPanelProps) {
                   onClick={clearAllWallets}
                   className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-mono text-sm transition-colors"
                 >
-                  🗑️ Clear All Wallets
+                  🗑️ Clear All & Reload
                 </button>
               </>
             )}
