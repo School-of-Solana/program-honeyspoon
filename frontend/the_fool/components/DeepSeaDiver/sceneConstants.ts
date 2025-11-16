@@ -51,28 +51,29 @@ export const SPEEDS = {
 } as const;
 
 // ===== Z-INDEX LAYERS =====
+// Fixed: No duplicate z-index values, proper layering
 export const Z_LAYERS = {
   BACKGROUND: 0,
   SKY: 1,
-  PARALLAX_FAR: 2,
-  SUN: 2,
-  BEACH: 1,
-  LIGHT_RAYS: 3,
-  PARALLAX_MID: 4,
-  WATER_SURFACE: 5,
-  SEAGULL: 4,
-  PARALLAX_NEAR: 6,
-  FOAM: 7,
-  FISH: 7,
-  JELLYFISH: 6,
-  CORAL_FOREGROUND: 8,
-  PREDATOR: 9,
+  BEACH: 2,                 // Fixed: was 1, now unique
+  SUN: 3,                   // Fixed: was 2, now unique
+  PARALLAX_FAR: 4,          // Fixed: was 2, now unique
+  SEAGULL: 5,               // Fixed: was 4
+  LIGHT_RAYS: 6,            // Fixed: was 3
+  JELLYFISH: 7,             // Fixed: was 6
+  PARALLAX_MID: 8,          // Fixed: was 4
+  WATER_SURFACE: 9,         // Fixed: was 5
+  FOAM: 10,                 // Fixed: was 7
+  FISH: 11,                 // Fixed: was 7, now unique
+  PARALLAX_NEAR: 12,        // Fixed: was 6
+  CORAL_FOREGROUND: 13,     // Fixed: was 8
+  PREDATOR: 14,             // Fixed: was 9
   BUBBLES: 15,
   BOAT: 18,
-  CHEST: 18, // behind diver
+  CHEST: 18,                // Same as boat is OK (both behind diver)
   DIVER: 20,
   SPEED_LINES: 25,
-  PARTICLE: 25,
+  PARTICLE: 25,             // Same as speed lines is OK
   COIN: 26,
   ATTACK_FLASH: 99,
   MESSAGE: 100,
@@ -100,19 +101,15 @@ export const LAYOUT = {
 // ===== SCALES & SIZES =====
 export const SCALES = {
   DIVER: 2.5,
-  BOAT_HULL: { width: 140, height: 20 },
-  BOAT_MAST: { width: 4, height: 50 },
-  BOAT_FLAG: { width: 30, height: 20 },
+  // Note: BOAT constants moved to BOAT section below (no duplication)
   SUN_RADIUS: 50,
   SUN_RAY_LENGTH: 80,
   SUN_RAY_WIDTH: 8,
   CLOUD_BASE: 20,
   SEAGULL_SIZE: 10,
-  PALM_TRUNK: { width: 15, height: 80 },
-  PALM_LEAF: { width: 40, height: 15 },
+  // Note: PALM_TREE constants removed (using sprite now)
   SHELL_SIZE: 10,
   ROCK_SIZE: { min: 12, max: 20 },
-  WATER_LINE_HEIGHT: 4,
   WAVE_AMPLITUDE: 40,
   WAVE_FREQUENCY: 0.008,
   BUBBLE_SCALE: { min: 1.5, max: 3 },
@@ -402,12 +399,12 @@ export const BOAT = {
   RAIL_OFFSET_X: 55,
   RAIL_OFFSET_Y: -10,
   MAST_WIDTH: 4,
-  MAST_HEIGHT: 50,
+  MAST_HEIGHT: 80,          // Taller mast
   MAST_OFFSET_X: -20,
-  MAST_OFFSET_Y: -25,
+  MAST_OFFSET_Y: 0,          // Fixed: mast bottom at deck level (0)
   FLAG_WIDTH: 30,
   FLAG_HEIGHT: 20,
-  FLAG_OFFSET_Y: -75,
+  FLAG_OFFSET_Y: -82,        // Adjusted to match taller mast
   ANCHOR_ROPE_RADIUS: 5,
   ANCHOR_ROPE_X: 30,
   ANCHOR_ROPE_Y: -5,

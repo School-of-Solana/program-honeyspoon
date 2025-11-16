@@ -195,7 +195,7 @@ export const SPRITE_CONFIGS: SpriteConfig[] = [
     file: "/sprites/palmtree.png",
     sliceX: 1,
     sliceY: 1,
-    frameSize: { w: 16, h: 32 },
+    frameSize: { w: 16, h: 48 },
     totalFrames: 1,
   },
   {
