@@ -22,6 +22,10 @@ export enum SessionStatus {
 
 /**
  * GameSession account state - matches contract's GameSession struct
+ * 
+ * NEW (VRF-based RNG):
+ * - rngSeed: 32-byte seed from VRF oracle (Switchboard)
+ * - rngCursor: which slice of seed has been consumed (optional)
  */
 export interface GameSessionState {
   sessionPda: SessionHandle;
@@ -29,10 +33,12 @@ export interface GameSessionState {
   houseVault: string; // Pubkey as base58
   status: SessionStatus;
   betAmount: bigint; // u64 lamports
-  currentTreasure: bigint; // u64 lamports
+  currentTreasure: bigint; // u64 lamports (computed deterministically)
   maxPayout: bigint; // u64 lamports
   diveNumber: number; // u16
   bump: number; // u8
+  rngSeed?: Uint8Array; // [u8; 32] VRF seed (if using VRF)
+  rngCursor?: number; // u8 cursor into seed stream
 }
 
 /**
@@ -104,43 +110,48 @@ export interface GameChainPort {
   }>;
 
   /**
-   * Play a round (update session state)
+   * Play a round (contract computes outcome with on-chain RNG)
    * Maps to: play_round instruction
    * 
-   * On-chain behavior:
-   * - Validates session.status == Active
-   * - Validates round number == session.dive_number + 1
-   * - Validates new_treasure >= current_treasure (monotonic)
-   * - Validates new_treasure <= max_payout
-   * - Updates session.current_treasure and session.dive_number
+   * CRITICAL SECURITY CHANGE:
+   * - Contract now does RNG internally (VRF-based or slot-hash)
+   * - NO client input for outcome (prevents cheating)
+   * - Contract determines: survive/lose + new treasure
+   * - Deterministic payout: treasure_for_round(bet, dive)
    * 
+   * On-chain behavior:
+   * 1. Validates session.status == Active
+   * 2. Derives random roll from VRF seed + dive_number
+   * 3. Computes survival_probability(dive_number)
+   * 4. If roll < threshold:
+   *    - Survive: increment dive, compute new treasure deterministically
+   * 5. Else:
+   *    - Lose: status = Lost, release reserved funds
+   * 
+   * @returns Updated session state (may be Active or Lost)
    * @throws {GameError} INVALID_SESSION_STATUS if not active
-   * @throws {GameError} ROUND_MISMATCH if round number incorrect
-   * @throws {GameError} TREASURE_INVALID if treasure violates constraints
    * @throws {GameError} WRONG_USER if caller doesn't own session
    */
   playRound(params: {
     sessionPda: SessionHandle;
     userPubkey: string;
-    newTreasureLamports: bigint;
-    newDiveNumber: number;
-  }): Promise<GameSessionState>;
+    // NO newTreasure / newDiveNumber - contract computes internally!
+  }): Promise<{
+    state: GameSessionState;
+    survived: boolean; // Outcome determined by contract
+    randomRoll?: number; // Optional: for transparency/verification
+  }>;
 
   /**
-   * Mark session as lost
-   * Maps to: lose_session instruction
+   * DEPRECATED: No longer needed!
    * 
-   * On-chain behavior:
-   * - Validates session.status == Active
-   * - Sets status = Lost
-   * - Decrements house_vault.total_reserved by max_payout
-   * - House keeps the bet (no transfer)
+   * The lose_session instruction is now handled automatically
+   * by playRound() when the on-chain RNG determines a loss.
    * 
-   * @throws {GameError} INVALID_SESSION_STATUS if not active
-   * @throws {GameError} WRONG_USER if caller doesn't own session
-   * @throws {GameError} OVERFLOW if vault.total_reserved underflows
+   * This method remains for backward compatibility with LocalGameChain
+   * but will not exist in the final contract.
    */
-  loseSession(params: {
+  loseSession?(params: {
     sessionPda: SessionHandle;
     userPubkey: string;
   }): Promise<GameSessionState>;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import OceanScene from "@/components/DeepSeaDiver/OceanScene";
-import DebugWalletPanel from "@/components/DebugWalletPanel";
+import DebugPanel from "@/components/DebugWalletPanel";
 import { GameErrorBoundary } from "@/components/DeepSeaDiver/GameErrorBoundary";
 import { calculateDiveStats } from "@/lib/gameLogic";
 import {
@@ -73,10 +73,10 @@ export default function Home() {
   // Read animation message from store for display
   const animationMessage = useGameStore((state) => state.animationMessage);
 
-  // Debug mode states
-  const [debugMode, setDebugMode] = useState(false); // House wallet debug
-  const [kaplayDebug, setKaplayDebug] = useState(false); // Kaplay debug mode
+  // Sound state
   const [soundMuted, setSoundMuted] = useState(false); // Sound mute state
+  
+  // House wallet info for debug panel
   const [houseWalletInfo, setHouseWalletInfo] = useState({
     balance: 0,
     reservedFunds: 0,
@@ -110,28 +110,14 @@ export default function Home() {
     setSoundMuted(getSoundManager().isMuted());
   }, []);
 
-  // Update house wallet info periodically in debug mode
+  // Update house wallet info periodically for debug panel
   useEffect(() => {
-    if (!debugMode) return;
-
     const interval = setInterval(async () => {
       const houseStatus = await getHouseStatus();
       setHouseWalletInfo(houseStatus);
     }, 2000); // Update every 2 seconds
 
     return () => clearInterval(interval);
-  }, [debugMode]);
-
-  // Keyboard shortcut to toggle debug mode (Ctrl+Shift+D)
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === "D") {
-        setDebugMode((prev) => !prev);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
   }, []);
 
   // Error handling helpers
@@ -656,8 +642,8 @@ export default function Home() {
                 ABYSS FORTUNE
               </p>
 
-              {/* Debug & Mute Buttons */}
-              <div className="flex justify-between mb-4">
+              {/* Sound Mute Button */}
+              <div className="flex justify-end mb-4">
                 <button
                   onClick={() => {
                     getSoundManager().toggleMute();
@@ -668,14 +654,6 @@ export default function Home() {
                   title="Toggle sound"
                 >
                   {soundMuted ? "🔇 MUTED" : "🔊 SOUND"}
-                </button>
-                <button
-                  onClick={() => setDebugMode(!debugMode)}
-                  className="nes-btn is-warning"
-                  style={{ padding: "4px 8px", fontSize: "8px" }}
-                  title="Toggle debug mode (Ctrl+Shift+D)"
-                >
-                  DEBUG
                 </button>
               </div>
 
@@ -810,64 +788,6 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-
-              {/* Debug Mode: House Wallet Info */}
-              {debugMode && (
-                <div className="max-w-7xl mx-auto mt-4">
-                  <div
-                    className="nes-container is-dark is-rounded"
-                    style={{ backgroundColor: "rgba(220, 38, 38, 0.9)" }}
-                  >
-                    <div className="flex justify-between items-center mb-4">
-                      <span style={{ fontSize: "10px", color: "#fca5a5" }}>
-                        DEBUG - HOUSE WALLET
-                      </span>
-                      <button
-                        onClick={() => setDebugMode(false)}
-                        className="nes-btn is-error"
-                        style={{ padding: "4px 8px", fontSize: "8px" }}
-                      >
-                        X
-                      </button>
-                    </div>
-                    <div
-                      className="grid grid-cols-5 gap-2"
-                      style={{ fontSize: "8px" }}
-                    >
-                      <div>
-                        <div style={{ color: "#9ca3af" }}>Balance</div>
-                        <div style={{ color: "#4ade80", fontWeight: "bold" }}>
-                          ${houseWalletInfo.balance.toLocaleString()}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ color: "#9ca3af" }}>Reserved</div>
-                        <div style={{ color: "#fb923c", fontWeight: "bold" }}>
-                          ${houseWalletInfo.reservedFunds.toLocaleString()}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ color: "#9ca3af" }}>Available</div>
-                        <div style={{ color: "#60a5fa", fontWeight: "bold" }}>
-                          ${houseWalletInfo.availableFunds.toLocaleString()}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ color: "#9ca3af" }}>Paid Out</div>
-                        <div style={{ color: "#f87171", fontWeight: "bold" }}>
-                          ${houseWalletInfo.totalPaidOut.toLocaleString()}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ color: "#9ca3af" }}>Received</div>
-                        <div style={{ color: "#c084fc", fontWeight: "bold" }}>
-                          ${houseWalletInfo.totalReceived.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Bottom: Action Buttons - NES Style */}
@@ -881,39 +801,27 @@ export default function Home() {
                     padding: "12px 16px",
                   }}
                 >
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span
-                        style={{
-                          fontSize: "10px",
-                          color: GAME_COLORS.TEXT_SECONDARY,
-                        }}
-                      >
-                        SURVIVAL CHANCE:
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "20px",
-                          color: GAME_COLORS.SURVIVAL_GREEN,
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {(currentDiveStats.survivalProbability * 100).toFixed(
-                          0
-                        )}
-                        %
-                      </span>
-                    </div>
-
-                    {/* Kaplay Debug Toggle */}
-                    <button
-                      onClick={() => setKaplayDebug(!kaplayDebug)}
-                      className={`nes-btn ${kaplayDebug ? "is-success" : "is-warning"}`}
-                      style={{ padding: "6px 12px", fontSize: "8px" }}
-                      title="Toggle Kaplay Debug Mode"
+                  <div className="flex items-center gap-2">
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        color: GAME_COLORS.TEXT_SECONDARY,
+                      }}
                     >
-                      {kaplayDebug ? "DBG:ON" : "DBG"}
-                    </button>
+                      SURVIVAL CHANCE:
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "20px",
+                        color: GAME_COLORS.SURVIVAL_GREEN,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {(currentDiveStats.survivalProbability * 100).toFixed(
+                        0
+                      )}
+                      %
+                    </span>
                   </div>
                 </div>
 
@@ -947,9 +855,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* Debug Wallet Panel (only in development with ?debug=true) */}
+        {/* Unified Debug Panel (only in development) */}
         {process.env.NODE_ENV === "development" && (
-          <DebugWalletPanel />
+          <DebugPanel houseWalletInfo={houseWalletInfo} />
         )}
       </div>
     </GameErrorBoundary>

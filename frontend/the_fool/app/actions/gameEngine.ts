@@ -216,16 +216,22 @@ export async function startGameSession(
 }
 
 /**
- * Execute a round (server-side for security and fairness)
- * Uses cryptographically secure random number generation
- * REFACTORED: Now uses GameChainPort
+ * Execute a round (place bet and get result)
  *
- * @param roundNumber - Current round number (1-indexed)
- * @param currentValue - Current accumulated value
+ * REFACTORED: Now uses ON-CHAIN RNG via GameChainPort
+ * 
+ * CRITICAL SECURITY CHANGE:
+ * - Server NO LONGER generates RNG or computes outcomes
+ * - Contract now does RNG internally (VRF-based or slot-hash)
+ * - Server is just a VIEWER - it calls playRound() and reports the result
+ * - NO client input for outcome (prevents 100% of cheating exploits)
+ *
+ * @param roundNumber - Current round number (1-indexed) - for validation only
+ * @param currentValue - Current accumulated value - for validation only
  * @param sessionId - Game session PDA
  * @param userId - User ID
- * @param testSeed - Optional deterministic seed for testing (0-99)
- * @returns Round result with survival status and new value
+ * @param testSeed - DEPRECATED - chain now controls RNG
+ * @returns Round result with survival status and new value (from chain)
  */
 export async function executeRound(
   roundNumber: number,
@@ -302,57 +308,38 @@ export async function executeRound(
     );
   }
 
-  // Generate cryptographically secure random number (0-99)
-  let randomRoll: number;
-
-  if (testSeed !== undefined && process.env.NODE_ENV === "test") {
-    // Use deterministic seed for testing
-    randomRoll = parseInt(testSeed, 10);
-    if (isNaN(randomRoll) || randomRoll < 0 || randomRoll > 99) {
-      throw new Error("Invalid test seed: must be 0-99");
-    }
-  } else {
-    // Use cryptographically secure random for production
-    const randomBytes = crypto.randomBytes(4);
-    randomRoll = randomBytes.readUInt32BE(0) % 100;
-  }
-
-  // Simulate round outcome (server calculates)
-  const result = simulateRound(
-    roundNumber,
-    currentValue,
-    randomRoll,
-    GAME_CONFIG
-  );
+  // ===== NEW ON-CHAIN RNG MODEL =====
+  // Contract now generates RNG internally and computes outcome
+  // Server is just a VIEWER - it calls playRound() and gets the result
+  console.log(`[CHAIN] 🎲 Calling playRound() - contract will determine outcome...`);
 
   try {
-    if (result.survived) {
-      // Player survived - update chain state
-      const newTreasureLamports = dollarsToLamports(result.totalValue);
-      const newDiveNumber = roundNumber + 1;
+    // Call chain to execute round (contract does RNG + outcome computation)
+    const chainResult = await chain.playRound({
+      sessionPda: sessionId,
+      userPubkey: userId,
+      // NO client input for outcome - contract determines everything!
+    });
 
-      const updatedState = await chain.playRound({
-        sessionPda: sessionId,
-        userPubkey: userId,
-        newTreasureLamports,
-        newDiveNumber,
-      });
+    console.log(`[CHAIN] 📊 Chain result:`, {
+      survived: chainResult.survived,
+      randomRoll: chainResult.randomRoll,
+      newStatus: chainResult.state.status,
+      newDiveNumber: chainResult.state.diveNumber,
+      newTreasure: lamportsToDollars(chainResult.state.currentTreasure),
+    });
 
-      // Update local session
-      gameSession.currentTreasure = lamportsToDollars(updatedState.currentTreasure);
-      gameSession.diveNumber = updatedState.diveNumber;
+    // Update local session with chain's outcome
+    gameSession.currentTreasure = lamportsToDollars(chainResult.state.currentTreasure);
+    gameSession.diveNumber = chainResult.state.diveNumber;
+
+    if (chainResult.survived) {
+      // Player survived
       setGameSession(gameSession);
-
-      console.log(`[CHAIN] ✅ Round ${roundNumber} survived: $${result.totalValue}`);
+      console.log(`[CHAIN] ✅ Round ${roundNumber} survived: $${gameSession.currentTreasure}`);
 
     } else {
-      // Player lost - mark as lost on-chain
-      await chain.loseSession({
-        sessionPda: sessionId,
-        userPubkey: userId,
-      });
-
-      // Update local session
+      // Player lost (chain already updated status to Lost)
       gameSession.isActive = false;
       gameSession.status = "LOST";
       gameSession.endTime = Date.now();
@@ -390,6 +377,21 @@ export async function executeRound(
       deleteGameSession(sessionId);
       console.log(`[CHAIN] ❌ Round ${roundNumber} lost`);
     }
+
+    // Build RoundResult for server response (matches old format)
+    const roundStats = calculateRoundStats(roundNumber, GAME_CONFIG);
+    const result: RoundResult = {
+      success: chainResult.survived,
+      survived: chainResult.survived,
+      randomRoll: chainResult.randomRoll ?? 0,
+      threshold: Math.floor(roundStats.winProbability * 100),
+      winProbability: roundStats.winProbability,
+      multiplier: roundStats.multiplier,
+      newValue: lamportsToDollars(chainResult.state.currentTreasure) - currentValue,
+      totalValue: lamportsToDollars(chainResult.state.currentTreasure),
+      roundNumber,
+      timestamp: Date.now(),
+    };
 
     return result;
 

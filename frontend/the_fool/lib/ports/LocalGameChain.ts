@@ -23,6 +23,12 @@ import {
 } from "./GameChainPort";
 import { GameError } from "./GameErrors";
 import { mockHouseVaultPDA, mockSessionPDA } from "../solana/pdas";
+import {
+  generateVRFSeed,
+  simulateRoundOutcome,
+  treasureForRound,
+  type GameCurveConfig,
+} from "./rng";
 
 // localStorage keys
 const STORAGE_KEYS = {
@@ -47,6 +53,14 @@ export class LocalGameChain implements GameChainPort {
   private houseVaults = new Map<string, HouseVaultState>();
   private sessions = new Map<string, GameSessionState>();
   private sessionCounter = 0; // For unique session nonces
+
+  // Game configuration matching contract
+  private gameConfig: GameCurveConfig = {
+    baseWinProbability: 0.95, // 95% survival at round 1
+    decayConstant: 0.15,
+    minWinProbability: 0.01, // 1% minimum
+    houseEdge: 0.15, // 15% house edge
+  };
 
   constructor(
     private readonly initialHouseBalance: bigint = BigInt(500_000_000_000_000) // 500k SOL in lamports
@@ -313,6 +327,9 @@ export class LocalGameChain implements GameChainPort {
       throw GameError.overflow("total_reserved");
     }
 
+    // Generate VRF seed (in real contract: comes from Switchboard)
+    const rngSeed = generateVRFSeed();
+
     // Create session (mimic contract init)
     const state: GameSessionState = {
       sessionPda,
@@ -324,6 +341,8 @@ export class LocalGameChain implements GameChainPort {
       maxPayout: params.maxPayoutLamports,
       diveNumber: 1, // First dive
       bump: 255,
+      rngSeed, // VRF seed for deterministic RNG
+      rngCursor: 0,
     };
 
     this.sessions.set(sessionPda, state);
@@ -331,15 +350,23 @@ export class LocalGameChain implements GameChainPort {
     // Persist to localStorage
     this.saveState();
     
+    console.log(`[CHAIN] 🎲 Generated VRF seed for session: ${Array.from(rngSeed.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join('')}...`);
+    
     return { sessionPda, state };
   }
 
+  /**
+   * NEW SECURITY MODEL: Contract computes outcome with on-chain RNG
+   * NO client input for treasure/round - contract decides based on VRF seed
+   */
   async playRound(params: {
     sessionPda: SessionHandle;
     userPubkey: string;
-    newTreasureLamports: bigint;
-    newDiveNumber: number;
-  }): Promise<GameSessionState> {
+  }): Promise<{
+    state: GameSessionState;
+    survived: boolean;
+    randomRoll?: number;
+  }> {
     const session = this.sessions.get(params.sessionPda);
     if (!session) {
       throw new Error("Account does not exist");
@@ -355,30 +382,58 @@ export class LocalGameChain implements GameChainPort {
       throw GameError.invalidSessionStatus();
     }
 
-    // Mimic contract validation: round number must be sequential
-    const expectedRound = session.diveNumber + 1;
-    if (params.newDiveNumber !== expectedRound) {
-      throw GameError.roundMismatch(expectedRound, params.newDiveNumber);
+    // Ensure we have VRF seed
+    if (!session.rngSeed) {
+      throw new Error("Session missing RNG seed");
     }
 
-    // Mimic contract validation: treasure must be monotonic (non-decreasing)
-    if (params.newTreasureLamports < session.currentTreasure) {
-      throw GameError.treasureInvalid("treasure decreased (non-monotonic)");
+    // CONTRACT COMPUTES OUTCOME using VRF seed + dive number
+    const outcome = simulateRoundOutcome(
+      session.rngSeed,
+      session.diveNumber,
+      session.betAmount,
+      this.gameConfig,
+      params.sessionPda
+    );
+
+    console.log(`[CHAIN] 🎲 Round ${session.diveNumber} outcome:`, {
+      roll: outcome.randomRoll,
+      threshold: outcome.threshold,
+      survived: outcome.survived,
+      survivalProb: (outcome.survivalProbability * 100).toFixed(1) + '%',
+    });
+
+    if (outcome.survived) {
+      // Player survives: update session
+      session.currentTreasure = outcome.newTreasure;
+      session.diveNumber = outcome.newDiveNumber;
+      
+      console.log(`[CHAIN] ✅ Survived! New treasure: ${outcome.newTreasure.toString()} lamports`);
+    } else {
+      // Player loses: mark session as lost
+      session.status = SessionStatus.Lost;
+      
+      // Release house funds (same as loseSession logic)
+      const vault = this.houseVaults.get(session.houseVault);
+      if (vault) {
+        try {
+          vault.totalReserved = this.checkedSub(vault.totalReserved, session.maxPayout);
+        } catch (e) {
+          throw GameError.overflow("total_reserved underflow");
+        }
+      }
+      
+      console.log(`[CHAIN] ❌ Lost! Session ended.`);
     }
 
-    // Mimic contract validation: treasure <= max_payout
-    if (params.newTreasureLamports > session.maxPayout) {
-      throw GameError.treasureInvalid("exceeds max payout");
-    }
-
-    // Update session (mimic contract)
-    session.currentTreasure = params.newTreasureLamports;
-    session.diveNumber = params.newDiveNumber;
-    
     // Persist to localStorage
     this.saveState();
     
-    return session;
+    return {
+      state: session,
+      survived: outcome.survived,
+      randomRoll: outcome.randomRoll,
+    };
   }
 
   async loseSession(params: {

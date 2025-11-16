@@ -79,17 +79,23 @@ export class SolanaGameChain implements GameChainPort {
   async playRound(_params: {
     sessionPda: SessionHandle;
     userPubkey: string;
-    newTreasureLamports: bigint;
-    newDiveNumber: number;
-  }): Promise<GameSessionState> {
+    // NO newTreasureLamports / newDiveNumber - contract computes internally!
+  }): Promise<{
+    state: GameSessionState;
+    survived: boolean;
+    randomRoll?: number;
+  }> {
     throw new Error("Not implemented");
   }
 
+  // DEPRECATED: loseSession() is no longer needed!
+  // The playRound() instruction now handles loss internally when RNG determines failure.
+  // This method remains for backward compatibility but won't exist in final contract.
   async loseSession(_params: {
     sessionPda: SessionHandle;
     userPubkey: string;
   }): Promise<GameSessionState> {
-    throw new Error("Not implemented");
+    throw new Error("Not implemented - deprecated (use playRound instead)");
   }
 
   async cashOut(_params: {
@@ -118,8 +124,12 @@ export class SolanaGameChain implements GameChainPort {
  * [ ] Implement initHouseVault() - call program.methods.initHouseVault()
  * [ ] Implement toggleHouseLock() - call program.methods.toggleHouseLock()
  * [ ] Implement startSession() - derive PDA, call program.methods.startSession()
+ *     - Must integrate Switchboard VRF or use slot hash for RNG seed
  * [ ] Implement playRound() - call program.methods.playRound()
- * [ ] Implement loseSession() - call program.methods.loseSession()
+ *     - Contract computes outcome internally (VRF-based RNG)
+ *     - NO client input for newTreasure/newDiveNumber
+ *     - Returns { state, survived, randomRoll }
+ * [ ] SKIP loseSession() - deprecated! playRound() handles loss internally
  * [ ] Implement cashOut() - call program.methods.cashOut()
  * [ ] Implement getHouseVault() - fetch account with program.account.houseVault.fetch()
  * [ ] Implement getSession() - fetch account with program.account.gameSession.fetch()
@@ -127,4 +137,11 @@ export class SolanaGameChain implements GameChainPort {
  * [ ] Add PDA derivation helpers (real PublicKey.findProgramAddressSync)
  * [ ] Test against devnet
  * [ ] Update getGameChain() in lib/ports/index.ts to use SolanaGameChain
+ * 
+ * CONTRACT REQUIREMENTS (your side):
+ * [ ] Add Switchboard VRF integration to start_session
+ * [ ] Implement derive_roll(seed, dive) with keccak256
+ * [ ] Implement treasure_for_round(bet, dive) pure function
+ * [ ] Remove new_treasure/new_dive_number params from play_round
+ * [ ] Make play_round compute outcome internally and return survived bool
  */
