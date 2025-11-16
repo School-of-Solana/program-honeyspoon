@@ -1,443 +1,510 @@
-Perfect, this Twitter project is _exactly_ the style we want to copy for the game contract. Let’s mine it for patterns and then turn that into a concrete plan for the **dive game smart contract + test suite**, consistent with your vault + twitter repos.
+You’re in a **really** good place already – this is a legit little production-y program. Let’s tighten it further in two dimensions:
 
-I’ll keep it structured and actionable.
+1. **Contract improvements** – extra invariants, better error usage, small API tweaks
+2. **Test improvements** – more edge cases + some cleanup that will pay off later
 
----
-
-## 1. What this Twitter repo is teaching us
-
-Key patterns from code + tests that we should reuse for the game program:
-
-### 1.1. PDA design + constraints
-
-- **Deterministic PDAs** with semantic seeds:
-
-  - Tweet: `[topic.as_bytes(), TWEET_SEED.as_bytes(), author]`.
-  - Reaction: `[TWEET_REACTION_SEED, reaction_author, tweet]`.
-  - Comment: `[COMMENT_SEED, comment_author, hash(content), tweet]`.
-
-- **Close + has_one** constraints for deletes:
-
-  - `remove_reaction` closes the `Reaction` account and decrements likes/dislikes.
-  - `remove_comment` is implemented _entirely_ via `#[account(close = comment_author, has_one = comment_author)]`.
-
-We’ll do the same for `GameSession` and possibly “SessionReaction”-like things later.
-
-### 1.2. Tight validation with custom errors
-
-- Length validation:
-
-  - Topic/content/comment length vs constants.
-  - Uses specific `TwitterError` variants: `TopicTooLong`, `ContentTooLong`, `CommentTooLong`.
-
-- Counter safety with `checked_add` / `checked_sub`:
-
-  - `MaxLikesReached`, `MinLikesReached`, etc.
-
-For the game, we’ll mirror this for:
-
-- Round number mismatches.
-- Treasure > max_payout.
-- Underflows on reserved funds.
-
-### 1.3. Test style: super-detailed, scenario-based
-
-Look at `tests/twitter.ts` – it’s basically a clinic in how we want to test the game:
-
-- **Boundary tests**:
-
-  - Exactly 32-byte topic, exactly 500-byte content/comment, empty content, single char, unicode.
-
-- **Duplicate detection**:
-
-  - Tweet with same topic + author → PDA collision → `"already in use"` error.
-  - Same for comments/reactions.
-
-- **Non-existent account tests**:
-
-  - React/comment/remove against a non-existent PDA → assert on `"Account does not exist"` / `AccountNotInitialized`.
-
-- **Auth checks via constraints**:
-
-  - Removing someone else’s reaction/comment → seeds / `has_one` constraint error.
-
-- **Helpers**:
-
-  - `getTweetAddress`, `getReactionAddress`, `getCommentAddress` all mirror on-chain seed logic.
-  - `checkTweet`, `checkReaction`, `checkComment` helpers that assert all fields, including bump.
-
-- **Error parsing**:
-
-  - Uses `AnchorError.parse(error.logs)` to assert specific error codes (`ContentTooLong`, `CommentTooLong`).
-  - Uses a `SolanaError.contains` helper to spot `"already in use"` substrings.
-
-We’re going to mimic all of this for the game contract.
+I’ll reference your current code + tests as I go.
 
 ---
 
-## 2. Game program design (refined with these patterns)
+## 1. Contract improvements
 
-This builds on the earlier plan but now explicitly shaped like the Twitter/vault programs.
+### 1.1. Strengthen money invariants in `start_session`
 
-### 2.1. Accounts
+Right now `start_session`:
 
-**HouseVault**
+- transfers `bet_amount` from user → vault
+- does `total_reserved += max_payout` with `checked_add`
+- **does not** check that the vault actually has enough _free_ lamports to reserve `max_payout` (over and above `total_reserved`).
+
+That means the house can “over-reserve” compared to its real balance; you only detect underfunding at `cash_out` when `vault_balance < session.current_treasure`.
+
+**Improvement:**
+
+Before reserving, check:
+
+- `max_payout >= bet_amount` (so it’s a sensible game config)
+- `available = vault_balance - total_reserved >= max_payout`
+
+Roughly:
 
 ```rust
-#[account]
-#[derive(InitSpace)]
-pub struct HouseVault {
-    pub house_authority: Pubkey,
-    pub locked: bool,
-    pub total_reserved: u64,   // lamports reserved for active sessions
-    pub bump: u8,
+pub fn start_session(
+    ctx: Context<StartSession>,
+    bet_amount: u64,
+    max_payout: u64,
+    session_index: u64,
+) -> Result<()> {
+    let house_vault = &mut ctx.accounts.house_vault;
+    let session = &mut ctx.accounts.session;
+    let clock = Clock::get()?;
+
+    require!(!house_vault.locked, GameError::HouseLocked);
+
+    // 1) Validate bet / payout relationship
+    require!(bet_amount > 0, GameError::InvalidBetAmount);
+    require!(max_payout >= bet_amount, GameError::TreasureInvalid);
+
+    // 2) Transfer bet
+    // ...
+
+    // 3) Check free liquidity vs new reservation
+    let vault_balance = house_vault.to_account_info().lamports();
+    let available = vault_balance
+        .checked_sub(house_vault.total_reserved)
+        .ok_or(GameError::Overflow)?;
+    require!(
+        available >= max_payout,
+        GameError::InsufficientVaultBalance
+    );
+
+    // 4) Reserve and init
+    house_vault.total_reserved = house_vault
+        .total_reserved
+        .checked_add(max_payout)
+        .ok_or(GameError::Overflow)?;
+
+    // rest unchanged...
 }
 ```
 
-PDA seeds:
+You’d need to add:
 
 ```rust
-pub const HOUSE_VAULT_SEED: &str = "HOUSE_VAULT";
-seeds = [HOUSE_VAULT_SEED.as_bytes(), house_authority.key().as_ref()], bump
+#[msg("Bet amount must be greater than zero")]
+InvalidBetAmount,
 ```
 
-**GameSession**
+to `GameError`.
 
-```rust
-#[derive(AnchorDeserialize, AnchorSerialize, Clone, InitSpace)]
-pub enum SessionStatus {
-    Active,
-    Lost,
-    CashedOut,
-    Expired,
+**Tests to add:**
+
+- `start_session` fails with `InvalidBetAmount` when `bet_amount == 0`.
+- `start_session` fails with `TreasureInvalid` when `max_payout < bet_amount`.
+- Drain most of the vault (e.g. by starting huge sessions in a loop) then try to start a new one where `max_payout` would over-reserve → expect `InsufficientVaultBalance`.
+
+---
+
+### 1.2. Extra safety checks in `cash_out` and `lose_session`
+
+Right now:
+
+- `lose_session` just `checked_sub(total_reserved, session.max_payout)` and sets `Lost`.
+- `cash_out` checks `vault_balance >= current_treasure`, then does the lamport transfer, then subtracts `max_payout` from `total_reserved`.
+
+Two small hardening steps:
+
+1. **Check `total_reserved >= session.max_payout` before `checked_sub`** to distinguish logic bugs from overflow.
+
+   ```rust
+   require!(
+       house_vault.total_reserved >= session.max_payout,
+       GameError::Overflow
+   );
+   house_vault.total_reserved = house_vault
+       .total_reserved
+       .checked_sub(session.max_payout)
+       .ok_or(GameError::Overflow)?;
+   ```
+
+   Same in both `lose_session` and `cash_out`.
+
+2. **Guard against `current_treasure == 0` or `< bet_amount` in lose path** if you ever use `current_treasure` later. Currently you don’t, so that’s optional.
+
+**Tests to add:**
+
+- “Manual corruption” style test: start a session, **manually** reduce `house_vault.total_reserved` via `setAccount` in a local validator (or a fake program) and then try `cash_out` or `lose_session` → expect `Overflow` or similar. (If you don’t want to do funky validator tricks, you can skip this; the `require!` will still protect you logically.)
+
+---
+
+### 1.3. Use your error types more explicitly
+
+You currently define:
+
+- `WrongUser`
+- `WrongHouseVault`
+
+…but you mostly rely on `has_one = user` / `has_one = house_vault` account constraints, which throw generic “constraint” messages instead of your nice error codes.
+
+Two options:
+
+1. **Keep constraints (they’re great), and accept generic errors.**
+   → Just delete `WrongUser` / `WrongHouseVault` to avoid dead-code.
+
+2. **Use `require!` to produce explicit errors, while still keeping constraints as a first defence.** Example in `CashOut`:
+
+   ```rust
+   let session = &ctx.accounts.session;
+   let user = &ctx.accounts.user.key();
+
+   require!(
+       session.user == *user,
+       GameError::WrongUser
+   );
+   require!(
+       session.house_vault == ctx.accounts.house_vault.key(),
+       GameError::WrongHouseVault
+   );
+   ```
+
+   You can keep or drop the `has_one` constraints then.
+
+If you go with (2), update tests to expect `WrongUser` / `WrongHouseVault` via `AnchorError.parse`.
+
+---
+
+### 1.4. Optional: allow the house to mark losses
+
+`lose_session` currently requires the `user` signer (has_one = user).
+
+For operational safety, you might want **house authority** to be able to close stuck sessions:
+
+- Alternative `LoseSession` context:
+
+  ```rust
+  #[derive(Accounts)]
+  pub struct LoseSession<'info> {
+      #[account(mut)]
+      pub signer: Signer<'info>, // user OR house_authority
+
+      #[account(
+          mut,
+          has_one = house_vault,
+      )]
+      pub session: Account<'info, GameSession>,
+
+      #[account(
+          mut,
+          has_one = house_authority,
+      )]
+      pub house_vault: Account<'info, HouseVault>,
+
+      pub house_authority: UncheckedAccount<'info>,
+  }
+  ```
+
+- In handler:
+
+  ```rust
+  let is_user = ctx.accounts.signer.key() == session.user;
+  let is_house = ctx.accounts.signer.key() == house_vault.house_authority;
+  require!(is_user || is_house, GameError::WrongUser);
+  ```
+
+**Tests to add if you do this:**
+
+- Loss by user still works.
+- Loss by `houseAuthority` works even if user never comes back.
+- Third random signer → `WrongUser`.
+
+If you’re happy with “user-only” losses, no need to change, but it’s good to have thought it through.
+
+---
+
+### 1.5. (Optional) close session accounts on terminal states
+
+Sessions never close right now; they just flip `status`.
+
+If you care about reclaiming rent and avoiding unbounded account growth:
+
+- Make `session` closable in `lose_session` and `cash_out`:
+
+  ```rust
+  #[derive(Accounts)]
+  pub struct CashOut<'info> {
+      #[account(mut)]
+      pub user: Signer<'info>,
+
+      #[account(
+          mut,
+          has_one = user,
+          has_one = house_vault,
+          close = user,
+      )]
+      pub session: Account<'info, GameSession>,
+
+      #[account(mut)]
+      pub house_vault: Account<'info, HouseVault>,
+  }
+  ```
+
+Same idea for `LoseSession`, maybe `close = house_vault` or `close = user`.
+
+**Tests to add:**
+
+- After `cashOut`, fetching `gameSession` fails with `AccountNotFound`.
+- User’s balance after cashOut includes both payout + rent-exemption refund (within some epsilon).
+
+If you want on-chain history, it’s fine to leave them open; then just ignore this section.
+
+---
+
+## 2. Test suite improvements
+
+Your tests are already very solid and cover tons of behavior. A few ways to push them further and remove some footguns.
+
+### 2.1. Fix lamports math to avoid floats
+
+You do things like:
+
+```ts
+const treasure2 = 1.5 * LAMPORTS_PER_SOL;
+await program.methods
+  .playRound(new BN(treasure2), 2)
+  ...
+assert.strictEqual(
+  sessionAccount.currentTreasure.toString(),
+  Math.floor(treasure2).toString()
+);
+```
+
+JS floats × big ints is… meh:
+
+- `1.5 * 1_000_000_000` _usually_ gives exactly `1500000000`, but you’re flirting with float imprecision.
+- You’re also depending on BN(stringified float) behaviour.
+
+**Improvement:**
+
+Use helpers to stay in integer-land **always**:
+
+```ts
+function lamports(sol: number): BN {
+  return new BN(BigInt(Math.round(sol * LAMPORTS_PER_SOL)).toString());
 }
 
-#[account]
-#[derive(InitSpace)]
-pub struct GameSession {
-    pub user: Pubkey,
-    pub house_vault: Pubkey,
-    pub status: SessionStatus,
-    pub bet_amount: u64,
-    pub current_treasure: u64,
-    pub max_payout: u64,
-    pub dive_number: u16,
-    pub bump: u8,
+function lamportsNum(sol: number): number {
+  return Number(BigInt(Math.round(sol * LAMPORTS_PER_SOL)));
 }
 ```
 
-PDA seeds (similar style to `getTweetAddress`):
+Then:
 
-```rust
-pub const SESSION_SEED: &str = "SESSION_SEED";
-// maybe plus an index or hash to allow multiple sessions per user if we want
-seeds = [
-    SESSION_SEED.as_bytes(),
-    user.key().as_ref(),
-    // optional: u64 index or hash(session_nonce)
-],
-bump
+```ts
+const treasure2 = lamports(1.5);
+await program.methods
+  .playRound(treasure2, 2)
+  ...
+
+assert.strictEqual(
+  sessionAccount.currentTreasure.toString(),
+  treasure2.toString()
+);
 ```
 
-### 2.2. Instructions
-
-**1) init_house_vault**
-
-- `#[derive(Accounts)]` with:
-
-  - `house_authority: Signer`
-  - `#[account(init, payer = house_authority, space = 8 + HouseVault::INIT_SPACE, seeds = [...], bump)] house_vault`
-
-- Sets `locked = false`, `total_reserved = 0`.
-- Emits `InitializeHouseVaultEvent`.
-
-**2) toggle_house_lock**
-
-- Constraint: `#[account(mut, has_one = house_authority)] house_vault`.
-- Flips `locked`.
-- Emits `ToggleHouseLockEvent`.
-
-**3) start_session**
-
-- Accounts:
-
-  - `user: Signer<'info>`
-  - `#[account(mut)] house_vault: Account<HouseVault>`
-  - `#[account(init, payer = user, space = 8 + GameSession::INIT_SPACE, seeds = [...], bump)] session`
-  - `system_program`
-
-- Logic:
-
-  - Check `!house_vault.locked`.
-  - Transfer lamports from `user` → house_vault (like vault `deposit`).
-  - Compute `max_payout` (for now, passed in or simple multiplier; later server-engine-determined).
-  - Set `status = Active`, `bet_amount`, `current_treasure = bet_amount`, `dive_number = 1`, `house_vault.total_reserved += max_payout`.
-
-- Emits `SessionStartedEvent`.
-
-**4) play_round**
-
-- Accounts:
-
-  - `user: Signer<'info>`
-  - `#[account(mut, has_one = user, has_one = house_vault)] session: Account<GameSession>`
-  - `#[account(mut)] house_vault: Account<HouseVault>`
-
-- Args:
-
-  - `new_treasure: u64`
-  - `new_dive_number: u16`
-
-- Logic:
-
-  - `require!(session.status == SessionStatus::Active, GameError::InvalidSessionStatus);`
-  - `require!(new_dive_number == session.dive_number + 1, GameError::RoundMismatch);`
-  - `require!(new_treasure >= session.current_treasure, GameError::TreasureInvalid);`
-  - `require!(new_treasure <= session.max_payout, GameError::TreasureInvalid);`
-  - Update session fields.
-
-- Emits `RoundPlayedEvent`.
-
-**5) lose_session**
-
-- Accounts:
-
-  - Caller can be `user` or `house_authority` (we can decide now).
-  - `#[account(mut)] session`
-  - `#[account(mut, has_one = house_authority)] house_vault`
-
-- Logic:
-
-  - `require!(session.status == SessionStatus::Active, GameError::InvalidSessionStatus);`
-  - `session.status = SessionStatus::Lost;`
-  - `house_vault.total_reserved = house_vault.total_reserved.checked_sub(session.max_payout).ok_or(GameError::Overflow)?;`
-  - (House keeps bet – no more transfers.)
-
-- Emits `SessionLostEvent`.
-
-**6) cash_out**
-
-- Accounts:
-
-  - `user: Signer<'info>`
-  - `#[account(mut, has_one = user, has_one = house_vault)] session`
-  - `#[account(mut)] house_vault`
-  - `system_program` OR just lamport arithmetic on accounts.
-
-- Logic:
-
-  - Check `!house_vault.locked`.
-  - `require!(session.status == SessionStatus::Active, GameError::InvalidSessionStatus);`
-  - `require!(session.current_treasure > session.bet_amount, GameError::TreasureInvalid);`
-  - Transfer `session.current_treasure` from `house_vault` to `user`.
-  - `house_vault.total_reserved -= session.max_payout`.
-  - `session.status = SessionStatus::CashedOut;`
-
-- Emits `SessionCashedOutEvent`.
+Same for maxPayout, betAmount, etc.
 
 ---
 
-## 3. Error codes & tests, Twitter-style
+### 2.2. Add tests for missing behaviors
 
-### 3.1. Error enum
+You already hit most of what we planned earlier; here are the **gaps** I see in `tests/dive-game.ts`:
 
-Similar to `TwitterError`:
+#### (a) Happy `lose_session` test
 
-```rust
-#[error_code]
-pub enum GameError {
-    #[msg("House is locked")]
-    HouseLocked,
-    #[msg("Session is not active")]
-    InvalidSessionStatus,
-    #[msg("Caller is not session user")]
-    WrongUser,
-    #[msg("Round number mismatch")]
-    RoundMismatch,
-    #[msg("Treasure invalid (non-monotone or exceeds max payout)")]
-    TreasureInvalid,
-    #[msg("Insufficient vault balance")]
-    InsufficientVaultBalance,
-    #[msg("Overflow")]
-    Overflow,
-}
+Right now loss is mostly tested as _cleanup_ / precondition; you don’t have a focused test that asserts all of:
+
+- status becomes `{ lost: {} }`
+- `totalReserved` decreases by `max_payout`
+- vault/user balances behave as expected (house keeps bet, no transfer).
+
+**New test:**
+
+```ts
+it("Should successfully mark session as lost and release reserved funds", async () => {
+  const betAmount = lamportsNum(1);
+  const maxPayout = lamportsNum(10);
+  const sessionIndex = 40;
+  const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+```
+  await program.methods
+    .startSession(
+      lamports(1),
+      lamports(10),
+      new BN(sessionIndex)
+    )
+    .accounts({ ... })
+    .signers([userAlice])
+    .rpc();
+
+  const houseBefore = await program.account.houseVault.fetch(houseVaultPDA);
+  const reservedBefore = houseBefore.totalReserved.toNumber();
+
+  await program.methods
+    .loseSession()
+    .accounts({
+      user: userAlice.publicKey,
+      session: sessionPDA,
+      houseVault: houseVaultPDA,
+    })
+    .signers([userAlice])
+    .rpc();
+
+  const session = await program.account.gameSession.fetch(sessionPDA);
+  const houseAfter = await program.account.houseVault.fetch(houseVaultPDA);
+
+  assert.deepEqual(session.status, { lost: {} });
+  assert.strictEqual(
+    houseAfter.totalReserved.toNumber(),
+    reservedBefore - maxPayout
+  );
+});
 ```
 
-On the TS side, we’ll parse them with `AnchorError.parse(error.logs)` just like `ContentTooLong` / `CommentTooLong` in the Twitter tests.
+#### (b) `lose_session` on non-active session
+
+You have “fail to play after loss” and “fail to cash out twice”, but not “fail to lose twice”.
+
+```ts
+it("Should fail to lose a session twice", async () => {
+  // create + lose once...
+
+  let shouldFail = "This should fail";
+  try {
+    await program.methods
+      .loseSession()
+      .accounts({
+        user: userAlice.publicKey,
+        session: sessionPDA,
+        houseVault: houseVaultPDA,
+      })
+      .signers([userAlice])
+      .rpc();
+  } catch (error: any) {
+    shouldFail = "Failed";
+    const err = anchor.AnchorError.parse(error.logs);
+    assert.strictEqual(
+      err.error.errorCode.code,
+      "InvalidSessionStatus",
+      "Expected InvalidSessionStatus error"
+    );
+  }
+  assert.strictEqual(shouldFail, "Failed");
+});
+```
+
+#### (c) `InsufficientVaultBalance` on cash out
+
+Right now you **never** trigger `GameError::InsufficientVaultBalance`. You should. 
+
+Example approach:
+
+* Airdrop a small amount into vault and *do not* top up.
+* Start a session with `max_payout` > vault balance (or shrink vault artificially via a direct transfer before calling `cashOut`).
+* Play rounds until `currentTreasure` > vault balance.
+* Cash out → expect `InsufficientVaultBalance`.
+
+Even a simpler version:
+
+```ts
+// drain vault by transferring lamports to a random keypair
+await provider.connection.requestAirdrop(random.publicKey, vaultBalance - 1);
+
+// now cashOut -> InsufficientVaultBalance
+```
+
+(You might need a separate keypair that `houseAuthority` owns to send funds out.)
 
 ---
 
-## 4. Test suite plan (modeled on `tests/twitter.ts`)
+### 2.3. Make event tests “real”
 
-File: `tests/game.ts`, with the same structure and helpers.
+You already have `parseEvents` helper but you commented out event checks. 
 
-### 4.1. Shared helpers
+With Anchor 0.31, your existing `EventParser` usage is basically correct. Pick at least **one test per event** and assert:
 
-- `airdrop(connection, address, amount)` – same as Twitter.
-- `getHouseVaultAddress(houseAuthority, programId)` – like `getTweetAddress` but constant seed.
-- `getSessionAddress(user, indexOrSeed, programId)` – similar to `getTweetAddress` / `getReactionAddress`.
-- `checkHouseVault(program, vaultPk, expected)` – asserts authority, locked flag, total_reserved, bump.
-- `checkSession(program, sessionPk, expected)` – asserts user, status, bet_amount, current_treasure, max_payout, dive_number, bump.
-- `class SolanaError` with `contains(logs, "already in use")` etc – copy from Twitter tests.
+* event was emitted once
+* key fields are correct
 
-### 4.2. Describe blocks & test cases
+Example for `InitializeHouseVaultEvent`:
 
-#### `describe("House Vault", ...)`
+```ts
+it("Should emit InitializeHouseVaultEvent", async () => {
+  const txSig = await program.methods
+    .initHouseVault(false)
+    .accounts({ ... })
+    .signers([houseAuthority])
+    .rpc({ commitment: "confirmed" });
 
-1. **Initialize house vault**
+  const tx = await provider.connection.getTransaction(txSig, {
+    commitment: "confirmed",
+  });
+  const logs = tx?.meta?.logMessages ?? [];
+  const events = parseEvents(logs, "InitializeHouseVaultEvent");
 
-   - Like `initialize tweet` success test: assert fields, bump, etc.
+  assert.lengthOf(events, 1);
+  const e = events[0];
+  assert.strictEqual(e.houseVault.toString(), houseVaultPDA.toString());
+  assert.strictEqual(e.houseAuthority.toString(), houseAuthority.publicKey.toString());
+  assert.strictEqual(e.locked, false);
+});
+```
 
-2. **Cannot init twice for same authority**
+Do the same for:
 
-   - Expect `"already in use"` in logs.
+* `SessionStartedEvent`
+* `RoundPlayedEvent`
+* `SessionLostEvent`
+* `SessionCashedOutEvent`
+* `ToggleHouseLockEvent`
 
-3. **Toggle lock**
-
-   - Lock/unlock and assert state; maybe multiple toggles.
-
-4. **Non-authority cannot toggle**
-
-   - Expect constraint / seeds error.
-
----
-
-#### `describe("Start Session", ...)`
-
-5. **Successfully start session with valid bet**
-
-   - Airdrop user.
-   - Call `start_session`.
-   - Assert:
-
-     - User balance decreased.
-     - Vault balance increased.
-     - Session account fields correct.
-     - `total_reserved` = `max_payout`.
-
-6. **Fail to start when house locked**
-
-   - Lock vault, then attempt `start_session` → parse `GameError::HouseLocked`.
-
-7. **(Optional) Single-active-session-per-user constraint**
-
-   - If we decide that seed design enforces only one active session, try to start a second one with same seed → `"already in use"`.
+You don’t have to test fields exhaustively for all of them – even 1–2 key fields per event is enough to catch wiring mistakes.
 
 ---
 
-#### `describe("Play Round", ...)`
+### 2.4. Make failure assertions more precise
 
-8. **Happy path: multiple rounds**
+Several tests use:
 
-   - Start session.
-   - `play_round` with increasing `new_dive_number` and `new_treasure`.
-   - Assert `dive_number`, `current_treasure` updated each time.
+```ts
+assert.isTrue(
+  error.message.includes("constraint") ||
+    error.message.includes("seeds") ||
+    SolanaError.contains(error.logs, "constraint"),
+  "Expected constraint or seeds error"
+);
+```
 
-9. **Round mismatch**
+Those are fine as “smoke tests”, but now that your contract has **stable error codes**, you can:
 
-   - Call `play_round` skipping a number → `GameError::RoundMismatch` via `AnchorError.parse`.
+* use `AnchorError.parse(error.logs)`
+* assert `err.error.errorCode.code === "HouseLocked" | "TreasureInvalid" | ...`
 
-10. **Treasure invalid (decrease)**
+You already do this in some tests (e.g. `Should fail to start session when house is locked`, `TreasureInvalid` cases). Extend that style to:
 
-    - `new_treasure < current_treasure` → `GameError::TreasureInvalid`.
+* wrong-user playing session
+* cross-session integrity tests (user A trying to cash out user B’s session)
+* any other place where you expect a specific `GameError`.
 
-11. **Treasure invalid (above max_payout)**
-
-    - `new_treasure > max_payout` → `GameError::TreasureInvalid`.
-
-12. **Play on non-active session (Lost/CashedOut)**
-
-    - After `lose_session` or `cash_out`, call `play_round` → `GameError::InvalidSessionStatus`.
-
-13. **Play on non-existent session**
-
-    - Use fake PDA (like “NonExistent” tweet in Twitter tests) → expect `"Account does not exist"` or `AccountNotInitialized`.
+The more you lean on error codes, the easier it will be to map them to your TS `GameErrorCode` later.
 
 ---
 
-#### `describe("Lose Session", ...)`
+## 3. Tiny cleanups / consistency
 
-14. **Lose active session**
+Just quick bullets:
 
-    - After some rounds, call `lose_session`.
-    - Assert:
+* **Use a helper for `getSessionPDA` & sessionIndex incrementing**
+  You do this already; just make sure you never reuse indices accidentally in tests unless you’re testing “already in use”.
 
-      - `status == Lost`.
-      - `total_reserved` decreased by `max_payout`.
-      - `house` kept bet.
+* **Make `SessionStatus` names line up in tests and Rust**
+  In Rust it’s `Active/Lost/CashedOut/Expired`; in tests you assert `session.status` as `{ active: {} }` / `{ cashedOut: {} }`. That’s correct – just keep them in sync if you ever rename.
 
-15. **Cannot lose twice**
-
-    - Second `lose_session` call → `InvalidSessionStatus`.
-
-16. **Non-user/non-authority cannot lose**
-
-    - Use third keypair, expect constraint / seeds error.
+* **Consider removing `Expired` until you implement expiry logic**
+  Or implement an `expire_session` instruction plus tests. Right now it’s dead code.
 
 ---
 
-#### `describe("Cash Out", ...)`
+### TL;DR
 
-17. **Happy cash out**
+If you implement:
 
-    - After some rounds, `cash_out`.
-    - Assert:
+* liquidity checks + `InvalidBetAmount` in `start_session`
+* reserved-funds sanity checks in `lose_session` / `cash_out`
+* a couple more negative tests (lose twice, insufficient vault balance, invalid bet)
+* event assertions
+* integer-only lamports math
 
-      - User balance increased by `current_treasure`.
-      - Vault balance decreased correctly.
-      - `total_reserved` decreased by `max_payout`.
-      - Status `CashedOut`.
+…you’ll have a **ridiculously** robust game program that’s essentially ready to drop behind your existing `GameChainPort` abstraction with almost zero surprises.
 
-18. **Cash out on locked house**
+If you want, next step I can rewrite one full instruction + its tests (e.g. `cash_out`) in “final form” with all of the above changes applied, so you have a concrete before/after to copy.
 
-    - Lock vault, attempt cash out → `GameError::HouseLocked`.
-
-19. **Cash out twice**
-
-    - Second call → `InvalidSessionStatus`.
-    - No extra balance changes.
-
-20. **Cash out on non-existent session**
-
-    - Fake session PDA → `"Account does not exist"`.
-
----
-
-#### `describe("Multi-user & invariants", ...)`
-
-21. **Two users, two sessions on same house**
-
-    - A and B each start session.
-    - A loses, B cashes out.
-    - Assert:
-
-      - Sessions don’t interfere.
-      - `total_reserved` returns to 0.
-      - Balances follow conservation (approx, ignoring fees).
-
-22. **Auth: wrong user cannot cash out / play / lose**
-
-    - Mirror Twitter tests where Alice tries to remove Charlie’s reaction/comment and gets constraint errors.
-
----
-
-## 5. How this ties back to your eventual integration
-
-We keep this program + tests **independent**, like:
-
-- Repo: `dive-game-chain/`
-- Program: `programs/dive_game/`
-- Tests: `tests/game.ts`
-
-Then, later in your main game repo:
-
-- Implement `SolanaGameChain` that:
-
-  - Uses the generated IDL + `@coral-xyz/anchor` (exactly like `const program = anchor.workspace.Twitter as Program<Twitter>`).
-  - Derives PDAs with helpers analogous to `getTweetAddress`, `getReactionAddress`, etc.
-  - Maps on-chain `GameError` → your TS `GameErrorCode` enum.
-  - Uses lamports for amounts and your existing `GameChainPort` abstraction.
-
-Because we’re copying the **Twitter test style** (lots of boundary checks, duplicates, non-existent accounts, constraint errors) plus the **vault money semantics**, the on-chain piece should be very boring and reliable by the time you plug it into the game.
-
-If you want, next step we can write the _actual_ Rust skeleton (`lib.rs`, `errors.rs`, `states.rs`, `instructions/*.rs`) with TODOs in the same way this Twitter task is structured, so you can fill implementation incrementally and run `anchor test` as you go.
