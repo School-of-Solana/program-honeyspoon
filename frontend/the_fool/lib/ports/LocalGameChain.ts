@@ -1,16 +1,16 @@
 /**
  * LocalGameChain - localStorage-backed implementation of GameChainPort
- * 
+ *
  * This implementation simulates the Anchor contract behavior exactly.
  * Every validation, error, and state transition mirrors the on-chain contract.
- * 
+ *
  * NEW: Uses localStorage to persist wallet balances (simulates Solana wallets)
- * 
+ *
  * Purpose:
  * - Testing without deploying to blockchain
  * - Development before contract is ready
  * - Fast unit tests with realistic wallet behavior
- * 
+ *
  * IMPORTANT: This must behave identically to SolanaGameChain
  */
 
@@ -32,10 +32,10 @@ import {
 
 // localStorage keys
 const STORAGE_KEYS = {
-  WALLETS: 'local_chain_wallets',
-  VAULTS: 'local_chain_vaults',
-  SESSIONS: 'local_chain_sessions',
-  COUNTER: 'local_chain_session_counter',
+  WALLETS: "local_chain_wallets",
+  VAULTS: "local_chain_vaults",
+  SESSIONS: "local_chain_sessions",
+  COUNTER: "local_chain_session_counter",
 };
 
 /**
@@ -75,7 +75,7 @@ export class LocalGameChain implements GameChainPort {
    * Load state from localStorage
    */
   private loadState(): void {
-    if (typeof window === 'undefined') return; // SSR safety
+    if (typeof window === "undefined") return; // SSR safety
 
     try {
       // Load session counter
@@ -109,9 +109,9 @@ export class LocalGameChain implements GameChainPort {
         });
       }
 
-      console.log('[CHAIN] ✅ Loaded state from localStorage');
+      console.log("[CHAIN] ✅ Loaded state from localStorage");
     } catch (error) {
-      console.warn('[CHAIN] ⚠️ Failed to load state from localStorage:', error);
+      console.warn("[CHAIN] ⚠️ Failed to load state from localStorage:", error);
     }
   }
 
@@ -119,7 +119,7 @@ export class LocalGameChain implements GameChainPort {
    * Save state to localStorage
    */
   private saveState(): void {
-    if (typeof window === 'undefined') return; // SSR safety
+    if (typeof window === "undefined") return; // SSR safety
 
     try {
       // Save session counter
@@ -144,7 +144,7 @@ export class LocalGameChain implements GameChainPort {
       });
       localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessionsObj));
     } catch (error) {
-      console.warn('[CHAIN] ⚠️ Failed to save state to localStorage:', error);
+      console.warn("[CHAIN] ⚠️ Failed to save state to localStorage:", error);
     }
   }
 
@@ -152,7 +152,7 @@ export class LocalGameChain implements GameChainPort {
    * Load wallets from localStorage
    */
   private loadWallets(): WalletStorage {
-    if (typeof window === 'undefined') return {};
+    if (typeof window === "undefined") return {};
 
     try {
       const walletsStr = localStorage.getItem(STORAGE_KEYS.WALLETS);
@@ -166,12 +166,12 @@ export class LocalGameChain implements GameChainPort {
    * Save wallets to localStorage
    */
   private saveWallets(wallets: WalletStorage): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     try {
       localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
     } catch (error) {
-      console.warn('[CHAIN] ⚠️ Failed to save wallets:', error);
+      console.warn("[CHAIN] ⚠️ Failed to save wallets:", error);
     }
   }
 
@@ -180,16 +180,18 @@ export class LocalGameChain implements GameChainPort {
    */
   private getUserBalance(user: string): bigint {
     const wallets = this.loadWallets();
-    
+
     if (!wallets[user]) {
       // New users start with 1000 SOL in lamports
       const initialBalance = BigInt(1_000_000_000_000);
       wallets[user] = initialBalance.toString();
       this.saveWallets(wallets);
-      console.log(`[CHAIN] 💰 Created new wallet for ${user.substring(0, 12)}...: 1000 SOL`);
+      console.log(
+        `[CHAIN] 💰 Created new wallet for ${user.substring(0, 12)}...: 1000 SOL`
+      );
       return initialBalance;
     }
-    
+
     return BigInt(wallets[user]);
   }
 
@@ -204,10 +206,22 @@ export class LocalGameChain implements GameChainPort {
 
   /**
    * Helper: Get vault balance from localStorage
+   * WORKAROUND: Server-side can't access localStorage, so we fall back to initialHouseBalance
    */
   private getVaultBalance(vaultPda: string): bigint {
     const wallets = this.loadWallets();
-    return wallets[vaultPda] ? BigInt(wallets[vaultPda]) : BigInt(0);
+    const balance = wallets[vaultPda] ? BigInt(wallets[vaultPda]) : BigInt(0);
+
+    // If balance is 0 and this is the house vault, use the initial balance as fallback
+    // This happens when running server-side where localStorage isn't available
+    if (balance === BigInt(0) && vaultPda.includes("HOUSE_VAULT")) {
+      console.log(
+        "[CHAIN] ⚠️ Using fallback balance for house vault (localStorage not accessible on server)"
+      );
+      return this.initialHouseBalance;
+    }
+
+    return balance;
   }
 
   /**
@@ -242,7 +256,7 @@ export class LocalGameChain implements GameChainPort {
     };
 
     this.houseVaults.set(vaultPda, state);
-    
+
     // Initialize vault balance
     this.setVaultBalance(vaultPda, this.initialHouseBalance);
 
@@ -294,13 +308,16 @@ export class LocalGameChain implements GameChainPort {
     // Check user has sufficient balance
     const userBalance = this.getUserBalance(params.userPubkey);
     if (userBalance < params.betAmountLamports) {
-      throw GameError.insufficientUserFunds(params.betAmountLamports, userBalance);
+      throw GameError.insufficientUserFunds(
+        params.betAmountLamports,
+        userBalance
+      );
     }
 
     // Check vault can cover the reservation
     const vaultBalance = this.getVaultBalance(params.houseVaultPda);
     const newReserved = vault.totalReserved + params.maxPayoutLamports;
-    
+
     // Mimic contract validation: vault must have enough to cover all reservations
     if (vaultBalance < newReserved) {
       throw GameError.insufficientVaultBalance();
@@ -316,13 +333,22 @@ export class LocalGameChain implements GameChainPort {
     }
 
     // Transfer: user → vault (mimic contract)
-    this.setUserBalance(params.userPubkey, userBalance - params.betAmountLamports);
-    this.setVaultBalance(params.houseVaultPda, vaultBalance + params.betAmountLamports);
+    this.setUserBalance(
+      params.userPubkey,
+      userBalance - params.betAmountLamports
+    );
+    this.setVaultBalance(
+      params.houseVaultPda,
+      vaultBalance + params.betAmountLamports
+    );
 
     // Update vault reserved (mimic contract)
     // Use checked_add to mimic Rust overflow checks
     try {
-      vault.totalReserved = this.checkedAdd(vault.totalReserved, params.maxPayoutLamports);
+      vault.totalReserved = this.checkedAdd(
+        vault.totalReserved,
+        params.maxPayoutLamports
+      );
     } catch (e) {
       throw GameError.overflow("total_reserved");
     }
@@ -346,12 +372,18 @@ export class LocalGameChain implements GameChainPort {
     };
 
     this.sessions.set(sessionPda, state);
-    
+
     // Persist to localStorage
     this.saveState();
-    
-    console.log(`[CHAIN] 🎲 Generated VRF seed for session: ${Array.from(rngSeed.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join('')}...`);
-    
+
+    console.log(
+      `[CHAIN] 🎲 Generated VRF seed for session: ${Array.from(
+        rngSeed.slice(0, 4)
+      )
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")}...`
+    );
+
     return { sessionPda, state };
   }
 
@@ -400,35 +432,40 @@ export class LocalGameChain implements GameChainPort {
       roll: outcome.randomRoll,
       threshold: outcome.threshold,
       survived: outcome.survived,
-      survivalProb: (outcome.survivalProbability * 100).toFixed(1) + '%',
+      survivalProb: (outcome.survivalProbability * 100).toFixed(1) + "%",
     });
 
     if (outcome.survived) {
       // Player survives: update session
       session.currentTreasure = outcome.newTreasure;
       session.diveNumber = outcome.newDiveNumber;
-      
-      console.log(`[CHAIN] ✅ Survived! New treasure: ${outcome.newTreasure.toString()} lamports`);
+
+      console.log(
+        `[CHAIN] ✅ Survived! New treasure: ${outcome.newTreasure.toString()} lamports`
+      );
     } else {
       // Player loses: mark session as lost
       session.status = SessionStatus.Lost;
-      
+
       // Release house funds (same as loseSession logic)
       const vault = this.houseVaults.get(session.houseVault);
       if (vault) {
         try {
-          vault.totalReserved = this.checkedSub(vault.totalReserved, session.maxPayout);
+          vault.totalReserved = this.checkedSub(
+            vault.totalReserved,
+            session.maxPayout
+          );
         } catch (e) {
           throw GameError.overflow("total_reserved underflow");
         }
       }
-      
+
       console.log(`[CHAIN] ❌ Lost! Session ended.`);
     }
 
     // Persist to localStorage
     this.saveState();
-    
+
     return {
       state: session,
       survived: outcome.survived,
@@ -462,7 +499,10 @@ export class LocalGameChain implements GameChainPort {
 
     // Mimic contract: checked_sub (no underflow)
     try {
-      vault.totalReserved = this.checkedSub(vault.totalReserved, session.maxPayout);
+      vault.totalReserved = this.checkedSub(
+        vault.totalReserved,
+        session.maxPayout
+      );
     } catch (e) {
       throw GameError.overflow("total_reserved underflow");
     }
@@ -517,23 +557,32 @@ export class LocalGameChain implements GameChainPort {
     }
 
     // Transfer: vault → user (mimic contract)
-    this.setVaultBalance(session.houseVault, vaultBalance - session.currentTreasure);
+    this.setVaultBalance(
+      session.houseVault,
+      vaultBalance - session.currentTreasure
+    );
     const userBalance = this.getUserBalance(params.userPubkey);
-    this.setUserBalance(params.userPubkey, userBalance + session.currentTreasure);
+    this.setUserBalance(
+      params.userPubkey,
+      userBalance + session.currentTreasure
+    );
 
     // Update vault reserved (mimic contract checked_sub)
     try {
-      vault.totalReserved = this.checkedSub(vault.totalReserved, session.maxPayout);
+      vault.totalReserved = this.checkedSub(
+        vault.totalReserved,
+        session.maxPayout
+      );
     } catch (e) {
       throw GameError.overflow("total_reserved underflow");
     }
 
     // Update session status (mimic contract)
     session.status = SessionStatus.CashedOut;
-    
+
     // Persist to localStorage
     this.saveState();
-    
+
     return {
       finalTreasureLamports: session.currentTreasure,
       state: session,
@@ -544,7 +593,9 @@ export class LocalGameChain implements GameChainPort {
     return this.houseVaults.get(vaultPda) || null;
   }
 
-  async getSession(sessionPda: SessionHandle): Promise<GameSessionState | null> {
+  async getSession(
+    sessionPda: SessionHandle
+  ): Promise<GameSessionState | null> {
     return this.sessions.get(sessionPda) || null;
   }
 
@@ -573,7 +624,9 @@ export class LocalGameChain implements GameChainPort {
    */
   setTestUserBalance(user: string, balance: bigint): void {
     this.setUserBalance(user, balance);
-    console.log(`[CHAIN] 💰 Set balance for ${user.substring(0, 12)}...: ${balance.toString()} lamports`);
+    console.log(
+      `[CHAIN] 💰 Set balance for ${user.substring(0, 12)}...: ${balance.toString()} lamports`
+    );
   }
 
   /**
@@ -590,7 +643,9 @@ export class LocalGameChain implements GameChainPort {
     const current = this.getUserBalance(user);
     const newBalance = current + amount;
     this.setUserBalance(user, newBalance);
-    console.log(`[CHAIN] 💵 Topped up ${user.substring(0, 12)}...: +${amount.toString()} lamports`);
+    console.log(
+      `[CHAIN] 💵 Topped up ${user.substring(0, 12)}...: +${amount.toString()} lamports`
+    );
     return newBalance;
   }
 
@@ -601,7 +656,9 @@ export class LocalGameChain implements GameChainPort {
     const current = this.getVaultBalance(vaultPda);
     const newBalance = current + amount;
     this.setVaultBalance(vaultPda, newBalance);
-    console.log(`[CHAIN] 💵 Topped up vault ${vaultPda.substring(0, 12)}...: +${amount.toString()} lamports`);
+    console.log(
+      `[CHAIN] 💵 Topped up vault ${vaultPda.substring(0, 12)}...: +${amount.toString()} lamports`
+    );
     return newBalance;
   }
 
@@ -616,7 +673,7 @@ export class LocalGameChain implements GameChainPort {
    * Reset all state (for testing)
    */
   resetState(): void {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.removeItem(STORAGE_KEYS.WALLETS);
       localStorage.removeItem(STORAGE_KEYS.VAULTS);
       localStorage.removeItem(STORAGE_KEYS.SESSIONS);
@@ -625,6 +682,6 @@ export class LocalGameChain implements GameChainPort {
     this.houseVaults.clear();
     this.sessions.clear();
     this.sessionCounter = 0;
-    console.log('[CHAIN] 🔄 Reset all state');
+    console.log("[CHAIN] 🔄 Reset all state");
   }
 }

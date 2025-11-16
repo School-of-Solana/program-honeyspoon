@@ -18,6 +18,7 @@ import { GAME_CONFIG } from "@/lib/constants";
 import { GAME_COLORS } from "@/lib/gameColors";
 import { playSound, getSoundManager } from "@/lib/soundManager";
 import { useGameStore } from "@/lib/gameStore";
+import { useChainWalletStore } from "@/lib/chainWalletStore";
 import {
   parseServerError,
   getErrorAction,
@@ -27,10 +28,82 @@ import {
 } from "@/lib/errorTypes";
 
 export default function Home() {
-  // Generate a fixed userId for this session (in production, would come from auth)
-  const [userId] = useState(
-    () => `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+  // Use Zustand store for userId and wallet balance
+  const userIdFromStore = useChainWalletStore((state) => state.userId);
+  const setUserId = useChainWalletStore((state) => state.setUserId);
+  const userBalance = useChainWalletStore((state) => state.userBalance);
+  const loadWalletsFromLocalStorage = useChainWalletStore(
+    (state) => state.loadWalletsFromLocalStorage
   );
+  const houseVaultBalance = useChainWalletStore(
+    (state) => state.houseVaultBalance
+  );
+  const houseVaultReserved = useChainWalletStore(
+    (state) => state.houseVaultReserved
+  );
+
+  // Convert nullable userId to non-null for GameState compatibility
+  const userId = userIdFromStore || "";
+
+  // Initialize userId on mount if not already set
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Load wallets first
+    loadWalletsFromLocalStorage();
+
+    // Check if we already have a userId in the store
+    if (userIdFromStore) {
+      console.log(
+        "[GAME] 📦 Using existing userId from store:",
+        userIdFromStore.substring(0, 30) + "..."
+      );
+      return;
+    }
+
+    // Try to get userId from legacy localStorage
+    const storedUserId = localStorage.getItem("game_user_id");
+    if (storedUserId) {
+      console.log(
+        "[GAME] 📦 Migrating userId from localStorage:",
+        storedUserId.substring(0, 30) + "..."
+      );
+      setUserId(storedUserId);
+      return;
+    }
+
+    // Check if there's already a user wallet in localStorage
+    const walletsStr = localStorage.getItem("local_chain_wallets");
+    if (walletsStr) {
+      try {
+        const wallets = JSON.parse(walletsStr);
+        const userWallets = Object.keys(wallets).filter((addr) =>
+          addr.startsWith("user_")
+        );
+        if (userWallets.length > 0) {
+          console.log(
+            "[GAME] 📦 Using existing wallet from localStorage:",
+            userWallets[0].substring(0, 30) + "..."
+          );
+          setUserId(userWallets[0]);
+          // Clean up legacy storage
+          localStorage.setItem("game_user_id", userWallets[0]);
+          return;
+        }
+      } catch (e) {
+        console.warn("[GAME] Failed to parse wallets from localStorage");
+      }
+    }
+
+    // No existing userId found - generate new one
+    const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    console.log(
+      "[GAME] 🆕 Generated new userId:",
+      newUserId.substring(0, 30) + "..."
+    );
+    setUserId(newUserId);
+    localStorage.setItem("game_user_id", newUserId);
+  }, [userIdFromStore, setUserId, loadWalletsFromLocalStorage]);
 
   const [gameState, setGameState] = useState<GameState>({
     isPlaying: false,
@@ -42,8 +115,13 @@ export default function Home() {
     sessionId: "",
     userId: "",
     discoveredShipwrecks: [],
-    walletBalance: 0,
+    walletBalance: userBalance, // Use balance from Zustand store
   });
+
+  // Sync gameState.walletBalance with Zustand store
+  useEffect(() => {
+    setGameState((prev) => ({ ...prev, walletBalance: userBalance }));
+  }, [userBalance]);
 
   const betAmount = GAME_CONFIG.FIXED_BET; // Fixed bet amount for simplified gameplay
   const [isProcessing, setIsProcessing] = useState(false);
@@ -75,50 +153,46 @@ export default function Home() {
 
   // Sound state
   const [soundMuted, setSoundMuted] = useState(false); // Sound mute state
-  
-  // House wallet info for debug panel
-  const [houseWalletInfo, setHouseWalletInfo] = useState({
-    balance: 0,
-    reservedFunds: 0,
-    availableFunds: 0,
-    totalPaidOut: 0,
-    totalReceived: 0,
-  });
 
-  // Initialize session and wallet on mount
+  // House wallet info for debug panel (now comes from Zustand store)
+  const houseWalletInfo = {
+    balance: houseVaultBalance,
+    reservedFunds: houseVaultReserved,
+    availableFunds: houseVaultBalance - houseVaultReserved,
+    totalPaidOut: 0, // Not tracked yet
+    totalReceived: 0, // Not tracked yet
+  };
+
+  // Initialize session on mount
   useEffect(() => {
     const initializeSession = async () => {
+      if (!userId) return; // Wait for userId to be set
+
       const sessionId = await generateSessionId();
-      const walletInfo = await getWalletInfo(userId);
-      const houseStatus = await getHouseStatus();
 
       setGameState((prev) => ({
         ...prev,
         sessionId,
         userId,
-        walletBalance: walletInfo.balance,
+        walletBalance: userBalance, // Use balance from Zustand store
       }));
 
-      setHouseWalletInfo(houseStatus);
+      console.log("[GAME] 🎮 Session initialized", {
+        sessionId,
+        userId: userId.substring(0, 30) + "...",
+        walletBalance: userBalance,
+      });
     };
 
     initializeSession();
-  }, [userId]);
+  }, [userId, userBalance]);
 
   // Sync initial sound state from manager on mount
   useEffect(() => {
     setSoundMuted(getSoundManager().isMuted());
   }, []);
 
-  // Update house wallet info periodically for debug panel
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      const houseStatus = await getHouseStatus();
-      setHouseWalletInfo(houseStatus);
-    }, 2000); // Update every 2 seconds
-
-    return () => clearInterval(interval);
-  }, []);
+  // No longer needed - Zustand store auto-syncs from localStorage every 2 seconds
 
   // Error handling helpers
   const showError = (
@@ -370,7 +444,7 @@ export default function Home() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      
+
       // ✅ NEW: Use typed error parsing instead of string matching
       const gameError = parseServerError(message);
       const action = getErrorAction(gameError);
@@ -497,7 +571,7 @@ export default function Home() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      
+
       // ✅ NEW: Use typed error parsing instead of string matching
       const gameError = parseServerError(message);
       const action = getErrorAction(gameError);
@@ -817,10 +891,7 @@ export default function Home() {
                         fontWeight: "bold",
                       }}
                     >
-                      {(currentDiveStats.survivalProbability * 100).toFixed(
-                        0
-                      )}
-                      %
+                      {(currentDiveStats.survivalProbability * 100).toFixed(0)}%
                     </span>
                   </div>
                 </div>
@@ -856,9 +927,7 @@ export default function Home() {
         )}
 
         {/* Unified Debug Panel (only in development) */}
-        {process.env.NODE_ENV === "development" && (
-          <DebugPanel houseWalletInfo={houseWalletInfo} />
-        )}
+        {process.env.NODE_ENV === "development" && <DebugPanel />}
       </div>
     </GameErrorBoundary>
   );
