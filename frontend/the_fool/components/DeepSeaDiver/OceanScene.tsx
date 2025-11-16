@@ -4,8 +4,9 @@ import { useEffect, useRef } from "react";
 import kaplay from "kaplay";
 import type { KAPLAYCtx } from "kaplay";
 import { getDepthZone } from "@/lib/gameLogic";
-import type { Shipwreck } from "@/lib/types";
+import { AnimationType, type Shipwreck } from "@/lib/types";
 import { SPRITE_CONFIGS } from "@/lib/spriteConfig";
+import { GAME_COLORS } from "@/lib/gameColors";
 import * as CONST from "./sceneConstants";
 
 interface OceanSceneProps {
@@ -92,7 +93,7 @@ export default function OceanScene({
       canvas: canvasRef.current,
       width: window.innerWidth,
       height: window.innerHeight,
-      background: [20, 40, 80],
+      background: GAME_COLORS.KAPLAY.OCEAN_BG,
       debug: debugMode,
       stretch: true,
       letterbox: false,
@@ -117,15 +118,15 @@ export default function OceanScene({
     console.log('[CANVAS] ✅ All sprites loaded!');
 
     // CENTRALIZED Animation state (not per-object!)
-    let diverY = k.height() / 2 - 100;
+    let diverY = k.height() / 2 - CONST.LAYOUT.DIVER_Y_OFFSET;
     const diverX = k.width() / 2;
     let isAnimating = false;
-    let animationType: 'idle' | 'diving' | 'treasure' | 'death' = 'idle';
+    let animationType: AnimationType = AnimationType.IDLE;
     let divingSpeed = 0;
 
     // Diving animation timing (centralized)
     let divingElapsed = 0;
-    const divingDuration = 2.5;
+    const divingDuration = CONST.ANIMATION_TIMINGS.DIVING_DURATION;
 
     // Treasure animation timing
     let treasurePulseTime = 0;
@@ -150,7 +151,7 @@ export default function OceanScene({
         ]),
         k.pos(0, 0),
         k.color(...CONST.COLORS.BOAT_HULL),
-        k.outline(CONST.BOAT.OUTLINE_WIDTH, k.rgb(70, 40, 20)),
+        k.outline(CONST.BOAT.OUTLINE_WIDTH, k.rgb(...CONST.COLORS.OUTLINE_BOAT_HULL)),
       ]);
 
       // Deck planks
@@ -196,7 +197,7 @@ export default function OceanScene({
         ]),
         k.pos(CONST.BOAT.MAST_OFFSET_X, CONST.BOAT.FLAG_OFFSET_Y),
         k.color(...CONST.COLORS.BOAT_FLAG),
-        k.outline(CONST.BOAT.OUTLINE_WIDTH_FLAG, k.rgb(150, 30, 30)),
+        k.outline(CONST.BOAT.OUTLINE_WIDTH_FLAG, k.rgb(...CONST.COLORS.OUTLINE_FLAG)),
       ]);
 
       // Anchor rope coil
@@ -204,7 +205,7 @@ export default function OceanScene({
         k.circle(CONST.BOAT.ANCHOR_ROPE_RADIUS),
         k.pos(CONST.BOAT.ANCHOR_ROPE_X, CONST.BOAT.ANCHOR_ROPE_Y),
         k.color(...CONST.COLORS.ANCHOR_ROPE),
-        k.outline(CONST.BOAT.OUTLINE_WIDTH_THIN, k.rgb(100, 80, 50)),
+        k.outline(CONST.BOAT.OUTLINE_WIDTH_THIN, k.rgb(...CONST.COLORS.OUTLINE_ANCHOR)),
       ]);
 
       return boat;
@@ -314,7 +315,7 @@ export default function OceanScene({
       k.add([
         k.polygon(beachPoints),
         k.pos(0, 0),
-        k.color(194, 178, 128), // Sandy color
+        k.color(...CONST.COLORS.BEACH),
         k.z(1),
       ]);
 
@@ -327,7 +328,7 @@ export default function OceanScene({
         k.add([
           k.circle(3),
           k.pos(waveX, y),
-          k.color(255, 255, 255),
+          k.color(...CONST.COLORS.FOAM),
           k.opacity(0.6),
           k.z(7),
         ]);
@@ -368,7 +369,7 @@ export default function OceanScene({
           k.circle(rock.size),
           k.pos(k.width() * rock.x, k.height() * rock.y),
           k.color(...CONST.COLORS.ROCK),
-          k.outline(2, k.rgb(70, 70, 70)),
+          k.outline(2, k.rgb(...CONST.COLORS.OUTLINE_ROCK)),
           k.z(CONST.Z_LAYERS.SUN),
         ]);
       });
@@ -385,7 +386,7 @@ export default function OceanScene({
           ]),
           k.pos(k.width() * shell.x, k.height() * shell.y),
           k.color(...CONST.COLORS.SHELL),
-          k.outline(1, k.rgb(200, 180, 160)),
+          k.outline(1, k.rgb(...CONST.COLORS.OUTLINE_SHELL)),
           k.z(CONST.Z_LAYERS.SUN),
         ]);
       });
@@ -431,7 +432,7 @@ export default function OceanScene({
           ]),
           k.pos(startX, startY),
           k.color(...CONST.COLORS.SEAGULL),
-          k.outline(1, k.rgb(200, 200, 200)),
+          k.outline(1, k.rgb(...CONST.COLORS.OUTLINE_CLOUD)),
           k.z(CONST.Z_LAYERS.SEAGULL),
         ]);
 
@@ -511,7 +512,7 @@ export default function OceanScene({
           const fadeOverlay = k.add([
             k.rect(k.width(), k.height()),
             k.pos(0, 0),
-            k.color(0, 0, 0),
+            k.color(...CONST.COLORS.FADE_BLACK),
             k.opacity(0),
             k.z(200),
           ]);
@@ -566,7 +567,7 @@ export default function OceanScene({
       const sky = k.add([
         k.rect(k.width(), k.height() * 0.6),
         k.pos(0, 0),
-        k.color(135, 206, 250),
+        k.color(...CONST.COLORS.SKY),
         k.opacity(0),
         k.z(1),
       ]);
@@ -575,7 +576,7 @@ export default function OceanScene({
       const sun = k.add([
         k.circle(50),
         k.pos(k.width() * 0.8, k.height() * 0.15),
-        k.color(255, 220, 100),
+        k.color(...CONST.COLORS.SUN),
         k.opacity(0),
         k.z(2),
       ]);
@@ -1235,7 +1236,7 @@ export default function OceanScene({
       function triggerDeathAnimation() {
         console.log('[CANVAS] Triggering death animation!');
         isAnimating = true;
-        animationType = 'death';
+        animationType = AnimationType.DEATH;
         divingSpeed = 0;
 
         // Choose predator based on current depth
@@ -1292,7 +1293,7 @@ export default function OceanScene({
                     fadeInterval.cancel();
                     // Reset animation state before going to beach
                     isAnimating = false;
-                    animationType = 'idle';
+                    animationType = AnimationType.IDLE;
                     k.go("beach");
                   }
                 });
@@ -1369,7 +1370,7 @@ export default function OceanScene({
         darknessOverlay.opacity = Math.min(0.1 + (depthRef.current / 1000) * 0.7, 0.8);
 
         // ===== DIVING ANIMATION LOGIC =====
-        if (animationType === 'diving') {
+        if (animationType === AnimationType.DIVING) {
           divingElapsed += k.dt();
           const progress = Math.min(divingElapsed / divingDuration, 1);
 
@@ -1440,7 +1441,7 @@ export default function OceanScene({
           if (progress >= 1) {
             console.log('[CANVAS] ✅ Diving animation complete!');
             isAnimating = false;
-            animationType = 'idle';
+            animationType = AnimationType.IDLE;
             divingSpeed = 0;
             divingElapsed = 0;
 
@@ -1451,20 +1452,20 @@ export default function OceanScene({
         }
 
         // ===== TREASURE ANIMATION LOGIC =====
-        if (animationType === 'treasure') {
+        if (animationType === AnimationType.TREASURE) {
           treasurePulseTime += k.dt() * 8;
 
           if (treasurePulseTime > Math.PI * 4) {
             console.log('[CANVAS] ✅ Treasure animation complete! Staying underwater for next dive...');
             // Stay underwater - don't surface automatically
             isAnimating = false;
-            animationType = 'idle';
+            animationType = AnimationType.IDLE;
             treasurePulseTime = 0;
           }
         }
 
         // ===== IDLE STATE - Gentle bobbing & slow parallax =====
-        if (!isAnimating && animationType === 'idle') {
+        if (!isAnimating && animationType === AnimationType.IDLE) {
           const bobAmount = Math.sin(k.time() * 2) * 10;
           diver.pos.y = diverY + bobAmount;
 
@@ -1498,22 +1499,22 @@ export default function OceanScene({
 
         // ===== ANIMATION TRIGGERS =====
         // Check for surfacing request (player cashed out)
-        if (shouldSurfaceRef.current && !isAnimating && animationType === 'idle') {
+        if (shouldSurfaceRef.current && !isAnimating && animationType === AnimationType.IDLE) {
           console.log('[CANVAS] 🌊 Player cashed out! Transitioning to surfacing...');
           k.go("surfacing", { treasure: treasureRef.current });
-        } else if (isDivingRef.current && !isAnimating && animationType === 'idle') {
+        } else if (isDivingRef.current && !isAnimating && animationType === AnimationType.IDLE) {
           console.log('[CANVAS] 🤿 Starting dive animation (2.5s)');
           isAnimating = true;
-          animationType = 'diving';
+          animationType = AnimationType.DIVING;
           divingElapsed = 0;
-        } else if (survivedRef.current === true && !isAnimating && animationType === 'idle') {
+        } else if (survivedRef.current === true && !isAnimating && animationType === AnimationType.IDLE) {
           console.log('[CANVAS] 💰 Treasure found! Playing success animation');
           isAnimating = true;
-          animationType = 'treasure';
+          animationType = AnimationType.TREASURE;
           treasurePulseTime = 0;
           createTreasureParticles(diver.pos.x, diver.pos.y);
           showTreasureChest(diver.pos.x, diver.pos.y); // Show animated chest!
-        } else if (survivedRef.current === false && !isAnimating && animationType === 'idle') {
+        } else if (survivedRef.current === false && !isAnimating && animationType === AnimationType.IDLE) {
           console.log('[CANVAS] 💀 Death triggered! Playing attack animation');
           triggerDeathAnimation();
         }

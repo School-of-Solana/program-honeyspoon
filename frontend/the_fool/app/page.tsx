@@ -285,6 +285,10 @@ export default function Home() {
 
         console.log('[GAME] 🔄 Resetting to betting screen');
 
+        // Generate new session ID for next game
+        const newSessionId = await generateSessionId();
+        console.log('[GAME] 🆔 New session ID generated', { newSessionId });
+
         // Reset and show betting card again
         setShowHUD(false);
         setGameState((prev) => ({
@@ -296,6 +300,7 @@ export default function Home() {
           oxygenLevel: 100,
           discoveredShipwrecks: [],
           walletBalance: walletInfo.balance,
+          sessionId: newSessionId, // ✅ NEW SESSION ID
         }));
         setLastShipwreck(undefined);
         setSurvived(undefined);
@@ -366,6 +371,10 @@ export default function Home() {
 
         console.log('[GAME] 🔄 Resetting to betting screen');
 
+        // Generate new session ID for next game
+        const newSessionId = await generateSessionId();
+        console.log('[GAME] 🆔 New session ID generated', { newSessionId });
+
         // Reset and show betting card
         setShowHUD(false);
         setGameState((prev) => ({
@@ -377,6 +386,7 @@ export default function Home() {
           oxygenLevel: 100,
           discoveredShipwrecks: [],
           walletBalance: walletInfo.balance,
+          sessionId: newSessionId, // ✅ NEW SESSION ID
         }));
         setLastShipwreck(undefined);
         setSurvived(undefined);

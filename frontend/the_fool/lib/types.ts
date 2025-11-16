@@ -2,6 +2,14 @@
  * Type definitions for Abyss Fortune game
  */
 
+// Animation state types
+export enum AnimationType {
+  IDLE = 'idle',
+  DIVING = 'diving',
+  TREASURE = 'treasure',
+  DEATH = 'death'
+}
+
 export interface GameState {
   isPlaying: boolean;
   diveNumber: number;

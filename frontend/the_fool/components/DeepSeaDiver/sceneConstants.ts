@@ -184,6 +184,13 @@ export const COLORS = {
   ATTACK_FLASH: [255, 0, 0] as [number, number, number],
   FADE_BLACK: [0, 0, 0] as [number, number, number],
   GLOW_YELLOW: [255, 255, 150] as [number, number, number],
+  // Outline colors
+  OUTLINE_BOAT_HULL: [70, 40, 20] as [number, number, number],
+  OUTLINE_FLAG: [150, 30, 30] as [number, number, number],
+  OUTLINE_ANCHOR: [100, 80, 50] as [number, number, number],
+  OUTLINE_ROCK: [70, 70, 70] as [number, number, number],
+  OUTLINE_SHELL: [200, 180, 160] as [number, number, number],
+  OUTLINE_CLOUD: [200, 200, 200] as [number, number, number],
 } as const;
 
 // ===== OPACITY VALUES =====
