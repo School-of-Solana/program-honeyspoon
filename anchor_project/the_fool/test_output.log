@@ -1,9 +1,0 @@
-[2025-11-16T17:41:59.809628000Z ERROR cargo_build_sbf] Failed to obtain package metadata: `cargo metadata` exited with an error: error: failed to load manifest for workspace member `/Users/abder/school_of_solana/program-honeyspoon/anchor_project/the_fool/programs/the_fool`
-    referenced by workspace at `/Users/abder/school_of_solana/program-honeyspoon/anchor_project/the_fool/Cargo.toml`
-    
-    Caused by:
-      failed to read `/Users/abder/school_of_solana/program-honeyspoon/anchor_project/the_fool/programs/the_fool/Cargo.toml`
-    
-    Caused by:
-      No such file or directory (os error 2)
-    
