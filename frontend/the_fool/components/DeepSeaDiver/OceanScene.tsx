@@ -9,6 +9,10 @@ import { SPRITE_CONFIGS } from "@/lib/spriteConfig";
 import { GAME_COLORS } from "@/lib/gameColors";
 import * as CONST from "./sceneConstants";
 import { createBoat } from "./entities/boat";
+import { createBubble } from "./entities/bubble";
+import { createFish } from "./entities/fish";
+import { createJellyfish } from "./entities/jellyfish";
+import { createSeagull } from "./entities/seagull";
 
 interface OceanSceneProps {
   depth: number;
@@ -343,37 +347,11 @@ export default function OceanScene({
       });
 
       // Flying seagulls
-      function createSeagull(startX: number, startY: number, speed: number) {
-        const seagull = k.add([
-          k.polygon([
-            k.vec2(0, 0),
-            k.vec2(-CONST.SEAGULL.WING_WIDTH, -CONST.SEAGULL.WING_HEIGHT),
-            k.vec2(-CONST.SEAGULL.BODY_WIDTH, 0),
-            k.vec2(0, -2),
-            k.vec2(CONST.SEAGULL.BODY_WIDTH, 0),
-            k.vec2(CONST.SEAGULL.WING_WIDTH, -CONST.SEAGULL.WING_HEIGHT),
-          ]),
-          k.pos(startX, startY),
-          k.color(...CONST.COLORS.SEAGULL),
-          k.outline(1, k.rgb(...CONST.COLORS.OUTLINE_CLOUD)),
-          k.z(CONST.Z_LAYERS.SEAGULL),
-        ]);
-
-        seagull.onUpdate(() => {
-          seagull.pos.x += speed * k.dt();
-          seagull.pos.y += Math.sin(k.time() * CONST.SEAGULL.VERTICAL_WAVE_SPEED + startX) * CONST.SEAGULL.VERTICAL_WAVE_AMPLITUDE * k.dt();
-
-          if (seagull.pos.x > k.width() + CONST.SEAGULL.WRAP_OFFSET) {
-            seagull.pos.x = -CONST.SEAGULL.WRAP_OFFSET;
-          }
-        });
-
-        return seagull;
-      }
+      // Seagull creation moved to entities/seagull.ts
 
       // Spawn seagulls
       CONST.DECORATIONS.SEAGULLS.forEach(seagull => {
-        createSeagull(k.width() * seagull.x, k.height() * seagull.y, seagull.speed);
+        createSeagull(k, k.width() * seagull.x, k.height() * seagull.y, seagull.speed);
       });
 
       // Create boat at water surface (LEFT SIDE - UI is on right)
@@ -899,104 +877,27 @@ export default function OceanScene({
       }
 
       // Bubbles - USING ANIMATED SPRITES!
-      function createBubble(x?: number, y?: number) {
-        const bubbleX = x !== undefined ? x : diver.pos.x + (Math.random() - 0.5) * CONST.BUBBLE.SPAWN_OFFSET_X;
-        const bubbleY = y !== undefined ? y : diver.pos.y - CONST.BUBBLE.SPAWN_OFFSET_Y;
-        const scale = CONST.BUBBLE.SCALE_BASE + Math.random() * CONST.BUBBLE.SCALE_RANDOM;
-
-        const bubble = k.add([
-          k.sprite("bubble", { frame: Math.floor(Math.random() * CONST.BUBBLE.FRAME_COUNT) }),
-          k.pos(bubbleX, bubbleY),
-          k.anchor("center"),
-          k.scale(scale),
-          k.opacity(CONST.BUBBLE.OPACITY_INITIAL),
-          k.z(CONST.Z_LAYERS.BUBBLES),
-          k.lifespan(CONST.BUBBLE.LIFESPAN),
-        ]);
-
-        bubble.onUpdate(() => {
-          bubble.pos.y -= (CONST.BUBBLE.RISE_BASE_SPEED + divingSpeed) * k.dt();
-          bubble.pos.x += Math.sin(k.time() * CONST.BUBBLE.HORIZONTAL_WAVE_SPEED + bubbleY) * CONST.BUBBLE.HORIZONTAL_WAVE_AMPLITUDE * k.dt();
-          bubble.opacity -= k.dt() * CONST.BUBBLE.OPACITY_FADE_RATE;
-
-          // Pop animation when fading out
-          if (bubble.opacity < CONST.BUBBLE.OPACITY_POP_THRESHOLD) {
-            bubble.play("pop");
-          }
-        });
-      }
+      // Bubble creation moved to entities/bubble.ts
 
       k.loop(CONST.SPAWN_RATES.BUBBLE_INTERVAL, () => {
         if (!isAnimating && Math.random() > CONST.SPAWN_RATES.BUBBLE_CHANCE) {
-          createBubble();
+          createBubble(k, diver.pos, divingSpeed);
         }
       });
 
-      // Fish (using sprites) - WITH VARIETY!
-      function createFish() {
-        const fishType = CONST.FISH.TYPES[Math.floor(Math.random() * CONST.FISH.TYPES.length)];
-        const fishY = CONST.FISH.SPAWN_Y_MIN + Math.random() * CONST.FISH.SPAWN_Y_RANGE;
-        const direction = Math.random() > 0.5 ? 1 : -1;
-        const startX = direction > 0 ? -CONST.FISH.SPAWN_OFFSET : k.width() + CONST.FISH.SPAWN_OFFSET;
-        const scaleMultiplier = fishType === "fish1" ? CONST.FISH.SCALE_SMALL : CONST.FISH.SCALE_LARGE;
-
-        const fish = k.add([
-          k.sprite(fishType, { anim: "swim" }),
-          k.pos(startX, fishY),
-          k.anchor("center"),
-          k.z(CONST.Z_LAYERS.FISH),
-          k.scale(direction > 0 ? scaleMultiplier : -scaleMultiplier, scaleMultiplier),
-          k.opacity(lightLevel * CONST.FISH.OPACITY_BASE),
-        ]);
-
-        fish.onUpdate(() => {
-          fish.pos.x += direction * CONST.FISH.HORIZONTAL_SPEED * k.dt();
-          fish.pos.y += Math.sin(k.time() * CONST.FISH.VERTICAL_WAVE_SPEED + fishY) * CONST.FISH.VERTICAL_WAVE_AMPLITUDE * k.dt();
-
-          if (
-            (direction > 0 && fish.pos.x > k.width() + CONST.FISH.DESPAWN_OFFSET) ||
-            (direction < 0 && fish.pos.x < -CONST.FISH.DESPAWN_OFFSET)
-          ) {
-            k.destroy(fish);
-          }
-        });
-      }
+      // Fish creation moved to entities/fish.ts
 
       k.loop(CONST.SPAWN_RATES.FISH_INTERVAL, () => {
         if (Math.random() > CONST.SPAWN_RATES.FISH_CHANCE && lightLevel > CONST.OPACITY.LIGHT_RAY_MIN) {
-          createFish();
+          createFish(k, lightLevel);
         }
       });
 
-      // Jellyfish (floating creatures)
-      function createJellyfish() {
-        const jellyfishY = CONST.JELLYFISH.SPAWN_Y_MIN + Math.random() * CONST.JELLYFISH.SPAWN_Y_RANGE;
-        const jellyfishX = Math.random() * k.width();
+      // Jellyfish creation moved to entities/jellyfish.ts
 
-        const jellyfish = k.add([
-          k.sprite("jellyfish", { anim: "float" }),
-          k.pos(jellyfishX, jellyfishY),
-          k.anchor("center"),
-          k.z(CONST.Z_LAYERS.JELLYFISH),
-          k.scale(CONST.JELLYFISH.SCALE),
-          k.opacity(CONST.JELLYFISH.OPACITY_BASE * lightLevel),
-        ]);
-
-        jellyfish.onUpdate(() => {
-          jellyfish.pos.y -= CONST.JELLYFISH.VERTICAL_SPEED * k.dt();
-          jellyfish.pos.x += Math.sin(k.time() * CONST.JELLYFISH.HORIZONTAL_WAVE_SPEED + jellyfishY) * CONST.JELLYFISH.HORIZONTAL_WAVE_AMPLITUDE * k.dt();
-
-          if (jellyfish.pos.y < -CONST.JELLYFISH.WRAP_OFFSET) {
-            jellyfish.pos.y = k.height() + CONST.JELLYFISH.WRAP_OFFSET;
-            jellyfish.pos.x = Math.random() * k.width();
-          }
-        });
-      }
-
-      // Spawn jellyfish periodically
       k.loop(CONST.SPAWN_RATES.JELLYFISH_INTERVAL, () => {
         if (Math.random() > CONST.SPAWN_RATES.JELLYFISH_CHANCE && lightLevel > CONST.OPACITY.LIGHT_RAY_MIN) {
-          createJellyfish();
+          createJellyfish(k, lightLevel);
         }
       });
 
@@ -1067,9 +968,9 @@ export default function OceanScene({
       function showTreasureChest(x: number, y: number) {
         const chest = k.add([
           k.sprite("chest", { anim: "closed" }),
-          k.pos(x, y + 60), // Position below diver
+          k.pos(x, y + 120), // Position WAY below diver (was 60, now 120)
           k.anchor("center"),
-          k.scale(3),
+          k.scale(5), // Make it BIGGER (was 3, now 5)
           k.opacity(0),
           k.z(18), // Behind diver (diver is z:20)
         ]);
@@ -1091,7 +992,7 @@ export default function OceanScene({
 
             // Spawn coin particles
             for (let i = 0; i < CONST.SPAWN_RATES.COIN_COUNT; i++) {
-              setTimeout(() => createCoinParticle(x, y + 60), i * CONST.ANIMATION_TIMINGS.COIN_SPAWN_INTERVAL);
+              setTimeout(() => createCoinParticle(x, y + 120), i * CONST.ANIMATION_TIMINGS.COIN_SPAWN_INTERVAL);
             }
           }, CONST.ANIMATION_TIMINGS.CHEST_ANIMATION_DELAY);
         }, CONST.ANIMATION_TIMINGS.CHEST_OPEN_DELAY);
@@ -1355,6 +1256,9 @@ export default function OceanScene({
           // Extra bubbles
           if (Math.random() > 0.8) {
             createBubble(
+              k,
+              diver.pos,
+              divingSpeed,
               diver.pos.x + (Math.random() - 0.5) * 60,
               diver.pos.y + (Math.random() - 0.5) * 40
             );

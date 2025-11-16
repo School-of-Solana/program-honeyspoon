@@ -10,8 +10,11 @@ const SOUND_PATHS = {
   COIN: '/sounds/coin.wav',
   EXPLOSION: '/sounds/explosion.wav',
   BUBBLES: '/sounds/bubbles.wav',
+  SURFACE: '/sounds/surface.wav',
+  DIVE: '/sounds/dive.wav',
   WATER_LOOP: '/sounds/water-loop.wav',
   BEACH_WAVES: '/sounds/beach-waves.ogg',
+  BUTTON_CLICK: '/sounds/button-click.wav',
 } as const;
 
 // Sound type
@@ -19,11 +22,14 @@ export type SoundType = keyof typeof SOUND_PATHS;
 
 // Volume settings (0.0 to 1.0)
 const DEFAULT_VOLUMES = {
-  COIN: 0.5,
-  EXPLOSION: 0.4,
-  BUBBLES: 0.3,
-  WATER_LOOP: 0.2,
-  BEACH_WAVES: 0.15,
+  COIN: 0.6,
+  EXPLOSION: 0.5,
+  BUBBLES: 0.4,
+  SURFACE: 0.5,
+  DIVE: 0.5,
+  WATER_LOOP: 0.15,
+  BEACH_WAVES: 0.12,
+  BUTTON_CLICK: 0.3,
 } as const;
 
 class SoundManager {
@@ -40,20 +46,26 @@ class SoundManager {
    * Preload all sound files
    */
   private preloadAll(): void {
+    console.log('[SOUND] 🎵 Preloading sounds...');
     Object.entries(SOUND_PATHS).forEach(([key, path]) => {
       try {
         const audio = new Audio(path);
         audio.preload = 'auto';
         audio.volume = DEFAULT_VOLUMES[key as SoundType] * this.masterVolume;
         
-        // Handle load errors silently (files not downloaded yet)
-        audio.addEventListener('error', () => {
-          // Silent fail - sound file not found
+        // Handle load events
+        audio.addEventListener('canplaythrough', () => {
+          console.log(`[SOUND] ✅ Loaded: ${key} (${path})`);
+        });
+        
+        audio.addEventListener('error', (e) => {
+          console.error(`[SOUND] ❌ Failed to load: ${key} (${path})`, e);
         });
         
         this.sounds.set(key as SoundType, audio);
+        console.log(`[SOUND] 📦 Registered: ${key}`);
       } catch (error) {
-        // Silent fail - can't create audio element
+        console.error(`[SOUND] ❌ Exception loading ${key}:`, error);
       }
     });
   }
@@ -62,13 +74,21 @@ class SoundManager {
    * Play a sound effect
    */
   play(soundType: SoundType, options?: { loop?: boolean; volume?: number }): void {
-    if (this.muted) return;
+    console.log(`[SOUND] 🎵 play() called for: ${soundType}`, { muted: this.muted, options });
+    
+    if (this.muted) {
+      console.log(`[SOUND] 🔇 Muted - not playing ${soundType}`);
+      return;
+    }
 
     const sound = this.sounds.get(soundType);
     if (!sound) {
-      // Silent fail - sound files not downloaded yet
+      console.warn(`[SOUND] ⚠️ Sound not found in map: ${soundType}`);
+      console.log('[SOUND] Available sounds:', Array.from(this.sounds.keys()));
       return;
     }
+
+    console.log(`[SOUND] 🎮 Found sound: ${soundType}, attempting to play...`);
 
     try {
       // Clone for overlapping sounds (multiple plays)
@@ -78,27 +98,30 @@ class SoundManager {
       playSound.loop = options?.loop ?? false;
       playSound.volume = (options?.volume ?? DEFAULT_VOLUMES[soundType]) * this.masterVolume;
 
+      console.log(`[SOUND] 📊 Volume: ${playSound.volume}, Loop: ${playSound.loop}`);
+
       // Play
       const playPromise = playSound.play();
       
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
-            // Success - sound playing
+            console.log(`[SOUND] ✅ Playing: ${soundType} (duration: ${playSound.duration}s)`);
           })
-          .catch(() => {
-            // Silent fail - file not found or can't play
+          .catch((error) => {
+            console.error(`[SOUND] ❌ Playback failed for ${soundType}:`, error);
           });
       }
 
       // Auto-cleanup for non-looping sounds
       if (!playSound.loop) {
         playSound.addEventListener('ended', () => {
+          console.log(`[SOUND] ⏹️ Finished playing: ${soundType}`);
           playSound.remove();
         });
       }
     } catch (error) {
-      console.error(`[SOUND] Error playing ${soundType}:`, error);
+      console.error(`[SOUND] ❌ Exception playing ${soundType}:`, error);
     }
   }
 

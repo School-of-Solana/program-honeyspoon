@@ -196,7 +196,8 @@ export default function Home() {
       // STEP 1: Start diving animation
       setIsDiving(true);
       setAnimationMessage('DIVING...');
-      playSound('BUBBLES'); // Play diving sound
+      playSound('DIVE'); // Play diving swoosh sound
+      setTimeout(() => playSound('BUBBLES'), 200); // Bubbles shortly after
       console.log('[GAME] 🎬 Starting diving animation (2.5s)...');
       
       // Wait for diving animation (2.5 seconds as defined in OceanScene)
@@ -341,6 +342,7 @@ export default function Home() {
     setIsProcessing(true);
     setShouldSurface(true); // Trigger surfacing animation
     setAnimationMessage('SURFACING!');
+    playSound('SURFACE'); // Play splash sound
 
     try {
       const result = await surfaceWithTreasure(
@@ -501,7 +503,10 @@ export default function Home() {
 
             {/* Start Button */}
             <button
-              onClick={handleStartGame}
+              onClick={() => {
+                playSound('BUTTON_CLICK');
+                handleStartGame();
+              }}
               disabled={betAmount > (gameState.walletBalance || 0)}
               className={`nes-btn ${betAmount > (gameState.walletBalance || 0) ? 'is-disabled' : 'is-success'} w-full mb-4`}
               style={{ fontSize: '12px' }}
@@ -658,7 +663,10 @@ export default function Home() {
               {/* Action Buttons */}
               <div className="flex gap-4">
                 <button
-                  onClick={handleDiveDeeper}
+                  onClick={() => {
+                    playSound('BUTTON_CLICK');
+                    handleDiveDeeper();
+                  }}
                   disabled={isProcessing}
                   className={`nes-btn ${isProcessing ? 'is-disabled' : 'is-error'} flex-1`}
                   style={{ fontSize: '16px', padding: '16px' }}
@@ -666,7 +674,10 @@ export default function Home() {
                   {isProcessing ? 'DIVING...' : 'DIVE DEEPER'}
                 </button>
                 <button
-                  onClick={handleSurface}
+                  onClick={() => {
+                    playSound('BUTTON_CLICK');
+                    handleSurface();
+                  }}
                   disabled={isProcessing}
                   className={`nes-btn ${isProcessing ? 'is-disabled' : 'is-success'} flex-1`}
                   style={{ fontSize: '16px', padding: '16px' }}
