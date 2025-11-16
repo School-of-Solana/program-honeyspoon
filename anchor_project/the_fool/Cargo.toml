@@ -1,8 +1,9 @@
+cargo-features = ["edition2024"]
+
 [workspace]
-members = [
-    "programs/*"
-]
+members = ["programs/*"]
 resolver = "2"
+edition = "2024"
 
 [profile.release]
 overflow-checks = true

@@ -4,14 +4,6 @@ version = "0.1.0"
 description = "Dive game smart contract for Solana"
 edition = "2021"
 
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = [
-  'cfg(feature, values("anchor-debug", "custom-panic", "custom-heap"))',
-  'cfg(target_os, values("solana"))',
-] }
-# Allow deprecation warnings from Anchor's internal macro expansions
-deprecated = "allow"
-
 [lib]
 crate-type = ["cdylib", "lib"]
 name = "dive_game"
@@ -26,7 +18,7 @@ idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
 anchor-lang = "0.32.1"
-solana-program = "3.0"
+solana-program = "2.2"
 
 [dev-dependencies]
 rstest = "0.26"

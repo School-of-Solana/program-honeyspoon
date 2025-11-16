@@ -357,11 +357,7 @@ mod tests {
         // Check no obvious sequential patterns
         let mut sequential_pairs = 0;
         for i in 0..(rolls.len() - 1) {
-            let diff = if rolls[i + 1] > rolls[i] {
-                rolls[i + 1] - rolls[i]
-            } else {
-                rolls[i] - rolls[i + 1]
-            };
+            let diff = rolls[i + 1].abs_diff(rolls[i]);
 
             // If difference is very small, might indicate pattern
             if diff < 1000 {
