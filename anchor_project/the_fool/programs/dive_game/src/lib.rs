@@ -2,7 +2,9 @@ use anchor_lang::prelude::*;
 
 pub mod errors;
 pub mod events;
+pub mod game_math;
 pub mod instructions;
+pub mod rng;
 pub mod states;
 
 use instructions::*;
@@ -17,21 +19,23 @@ pub mod dive_game {
         instructions::init_house_vault(ctx, locked)
     }
 
+    /// Start a new game session with secure on-chain RNG
+    /// - max_payout computed on-chain (user cannot manipulate)
+    /// - RNG seed generated from slot hashes for deterministic outcomes
     pub fn start_session(
         ctx: Context<StartSession>,
         bet_amount: u64,
-        max_payout: u64,
         session_index: u64,
     ) -> Result<()> {
-        instructions::start_session(ctx, bet_amount, max_payout, session_index)
+        instructions::start_session(ctx, bet_amount, session_index)
     }
 
-    pub fn play_round(
-        ctx: Context<PlayRound>,
-        new_treasure: u64,
-        new_dive_number: u16,
-    ) -> Result<()> {
-        instructions::play_round(ctx, new_treasure, new_dive_number)
+    /// Play a round with secure on-chain outcome computation
+    /// - Outcome computed from stored RNG seed (user cannot manipulate)
+    /// - Treasure calculated deterministically
+    /// - Probability curve applied for win/loss
+    pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
+        instructions::play_round(ctx)
     }
 
     pub fn lose_session(ctx: Context<LoseSession>) -> Result<()> {

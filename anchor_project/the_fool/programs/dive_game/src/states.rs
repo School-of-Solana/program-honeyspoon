@@ -32,4 +32,5 @@ pub struct GameSession {
     pub max_payout: u64,
     pub dive_number: u16,
     pub bump: u8,
+    pub rng_seed: [u8; 32], // Fixed 32-byte randomness seed for deterministic outcomes
 }

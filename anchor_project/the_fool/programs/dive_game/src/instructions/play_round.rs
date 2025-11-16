@@ -1,11 +1,24 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::GameError;
-use crate::events::RoundPlayedEvent;
+use crate::events::{RoundPlayedEvent, SessionLostEvent};
+use crate::game_math;
+use crate::rng;
 use crate::states::*;
 
-pub fn play_round(ctx: Context<PlayRound>, new_treasure: u64, new_dive_number: u16) -> Result<()> {
+/// Play a round with secure on-chain outcome computation
+///
+/// This implementation:
+/// - Computes outcome from stored RNG seed (user cannot manipulate)
+/// - Calculates treasure deterministically based on dive number
+/// - Applies probability curve for win/loss determination
+///
+/// # Security
+/// The user can only choose WHEN to play a round, not the OUTCOME.
+/// All randomness and treasure calculations happen on-chain.
+pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
     let session = &mut ctx.accounts.session;
+    let house_vault = &mut ctx.accounts.house_vault;
     let clock = Clock::get()?;
 
     // Verify session is active
@@ -14,35 +27,54 @@ pub fn play_round(ctx: Context<PlayRound>, new_treasure: u64, new_dive_number: u
         GameError::InvalidSessionStatus
     );
 
-    // Verify round number increments by 1
-    require!(
-        new_dive_number == session.dive_number + 1,
-        GameError::RoundMismatch
-    );
+    // Generate random roll from stored seed + current dive number
+    // rng_seed is now a fixed [u8; 32], no length check needed
+    let roll = rng::random_roll_bps(&session.rng_seed, session.dive_number);
 
-    // Verify treasure is monotonically increasing
-    require!(
-        new_treasure >= session.current_treasure,
-        GameError::TreasureInvalid
-    );
+    // Get survival probability for current dive
+    let survival_prob = game_math::survival_probability_bps(session.dive_number);
 
-    // Verify treasure doesn't exceed max payout
-    require!(
-        new_treasure <= session.max_payout,
-        GameError::TreasureInvalid
-    );
+    // Determine outcome
+    if roll < survival_prob {
+        // SURVIVED: Player continues to next dive
+        session.dive_number += 1;
 
-    // Update session state
-    session.current_treasure = new_treasure;
-    session.dive_number = new_dive_number;
+        // Calculate new treasure based on dive number
+        session.current_treasure =
+            game_math::treasure_for_dive(session.bet_amount, session.dive_number);
 
-    emit!(RoundPlayedEvent {
-        session: session.key(),
-        user: session.user,
-        dive_number: session.dive_number,
-        current_treasure: session.current_treasure,
-        timestamp: clock.unix_timestamp,
-    });
+        // Emit round played event
+        emit!(RoundPlayedEvent {
+            session: session.key(),
+            user: session.user,
+            dive_number: session.dive_number,
+            current_treasure: session.current_treasure,
+            timestamp: clock.unix_timestamp,
+        });
+    } else {
+        // LOST: Player loses the session
+        session.status = SessionStatus::Lost;
+
+        // Release reserved funds
+        require!(
+            house_vault.total_reserved >= session.max_payout,
+            GameError::Overflow
+        );
+        house_vault.total_reserved = house_vault
+            .total_reserved
+            .checked_sub(session.max_payout)
+            .ok_or(GameError::Overflow)?;
+
+        // Emit lost event
+        emit!(SessionLostEvent {
+            session: session.key(),
+            user: session.user,
+            house_vault: session.house_vault,
+            bet_amount: session.bet_amount,
+            final_dive_number: session.dive_number,
+            timestamp: clock.unix_timestamp,
+        });
+    }
 
     Ok(())
 }
@@ -55,6 +87,10 @@ pub struct PlayRound<'info> {
     #[account(
         mut,
         has_one = user,
+        has_one = house_vault,
     )]
     pub session: Account<'info, GameSession>,
+
+    #[account(mut)]
+    pub house_vault: Account<'info, HouseVault>,
 }
