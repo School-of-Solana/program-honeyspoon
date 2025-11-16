@@ -49,6 +49,13 @@ export function createDivingScene(
   k.scene("diving", () => {
     console.log("[CANVAS] 🤿 Diving scene created!");
 
+    // ✅ FIX: Reset animation state for new scene instance
+    state.isAnimating = false;
+    state.animationType = AnimationType.IDLE;
+    state.divingSpeed = 0;
+    state.divingElapsed = 0;
+    state.treasurePulseTime = 0;
+
     // Initialize object pools for performance
     initBubblePool(k);
 
