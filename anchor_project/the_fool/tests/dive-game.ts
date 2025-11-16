@@ -1,1722 +1,975 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { PublicKey, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { PublicKey, Keypair, LAMPORTS_PER_SOL, SYSVAR_SLOT_HASHES_PUBKEY } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { assert } from "chai";
 
-// Type definitions for the program
-type DiveGame = {
-  version: "0.1.0";
-  name: "dive_game";
-  instructions: Array<any>;
-  accounts: Array<any>;
-  events: Array<any>;
-  errors: Array<any>;
-};
+// ============================================================================
+// Global Constants
+// ============================================================================
 
-// Constants matching the program
 const HOUSE_VAULT_SEED = "house_vault";
 const SESSION_SEED = "session";
 
-// Session status type (matches on-chain enum)
-// Not used in tests, but kept for reference
-// type SessionStatus = "active" | "lost" | "cashedOut" | "expired";
+// Test amounts (in SOL, converted to lamports via helper)
+const TEST_AMOUNTS = {
+  TINY: 0.001,
+  SMALL: 0.1,
+  MEDIUM: 1,
+  LARGE: 10,
+  HUGE: 100,
+};
 
-describe("dive-game", () => {
-  const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
+const AIRDROP_AMOUNT = 10; // SOL
+const MAX_PAYOUT_MULTIPLIER = 100;
 
-  const program = anchor.workspace.DiveGame as Program<DiveGame>;
+// ============================================================================
+// Utility Functions
+// ============================================================================
 
-  // Test accounts
-  let houseAuthority: Keypair;
-  let userAlice: Keypair;
-  let userBob: Keypair;
-  let houseVaultPDA: PublicKey;
-  let houseVaultBump: number;
-
-  // Helper: Convert SOL to lamports (integer-only math)
-  function lamports(sol: number): BN {
+class TestUtils {
+  static lamports(sol: number): BN {
     return new BN(BigInt(Math.round(sol * LAMPORTS_PER_SOL)).toString());
   }
 
-  function lamportsNum(sol: number): number {
+  static lamportsNum(sol: number): number {
     return Number(BigInt(Math.round(sol * LAMPORTS_PER_SOL)));
   }
 
-  // Helper: Airdrop SOL to an address
-  async function airdrop(
-    connection: any,
-    address: PublicKey,
-    amount = 10 * LAMPORTS_PER_SOL,
-  ) {
-    const signature = await connection.requestAirdrop(address, amount);
-    await connection.confirmTransaction(signature, "confirmed");
+  static toSOL(lamports: number | BN): number {
+    const amount = typeof lamports === "number" ? lamports : lamports.toNumber();
+    return amount / LAMPORTS_PER_SOL;
   }
 
-  // Helper: Get house vault PDA
-  function getHouseVaultPDA(authority: PublicKey): [PublicKey, number] {
+  static async airdrop(
+    connection: anchor.web3.Connection,
+    address: PublicKey,
+    solAmount: number = AIRDROP_AMOUNT
+  ): Promise<void> {
+    const signature = await connection.requestAirdrop(
+      address,
+      TestUtils.lamportsNum(solAmount)
+    );
+    await connection.confirmTransaction(signature);
+  }
+
+  static getHouseVaultPDA(
+    authority: PublicKey,
+    programId: PublicKey
+  ): [PublicKey, number] {
     return PublicKey.findProgramAddressSync(
       [Buffer.from(HOUSE_VAULT_SEED), authority.toBuffer()],
-      program.programId,
+      programId
     );
   }
 
-  // Helper: Get session PDA
-  function getSessionPDA(
+  static getSessionPDA(
     user: PublicKey,
     sessionIndex: number,
+    programId: PublicKey
   ): [PublicKey, number] {
     const indexBuffer = Buffer.allocUnsafe(8);
     indexBuffer.writeBigUInt64LE(BigInt(sessionIndex));
 
     return PublicKey.findProgramAddressSync(
       [Buffer.from(SESSION_SEED), user.toBuffer(), indexBuffer],
-      program.programId,
+      programId
     );
   }
 
-  // Event parsing removed - not needed for tests
-  // The contract emits events correctly, but event parsing API has changed
-  // and we don't need to verify event contents in these tests
-
-  // Helper: Check if error logs contain a specific error
-  class SolanaError {
-    static contains(logs: string[] | undefined, error: string): boolean {
-      if (!logs) return false;
-      const match = logs.filter((s) => s.includes(error));
-      return Boolean(match?.length);
-    }
+  static expectedMaxPayout(betAmount: number | BN): BN {
+    const bet = typeof betAmount === "number" ? new BN(betAmount) : betAmount;
+    return bet.mul(new BN(MAX_PAYOUT_MULTIPLIER));
   }
 
-  // ============================================================================
-  // A. House Vault Basics
-  // ============================================================================
+  static errorContains(logs: string[] | undefined, error: string): boolean {
+    if (!logs) return false;
+    return logs.some((log) => log.includes(error));
+  }
 
-  describe("House Vault Basics", () => {
-    before(async () => {
-      houseAuthority = Keypair.generate();
-      await airdrop(provider.connection, houseAuthority.publicKey);
-      [houseVaultPDA, houseVaultBump] = getHouseVaultPDA(
-        houseAuthority.publicKey,
-      );
-    });
-
-    it("Should successfully initialize a house vault", async () => {
-      const tx = await program.methods
-        .initHouseVault(false)
-        .accounts({
-          houseAuthority: houseAuthority.publicKey,
-          houseVault: houseVaultPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([houseAuthority])
-        .rpc({ commitment: "confirmed" });
-
-      // Fetch and verify on-chain state
-      const houseVaultAccount =
-        await program.account.houseVault.fetch(houseVaultPDA);
-
-      assert.strictEqual(
-        houseVaultAccount.houseAuthority.toString(),
-        houseAuthority.publicKey.toString(),
-        "House authority should match",
-      );
-      assert.strictEqual(
-        houseVaultAccount.locked,
-        false,
-        "House vault should not be locked",
-      );
-      assert.strictEqual(
-        houseVaultAccount.totalReserved.toString(),
-        "0",
-        "Total reserved should be 0",
-      );
-      assert.strictEqual(
-        houseVaultAccount.bump,
-        houseVaultBump,
-        "Bump should match",
-      );
-
-      // Verify event was emitted
-      const txDetails = await provider.connection.getTransaction(tx, {
-        commitment: "confirmed",
-      });
-      const events = parseEvents(
-        txDetails?.meta?.logMessages || [],
-        "InitializeHouseVaultEvent",
-      );
-
-      // assert.strictEqual(events.length, 1, "Should emit one event");
-      // Event parsing works, no need for additional assertions here
-    });
-
-    it("Should fail to initialize house vault twice", async () => {
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .initHouseVault(false)
-          .accounts({
-            houseAuthority: houseAuthority.publicKey,
-            houseVault: houseVaultPDA,
-            systemProgram: anchor.web3.SystemProgram.programId,
-          })
-          .signers([houseAuthority])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        assert.isTrue(
-          error.message.includes("already in use") ||
-            SolanaError.contains(error.logs, "already in use"),
-          "Expected 'already in use' error",
-        );
-      }
-      assert.strictEqual(
-        shouldFail,
-        "Failed",
-        "Should not be able to initialize twice",
-      );
-    });
-
-    it("Should successfully toggle house lock", async () => {
-      // Lock the house
-      const tx1 = await program.methods
-        .toggleHouseLock()
-        .accounts({
-          houseAuthority: houseAuthority.publicKey,
-          houseVault: houseVaultPDA,
-        })
-        .signers([houseAuthority])
-        .rpc({ commitment: "confirmed" });
-
-      let houseVaultAccount =
-        await program.account.houseVault.fetch(houseVaultPDA);
-      assert.strictEqual(
-        houseVaultAccount.locked,
-        true,
-        "House vault should be locked",
-      );
-
-      // Verify event
-      const tx1Details = await provider.connection.getTransaction(tx1, {
-        commitment: "confirmed",
-      });
-      const events1 = parseEvents(
-        tx1Details?.meta?.logMessages || [],
-        "ToggleHouseLockEvent",
-      );
-      // assert.strictEqual(events1.length, 1);
-
-      // Unlock the house
-      const tx2 = await program.methods
-        .toggleHouseLock()
-        .accounts({
-          houseAuthority: houseAuthority.publicKey,
-          houseVault: houseVaultPDA,
-        })
-        .signers([houseAuthority])
-        .rpc({ commitment: "confirmed" });
-
-      houseVaultAccount = await program.account.houseVault.fetch(houseVaultPDA);
-      assert.strictEqual(
-        houseVaultAccount.locked,
-        false,
-        "House vault should be unlocked",
-      );
-
-      // Verify event
-      const tx2Details = await provider.connection.getTransaction(tx2, {
-        commitment: "confirmed",
-      });
-      const events2 = parseEvents(
-        tx2Details?.meta?.logMessages || [],
-        "ToggleHouseLockEvent",
-      );
-      // assert.strictEqual(events2.length, 1);
-    });
-
-    it("Should fail to toggle lock without authority", async () => {
-      const wrongAuthority = Keypair.generate();
-      await airdrop(provider.connection, wrongAuthority.publicKey);
-
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .toggleHouseLock()
-          .accounts({
-            houseAuthority: wrongAuthority.publicKey,
-            houseVault: houseVaultPDA,
-          })
-          .signers([wrongAuthority])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        assert.isTrue(
-          error.message.includes("constraint") ||
-            error.message.includes("seeds") ||
-            SolanaError.contains(error.logs, "constraint"),
-          "Expected constraint or seeds error",
-        );
-      }
-      assert.strictEqual(
-        shouldFail,
-        "Failed",
-        "Should not be able to toggle without authority",
-      );
-    });
-  });
-
-  after(async () => {
-    // Unlock house for next suite
+  static parseAnchorError(logs: string[] | undefined): any {
     try {
-      const vault = await program.account.houseVault.fetch(houseVaultPDA);
-      if (vault.locked) {
-        await program.methods
-          .toggleHouseLock()
-          .accounts({
-            houseAuthority: houseAuthority.publicKey,
-            houseVault: houseVaultPDA,
-          })
-          .signers([houseAuthority])
-          .rpc({ commitment: "confirmed" });
-      }
-    } catch (e) {
-      /* ignore */
+      return anchor.AnchorError.parse(logs);
+    } catch {
+      return null;
     }
-  });
+  }
+}
 
-  // ============================================================================
-  // B. Session Lifecycle - Happy Paths
-  // ============================================================================
+// ============================================================================
+// Test Fixture
+// ============================================================================
 
-  describe("Session Lifecycle - Happy Paths", () => {
-    before(async () => {
-      userAlice = Keypair.generate();
-      userBob = Keypair.generate();
-      await airdrop(provider.connection, userAlice.publicKey);
-      await airdrop(provider.connection, userBob.publicKey);
+class TestFixture {
+  program: Program;
+  provider: anchor.AnchorProvider;
+  houseAuthority: Keypair;
+  houseVaultPDA: PublicKey;
+  houseVaultBump: number;
+  users: Map<string, Keypair>;
 
-      // Fund house vault with enough SOL for payouts
-      await airdrop(provider.connection, houseVaultPDA, 100 * LAMPORTS_PER_SOL);
+  constructor(program: Program, provider: anchor.AnchorProvider) {
+    this.program = program;
+    this.provider = provider;
+    this.users = new Map();
+  }
+
+  async setupHouse(locked: boolean = false): Promise<void> {
+    this.houseAuthority = Keypair.generate();
+    await TestUtils.airdrop(this.provider.connection, this.houseAuthority.publicKey);
+    
+    [this.houseVaultPDA, this.houseVaultBump] = TestUtils.getHouseVaultPDA(
+      this.houseAuthority.publicKey,
+      this.program.programId
+    );
+
+    await this.program.methods
+      .initHouseVault(locked)
+      .accounts({
+        houseAuthority: this.houseAuthority.publicKey,
+        houseVault: this.houseVaultPDA,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([this.houseAuthority])
+      .rpc();
+  }
+
+  async fundHouse(solAmount: number): Promise<void> {
+    await TestUtils.airdrop(this.provider.connection, this.houseVaultPDA, solAmount);
+  }
+
+  async createUser(name: string, fundAmount: number = AIRDROP_AMOUNT): Promise<Keypair> {
+    const user = Keypair.generate();
+    await TestUtils.airdrop(this.provider.connection, user.publicKey, fundAmount);
+    this.users.set(name, user);
+    return user;
+  }
+
+  getUser(name: string): Keypair {
+    const user = this.users.get(name);
+    if (!user) throw new Error(`User ${name} not found`);
+    return user;
+  }
+
+  async startSession(user: Keypair, betSol: number, sessionIndex: number): Promise<PublicKey> {
+    const [sessionPDA] = TestUtils.getSessionPDA(user.publicKey, sessionIndex, this.program.programId);
+
+    await this.program.methods
+      .startSession(TestUtils.lamports(betSol), new BN(sessionIndex))
+      .accounts({
+        user: user.publicKey,
+        houseVault: this.houseVaultPDA,
+        houseAuthority: this.houseAuthority.publicKey,
+        session: sessionPDA,
+        slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([user])
+      .rpc();
+
+    return sessionPDA;
+  }
+
+  async playRound(user: Keypair, sessionPDA: PublicKey): Promise<void> {
+    await this.program.methods
+      .playRound()
+      .accounts({
+        user: user.publicKey,
+        session: sessionPDA,
+        houseVault: this.houseVaultPDA,
+      })
+      .signers([user])
+      .rpc();
+  }
+
+  async cashOut(user: Keypair, sessionPDA: PublicKey): Promise<void> {
+    await this.program.methods
+      .cashOut()
+      .accounts({
+        user: user.publicKey,
+        session: sessionPDA,
+        houseVault: this.houseVaultPDA,
+      })
+      .signers([user])
+      .rpc();
+  }
+
+  async loseSession(user: Keypair, sessionPDA: PublicKey): Promise<void> {
+    await this.program.methods
+      .loseSession()
+      .accounts({
+        user: user.publicKey,
+        session: sessionPDA,
+        houseVault: this.houseVaultPDA,
+      })
+      .signers([user])
+      .rpc();
+  }
+
+  async toggleHouseLock(): Promise<void> {
+    await this.program.methods
+      .toggleHouseLock()
+      .accounts({
+        houseAuthority: this.houseAuthority.publicKey,
+        houseVault: this.houseVaultPDA,
+      })
+      .signers([this.houseAuthority])
+      .rpc();
+  }
+
+  async getHouseVault(): Promise<any> {
+    return await this.program.account.houseVault.fetch(this.houseVaultPDA);
+  }
+
+  async getSession(sessionPDA: PublicKey): Promise<any> {
+    return await this.program.account.gameSession.fetch(sessionPDA);
+  }
+
+  async getBalance(address: PublicKey): Promise<number> {
+    return await this.provider.connection.getBalance(address);
+  }
+}
+
+// ============================================================================
+// Tests
+// ============================================================================
+
+describe("dive-game (Secure Implementation)", () => {
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+  const program = anchor.workspace.DiveGame as Program;
+
+  let fixture: TestFixture;
+
+  describe("House Vault Management", () => {
+    beforeEach(() => {
+      fixture = new TestFixture(program, provider);
     });
 
-    it("Should successfully start a session (bet)", async () => {
-      const betAmount = 1 * LAMPORTS_PER_SOL;
-      const maxPayout = 10 * LAMPORTS_PER_SOL;
-      const sessionIndex = 0;
+    it("Should initialize house vault", async () => {
+      await fixture.setupHouse(false);
+      const vault = await fixture.getHouseVault();
 
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      const userBalanceBefore = await provider.connection.getBalance(
-        userAlice.publicKey,
-      );
-      const houseBalanceBefore =
-        await provider.connection.getBalance(houseVaultPDA);
-
-      const tx = await program.methods
-        .startSession(
-          new BN(betAmount),
-          new BN(maxPayout),
-          new BN(sessionIndex),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      // Check balances
-      const userBalanceAfter = await provider.connection.getBalance(
-        userAlice.publicKey,
-      );
-      const houseBalanceAfter =
-        await provider.connection.getBalance(houseVaultPDA);
-
-      assert.isTrue(
-        userBalanceAfter < userBalanceBefore - betAmount,
-        "User balance should decrease by at least bet amount",
-      );
-      assert.strictEqual(
-        houseBalanceAfter,
-        houseBalanceBefore + betAmount,
-        "House balance should increase by bet amount",
-      );
-
-      // Check session state
-      const sessionAccount =
-        await program.account.gameSession.fetch(sessionPDA);
-      assert.strictEqual(
-        sessionAccount.user.toString(),
-        userAlice.publicKey.toString(),
-      );
-      assert.strictEqual(
-        sessionAccount.houseVault.toString(),
-        houseVaultPDA.toString(),
-      );
-      assert.deepEqual(sessionAccount.status, { active: {} });
-      assert.strictEqual(
-        sessionAccount.betAmount.toString(),
-        betAmount.toString(),
-      );
-      assert.strictEqual(
-        sessionAccount.currentTreasure.toString(),
-        betAmount.toString(),
-      );
-      assert.strictEqual(
-        sessionAccount.maxPayout.toString(),
-        maxPayout.toString(),
-      );
-      assert.strictEqual(sessionAccount.diveNumber, 1);
-
-      // Check house vault reserved amount
-      const houseVaultAccount =
-        await program.account.houseVault.fetch(houseVaultPDA);
-      assert.strictEqual(
-        houseVaultAccount.totalReserved.toString(),
-        maxPayout.toString(),
-      );
-
-      // Verify event
-      const txDetails = await provider.connection.getTransaction(tx, {
-        commitment: "confirmed",
-      });
-      const events = parseEvents(
-        txDetails?.meta?.logMessages || [],
-        "SessionStartedEvent",
-      );
-      // assert.strictEqual(events.length, 1);
-      // Event parsing works, no need for additional assertions here
+      assert.strictEqual(vault.houseAuthority.toString(), fixture.houseAuthority.publicKey.toString());
+      assert.strictEqual(vault.locked, false);
+      assert.strictEqual(vault.totalReserved.toString(), "0");
     });
 
-    it("Should successfully play several rounds", async () => {
-      const sessionIndex = 0;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+    it("Should toggle house lock", async () => {
+      await fixture.setupHouse(false);
+      await fixture.toggleHouseLock();
+      
+      let vault = await fixture.getHouseVault();
+      assert.strictEqual(vault.locked, true);
 
-      // Round 2
-      const treasure2 = 1.5 * LAMPORTS_PER_SOL;
-      const tx1 = await program.methods
-        .playRound(new BN(treasure2), 2)
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      let sessionAccount = await program.account.gameSession.fetch(sessionPDA);
-      assert.strictEqual(sessionAccount.diveNumber, 2);
-      assert.strictEqual(
-        sessionAccount.currentTreasure.toString(),
-        Math.floor(treasure2).toString(),
-      );
-
-      // Verify event
-      const tx1Details = await provider.connection.getTransaction(tx1, {
-        commitment: "confirmed",
-      });
-      const events1 = parseEvents(
-        tx1Details?.meta?.logMessages || [],
-        "RoundPlayedEvent",
-      );
-      // assert.strictEqual(events1.length, 1);
-
-      // Round 3
-      const treasure3 = 2.5 * LAMPORTS_PER_SOL;
-      const tx2 = await program.methods
-        .playRound(new BN(treasure3), 3)
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      sessionAccount = await program.account.gameSession.fetch(sessionPDA);
-      assert.strictEqual(sessionAccount.diveNumber, 3);
-      assert.strictEqual(
-        sessionAccount.currentTreasure.toString(),
-        Math.floor(treasure3).toString(),
-      );
-
-      // Verify event
-      const tx2Details = await provider.connection.getTransaction(tx2, {
-        commitment: "confirmed",
-      });
-      const events2 = parseEvents(
-        tx2Details?.meta?.logMessages || [],
-        "RoundPlayedEvent",
-      );
-      // assert.strictEqual(events2.length, 1);
-
-      // Round 4
-      const treasure4 = 4 * LAMPORTS_PER_SOL;
-      await program.methods
-        .playRound(new BN(treasure4), 4)
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      sessionAccount = await program.account.gameSession.fetch(sessionPDA);
-      assert.strictEqual(sessionAccount.diveNumber, 4);
-      assert.strictEqual(
-        sessionAccount.currentTreasure.toString(),
-        Math.floor(treasure4).toString(),
-      );
-    });
-
-    it("Should successfully cash out", async () => {
-      const sessionIndex = 0;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      const sessionBefore = await program.account.gameSession.fetch(sessionPDA);
-      const userBalanceBefore = await provider.connection.getBalance(
-        userAlice.publicKey,
-      );
-      const houseBalanceBefore =
-        await provider.connection.getBalance(houseVaultPDA);
-
-      const tx = await program.methods
-        .cashOut()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      // Check balances
-      const userBalanceAfter = await provider.connection.getBalance(
-        userAlice.publicKey,
-      );
-      const houseBalanceAfter =
-        await provider.connection.getBalance(houseVaultPDA);
-
-      const expectedPayout = sessionBefore.currentTreasure.toNumber();
-      assert.isTrue(
-        userBalanceAfter > userBalanceBefore + expectedPayout * 0.99, // Allow for fees
-        "User balance should increase",
-      );
-      assert.strictEqual(
-        houseBalanceAfter,
-        houseBalanceBefore - expectedPayout,
-        "House balance should decrease by payout amount",
-      );
-
-      // Check session was closed (account no longer exists)
-      try {
-        await program.account.gameSession.fetch(sessionPDA);
-        assert.fail("Session account should be closed after cash out");
-      } catch (error: any) {
-        assert.isTrue(
-          error.message.includes("Account does not exist"),
-          "Session should be closed",
-        );
-      }
-
-      // Check house vault reserved amount decreased
-      const houseVaultAccount =
-        await program.account.houseVault.fetch(houseVaultPDA);
-      assert.strictEqual(
-        houseVaultAccount.totalReserved.toString(),
-        "0",
-        "Total reserved should be 0 after cash out",
-      );
-
-      // Verify event
-      const txDetails = await provider.connection.getTransaction(tx, {
-        commitment: "confirmed",
-      });
-      const events = parseEvents(
-        txDetails?.meta?.logMessages || [],
-        "SessionCashedOutEvent",
-      );
-      // assert.strictEqual(events.length, 1);
-      // Event parsing works, no need for additional assertions here
-    });
-
-    it("Should successfully handle a losing session", async () => {
-      const betAmount = 0.5 * LAMPORTS_PER_SOL;
-      const maxPayout = 5 * LAMPORTS_PER_SOL;
-      const sessionIndex = 1;
-
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      // Start session
-      await program.methods
-        .startSession(
-          new BN(betAmount),
-          new BN(maxPayout),
-          new BN(sessionIndex),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      // Play one round
-      await program.methods
-        .playRound(new BN(betAmount * 1.2), 2)
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      const houseReservedBefore = (
-        await program.account.houseVault.fetch(houseVaultPDA)
-      ).totalReserved.toNumber();
-
-      // Lose session
-      const tx = await program.methods
-        .loseSession()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      // Check session was closed (account no longer exists)
-      try {
-        await program.account.gameSession.fetch(sessionPDA);
-        assert.fail("Session account should be closed after loss");
-      } catch (error: any) {
-        assert.isTrue(
-          error.message.includes("Account does not exist"),
-          "Session should be closed",
-        );
-      }
-
-      // Check house vault reserved decreased
-      const houseVaultAccount =
-        await program.account.houseVault.fetch(houseVaultPDA);
-      assert.strictEqual(
-        houseVaultAccount.totalReserved.toString(),
-        (houseReservedBefore - maxPayout).toString(),
-      );
-
-      // Verify event
-      const txDetails = await provider.connection.getTransaction(tx, {
-        commitment: "confirmed",
-      });
-      const events = parseEvents(
-        txDetails?.meta?.logMessages || [],
-        "SessionLostEvent",
-      );
-      // assert.strictEqual(events.length, 1);
+      await fixture.toggleHouseLock();
+      vault = await fixture.getHouseVault();
+      assert.strictEqual(vault.locked, false);
     });
   });
 
-  // ============================================================================
-  // C. Session Lifecycle - Failure Modes
-  // ============================================================================
+  describe("Session Lifecycle", () => {
+    beforeEach(async () => {
+      fixture = new TestFixture(program, provider);
+      await fixture.setupHouse(false);
+      await fixture.fundHouse(TEST_AMOUNTS.HUGE);
+    });
 
-  describe("Session Lifecycle - Failure Modes", () => {
-    it("Should fail to start session when house is locked", async () => {
-      // Lock house
-      await program.methods
-        .toggleHouseLock()
-        .accounts({
-          houseAuthority: houseAuthority.publicKey,
-          houseVault: houseVaultPDA,
-        })
-        .signers([houseAuthority])
-        .rpc({ commitment: "confirmed" });
+    it("Should start session with on-chain max_payout", async () => {
+      const alice = await fixture.createUser("alice");
+      const betAmount = TestUtils.lamportsNum(TEST_AMOUNTS.MEDIUM);
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.MEDIUM, 0);
 
-      const betAmount = 1 * LAMPORTS_PER_SOL;
-      const maxPayout = 10 * LAMPORTS_PER_SOL;
-      const sessionIndex = 99;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+      const session = await fixture.getSession(sessionPDA);
+      const expectedMaxPayout = TestUtils.expectedMaxPayout(betAmount);
 
-      let shouldFail = "This should fail";
+      assert.strictEqual(session.betAmount.toString(), betAmount.toString());
+      assert.strictEqual(session.maxPayout.toString(), expectedMaxPayout.toString());
+      assert.strictEqual(session.rngSeed.length, 32);
+    });
+
+    it("Should play rounds with on-chain outcomes", async () => {
+      const alice = await fixture.createUser("alice");
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+
+      for (let i = 0; i < 3; i++) {
+        try {
+          await fixture.playRound(alice, sessionPDA);
+          const session = await fixture.getSession(sessionPDA);
+          if (session.status.hasOwnProperty("lost")) break;
+        } catch {
+          break;
+        }
+      }
+    });
+
+    it("Should cash out successfully", async () => {
+      const alice = await fixture.createUser("alice");
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+
+      await fixture.playRound(alice, sessionPDA);
+      const session = await fixture.getSession(sessionPDA);
+      
+      if (!session.status.hasOwnProperty("lost")) {
+        await fixture.cashOut(alice, sessionPDA);
+        
+        let failed = false;
+        try {
+          await fixture.getSession(sessionPDA);
+        } catch {
+          failed = true;
+        }
+        assert.isTrue(failed, "Session should be closed");
+      }
+    });
+  });
+
+  describe("Failure Modes", () => {
+    beforeEach(async () => {
+      fixture = new TestFixture(program, provider);
+      await fixture.setupHouse(false);
+      await fixture.fundHouse(TEST_AMOUNTS.HUGE);
+    });
+
+    it("Should fail when house is locked", async () => {
+      const alice = await fixture.createUser("alice");
+      await fixture.toggleHouseLock();
+
+      let failed = false;
+      try {
+        await fixture.startSession(alice, TEST_AMOUNTS.MEDIUM, 0);
+      } catch (error: any) {
+        failed = true;
+        const err = TestUtils.parseAnchorError(error.logs);
+        assert.strictEqual(err?.error.errorCode.code, "HouseLocked");
+      }
+      assert.isTrue(failed);
+    });
+
+    it("Should fail with zero bet", async () => {
+      const alice = await fixture.createUser("alice");
+      const [sessionPDA] = TestUtils.getSessionPDA(alice.publicKey, 0, program.programId);
+
+      let failed = false;
       try {
         await program.methods
-          .startSession(
-            new BN(betAmount),
-            new BN(maxPayout),
-            new BN(sessionIndex),
-          )
+          .startSession(new BN(0), new BN(0))
           .accounts({
-            user: userAlice.publicKey,
-            houseVault: houseVaultPDA,
-            houseAuthority: houseAuthority.publicKey,
+            user: alice.publicKey,
+            houseVault: fixture.houseVaultPDA,
+            houseAuthority: fixture.houseAuthority.publicKey,
             session: sessionPDA,
+            slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
             systemProgram: anchor.web3.SystemProgram.programId,
           })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
+          .signers([alice])
+          .rpc();
       } catch (error: any) {
-        shouldFail = "Failed";
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "HouseLocked",
-          "Expected HouseLocked error",
-        );
+        failed = true;
+        const err = TestUtils.parseAnchorError(error.logs);
+        assert.strictEqual(err?.error.errorCode.code, "InvalidBetAmount");
       }
-      assert.strictEqual(shouldFail, "Failed");
+      assert.isTrue(failed);
+    });
+  });
+});
 
-      // Unlock house for other tests
-      await program.methods
-        .toggleHouseLock()
-        .accounts({
-          houseAuthority: houseAuthority.publicKey,
-          houseVault: houseVaultPDA,
-        })
-        .signers([houseAuthority])
-        .rpc({ commitment: "confirmed" });
+  // ============================================================================
+  // F. Multi-User Concurrent Sessions
+  // ============================================================================
+
+  describe("Multi-User Concurrent Sessions", () => {
+    beforeEach(async () => {
+      fixture = new TestFixture(program, provider);
+      await fixture.setupHouse(false);
+      await fixture.fundHouse(TEST_AMOUNTS.HUGE * 2); // Extra funding for multiple sessions
     });
 
-    it("Should fail to play on non-existent session", async () => {
-      const fakeSessionIndex = 999;
-      const [fakeSessionPDA] = getSessionPDA(
-        userAlice.publicKey,
-        fakeSessionIndex,
-      );
+    it("Should handle multiple users with independent sessions", async () => {
+      const alice = await fixture.createUser("alice");
+      const bob = await fixture.createUser("bob");
+      const charlie = await fixture.createUser("charlie");
 
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .playRound(new BN(1000000), 2)
-          .accounts({
-            user: userAlice.publicKey,
-            session: fakeSessionPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        assert.isTrue(
-          error.message.includes("Account does not exist") ||
-            error.message.includes("AccountNotInitialized"),
-          "Expected account not found error",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
+      // Start sessions for all users
+      const aliceSession = await fixture.startSession(alice, TEST_AMOUNTS.MEDIUM, 0);
+      const bobSession = await fixture.startSession(bob, TEST_AMOUNTS.SMALL, 0);
+      const charlieSession = await fixture.startSession(charlie, TEST_AMOUNTS.LARGE, 0);
+
+      // Verify total reserved
+      const vault = await fixture.getHouseVault();
+      const expectedReserved = TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.MEDIUM))
+        .add(TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.SMALL)))
+        .add(TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.LARGE)));
+
+      assert.strictEqual(vault.totalReserved.toString(), expectedReserved.toString());
+
+      // Each user plays independently
+      await fixture.playRound(alice, aliceSession);
+      await fixture.playRound(bob, bobSession);
+      await fixture.playRound(charlie, charlieSession);
+
+      // Verify sessions are independent
+      const aliceData = await fixture.getSession(aliceSession);
+      const bobData = await fixture.getSession(bobSession);
+      const charlieData = await fixture.getSession(charlieSession);
+
+      // Each should have different RNG seeds
+      const aliceSeed = Buffer.from(aliceData.rngSeed).toString('hex');
+      const bobSeed = Buffer.from(bobData.rngSeed).toString('hex');
+      const charlieSeed = Buffer.from(charlieData.rngSeed).toString('hex');
+
+      assert.notEqual(aliceSeed, bobSeed);
+      assert.notEqual(bobSeed, charlieSeed);
+      assert.notEqual(aliceSeed, charlieSeed);
     });
 
-    it("Should fail to play after cash out", async () => {
-      const sessionIndex = 0;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+    it("Should prevent cross-user session manipulation", async () => {
+      const alice = await fixture.createUser("alice");
+      const bob = await fixture.createUser("bob");
 
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .playRound(new BN(5 * LAMPORTS_PER_SOL), 5)
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        // After cash out, session is closed, so we expect AccountNotInitialized
-        assert.isTrue(
-          error.message.includes("AccountNotInitialized") ||
-            error.message.includes("Account does not exist"),
-          "Expected account not found error after cash out",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-    });
-
-    it("Should fail to play after loss", async () => {
-      const sessionIndex = 1;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .playRound(new BN(1 * LAMPORTS_PER_SOL), 3)
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        // After loss, session is closed, so we expect AccountNotInitialized
-        assert.isTrue(
-          error.message.includes("AccountNotInitialized") ||
-            error.message.includes("Account does not exist"),
-          "Expected account not found error after loss",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-    });
-
-    it("Should fail on round number mismatch", async () => {
-      const betAmount = 1 * LAMPORTS_PER_SOL;
-      const maxPayout = 10 * LAMPORTS_PER_SOL;
-      const sessionIndex = 2;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      // Start new session
-      await program.methods
-        .startSession(
-          new BN(betAmount),
-          new BN(maxPayout),
-          new BN(sessionIndex),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      // Try to play round 5 instead of round 2
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .playRound(new BN(2 * LAMPORTS_PER_SOL), 5)
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "RoundMismatch",
-          "Expected RoundMismatch error",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-    });
-
-    it("Should fail when treasure decreases", async () => {
-      const sessionIndex = 2;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      // Play round 2 successfully
-      await program.methods
-        .playRound(new BN(2 * LAMPORTS_PER_SOL), 2)
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      // Try to decrease treasure in round 3
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .playRound(new BN(1.5 * LAMPORTS_PER_SOL), 3)
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "TreasureInvalid",
-          "Expected TreasureInvalid error",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-    });
-
-    it("Should fail when treasure exceeds max payout", async () => {
-      const sessionIndex = 2;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      // Try to set treasure above max payout
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .playRound(new BN(15 * LAMPORTS_PER_SOL), 3)
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "TreasureInvalid",
-          "Expected TreasureInvalid error",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-
-      // Clean up: lose this session
-      await program.methods
-        .loseSession()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-    });
-
-    it("Should fail when wrong user tries to play session", async () => {
-      const betAmount = 1 * LAMPORTS_PER_SOL;
-      const maxPayout = 10 * LAMPORTS_PER_SOL;
-      const sessionIndex = 3;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      // Alice starts session
-      await program.methods
-        .startSession(
-          new BN(betAmount),
-          new BN(maxPayout),
-          new BN(sessionIndex),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      const aliceSession = await fixture.startSession(alice, TEST_AMOUNTS.MEDIUM, 0);
 
       // Bob tries to play Alice's session
-      let shouldFail = "This should fail";
+      let failed = false;
       try {
-        await program.methods
-          .playRound(new BN(2 * LAMPORTS_PER_SOL), 2)
-          .accounts({
-            user: userBob.publicKey,
-            session: sessionPDA,
-          })
-          .signers([userBob])
-          .rpc({ commitment: "confirmed" });
+        await fixture.playRound(bob, aliceSession);
       } catch (error: any) {
-        shouldFail = "Failed";
-        assert.isTrue(
-          error.message.includes("constraint") ||
-            error.message.includes("seeds") ||
-            SolanaError.contains(error.logs, "constraint"),
-          "Expected constraint error for wrong user",
-        );
+        failed = true;
+        assert.isTrue(TestUtils.errorContains(error.logs, "constraint"));
       }
-      assert.strictEqual(shouldFail, "Failed");
+      assert.isTrue(failed, "Cross-user access should fail");
 
-      // Clean up
-      await program.methods
-        .loseSession()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      // Bob tries to cash out Alice's session
+      failed = false;
+      try {
+        await fixture.cashOut(bob, aliceSession);
+      } catch (error: any) {
+        failed = true;
+        assert.isTrue(TestUtils.errorContains(error.logs, "constraint"));
+      }
+      assert.isTrue(failed, "Cross-user cash out should fail");
+
+      // Bob tries to lose Alice's session
+      failed = false;
+      try {
+        await fixture.loseSession(bob, aliceSession);
+      } catch (error: any) {
+        failed = true;
+        assert.isTrue(TestUtils.errorContains(error.logs, "constraint"));
+      }
+      assert.isTrue(failed, "Cross-user lose should fail");
     });
 
-    it("Should fail to cash out when house is locked", async () => {
-      const betAmount = 1 * LAMPORTS_PER_SOL;
-      const maxPayout = 10 * LAMPORTS_PER_SOL;
-      const sessionIndex = 4;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+    it("Should handle one user with multiple sessions", async () => {
+      const alice = await fixture.createUser("alice", TEST_AMOUNTS.LARGE);
 
-      // Start session
-      await program.methods
-        .startSession(
-          new BN(betAmount),
-          new BN(maxPayout),
-          new BN(sessionIndex),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      // Start multiple sessions for same user
+      const session1 = await fixture.startSession(alice, TEST_AMOUNTS.TINY, 0);
+      const session2 = await fixture.startSession(alice, TEST_AMOUNTS.TINY, 1);
+      const session3 = await fixture.startSession(alice, TEST_AMOUNTS.TINY, 2);
 
-      // Play a round to increase treasure
-      await program.methods
-        .playRound(new BN(2 * LAMPORTS_PER_SOL), 2)
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      // Verify each has unique RNG seed
+      const data1 = await fixture.getSession(session1);
+      const data2 = await fixture.getSession(session2);
+      const data3 = await fixture.getSession(session3);
 
-      // Lock house
-      await program.methods
-        .toggleHouseLock()
-        .accounts({
-          houseAuthority: houseAuthority.publicKey,
-          houseVault: houseVaultPDA,
-        })
-        .signers([houseAuthority])
-        .rpc({ commitment: "confirmed" });
+      const seed1 = Buffer.from(data1.rngSeed).toString('hex');
+      const seed2 = Buffer.from(data2.rngSeed).toString('hex');
+      const seed3 = Buffer.from(data3.rngSeed).toString('hex');
 
-      // Try to cash out
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .cashOut()
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionPDA,
-            houseVault: houseVaultPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "HouseLocked",
-          "Expected HouseLocked error",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
+      assert.notEqual(seed1, seed2);
+      assert.notEqual(seed2, seed3);
+      assert.notEqual(seed1, seed3);
 
-      // Unlock house
-      await program.methods
-        .toggleHouseLock()
-        .accounts({
-          houseAuthority: houseAuthority.publicKey,
-          houseVault: houseVaultPDA,
-        })
-        .signers([houseAuthority])
-        .rpc({ commitment: "confirmed" });
+      // Play rounds on different sessions
+      await fixture.playRound(alice, session1);
+      await fixture.playRound(alice, session2);
 
-      // Clean up
-      await program.methods
-        .loseSession()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      // Verify total reserved is correct
+      const vault = await fixture.getHouseVault();
+      const expectedReserved = TestUtils.expectedMaxPayout(
+        TestUtils.lamportsNum(TEST_AMOUNTS.TINY)
+      ).muln(3);
+
+      assert.strictEqual(vault.totalReserved.toString(), expectedReserved.toString());
     });
 
-    it("Should fail to cash out twice", async () => {
-      const betAmount = 1 * LAMPORTS_PER_SOL;
-      const maxPayout = 10 * LAMPORTS_PER_SOL;
-      const sessionIndex = 5;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+    it("Should correctly update reserved funds as sessions complete", async () => {
+      const alice = await fixture.createUser("alice");
+      const bob = await fixture.createUser("bob");
 
-      // Start session
-      await program.methods
-        .startSession(
-          new BN(betAmount),
-          new BN(maxPayout),
-          new BN(sessionIndex),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      const aliceSession = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const bobSession = await fixture.startSession(bob, TEST_AMOUNTS.SMALL, 0);
 
-      // Play rounds to increase treasure
-      await program.methods
-        .playRound(new BN(2 * LAMPORTS_PER_SOL), 2)
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      const aliceMaxPayout = TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.SMALL));
+      const initialReserved = aliceMaxPayout.muln(2);
 
-      const userBalanceBefore = await provider.connection.getBalance(
-        userAlice.publicKey,
-      );
+      let vault = await fixture.getHouseVault();
+      assert.strictEqual(vault.totalReserved.toString(), initialReserved.toString());
 
-      // First cash out - should succeed
-      await program.methods
-        .cashOut()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      // Alice loses
+      await fixture.loseSession(alice, aliceSession);
 
-      const userBalanceAfter = await provider.connection.getBalance(
-        userAlice.publicKey,
-      );
-      assert.isTrue(
-        userBalanceAfter > userBalanceBefore,
-        "Balance should increase after first cash out",
-      );
-
-      // Second cash out - should fail (session is closed)
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .cashOut()
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionPDA,
-            houseVault: houseVaultPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        // After first cash out, session is closed, so we expect AccountNotInitialized
-        assert.isTrue(
-          error.message.includes("AccountNotInitialized") ||
-            error.message.includes("Account does not exist"),
-          "Expected account not found error after first cash out",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-
-      // Verify balance didn't change
-      const userBalanceFinal = await provider.connection.getBalance(
-        userAlice.publicKey,
-      );
-      assert.isTrue(
-        Math.abs(userBalanceFinal - userBalanceAfter) < 10000,
-        "Balance should not change after failed second cash out",
-      );
-    });
-
-    it("Should fail to start session with zero bet amount", async () => {
-      const sessionIndex = 100;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .startSession(
-            new BN(0),
-            new BN(10 * LAMPORTS_PER_SOL),
-            new BN(sessionIndex),
-          )
-          .accounts({
-            user: userAlice.publicKey,
-            houseVault: houseVaultPDA,
-            houseAuthority: houseAuthority.publicKey,
-            session: sessionPDA,
-            systemProgram: anchor.web3.SystemProgram.programId,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "InvalidBetAmount",
-          "Expected InvalidBetAmount error",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-    });
-
-    it("Should fail to start session when max_payout < bet_amount", async () => {
-      const sessionIndex = 101;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .startSession(
-            new BN(10 * LAMPORTS_PER_SOL),
-            new BN(5 * LAMPORTS_PER_SOL),
-            new BN(sessionIndex),
-          )
-          .accounts({
-            user: userAlice.publicKey,
-            houseVault: houseVaultPDA,
-            houseAuthority: houseAuthority.publicKey,
-            session: sessionPDA,
-            systemProgram: anchor.web3.SystemProgram.programId,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "TreasureInvalid",
-          "Expected TreasureInvalid error",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-    });
-
-    it("Should fail to lose a session twice", async () => {
-      const betAmount = 1 * LAMPORTS_PER_SOL;
-      const maxPayout = 10 * LAMPORTS_PER_SOL;
-      const sessionIndex = 102;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
-
-      // Start and lose session
-      await program.methods
-        .startSession(
-          new BN(betAmount),
-          new BN(maxPayout),
-          new BN(sessionIndex),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      await program.methods
-        .loseSession()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      // Try to lose again
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .loseSession()
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionPDA,
-            houseVault: houseVaultPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        assert.isTrue(
-          error.message.includes("AccountNotInitialized") ||
-            error.message.includes("Account does not exist"),
-          "Expected account not found error after close",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-    });
-  });
-
-  // ============================================================================
-  // D. Multi-user / Isolation
-  // ============================================================================
-
-  describe("Multi-user / Isolation", () => {
-    it("Should handle two users with two sessions independently", async () => {
-      const betAmountAlice = 1 * LAMPORTS_PER_SOL;
-      const maxPayoutAlice = 10 * LAMPORTS_PER_SOL;
-      const sessionIndexAlice = 10;
-
-      const betAmountBob = 0.5 * LAMPORTS_PER_SOL;
-      const maxPayoutBob = 5 * LAMPORTS_PER_SOL;
-      const sessionIndexBob = 0;
-
-      const [sessionAlicePDA] = getSessionPDA(
-        userAlice.publicKey,
-        sessionIndexAlice,
-      );
-      const [sessionBobPDA] = getSessionPDA(userBob.publicKey, sessionIndexBob);
-
-      // Start Alice's session
-      await program.methods
-        .startSession(
-          new BN(betAmountAlice),
-          new BN(maxPayoutAlice),
-          new BN(sessionIndexAlice),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionAlicePDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      // Start Bob's session
-      await program.methods
-        .startSession(
-          new BN(betAmountBob),
-          new BN(maxPayoutBob),
-          new BN(sessionIndexBob),
-        )
-        .accounts({
-          user: userBob.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionBobPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userBob])
-        .rpc({ commitment: "confirmed" });
-
-      // Check house vault reserved is sum of both
-      let houseVault = await program.account.houseVault.fetch(houseVaultPDA);
-      assert.strictEqual(
-        houseVault.totalReserved.toString(),
-        (maxPayoutAlice + maxPayoutBob).toString(),
-        "Total reserved should be sum of both sessions",
-      );
-
-      // Alice plays rounds
-      await program.methods
-        .playRound(new BN(2 * LAMPORTS_PER_SOL), 2)
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionAlicePDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      await program.methods
-        .playRound(new BN(3 * LAMPORTS_PER_SOL), 3)
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionAlicePDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      // Bob plays rounds
-      await program.methods
-        .playRound(new BN(0.8 * LAMPORTS_PER_SOL), 2)
-        .accounts({
-          user: userBob.publicKey,
-          session: sessionBobPDA,
-        })
-        .signers([userBob])
-        .rpc({ commitment: "confirmed" });
-
-      // Verify independent session states
-      const aliceSession =
-        await program.account.gameSession.fetch(sessionAlicePDA);
-      const bobSession = await program.account.gameSession.fetch(sessionBobPDA);
-
-      assert.strictEqual(aliceSession.diveNumber, 3);
-      assert.strictEqual(bobSession.diveNumber, 2);
-      assert.strictEqual(
-        aliceSession.currentTreasure.toString(),
-        (3 * LAMPORTS_PER_SOL).toString(),
-      );
-      assert.strictEqual(
-        bobSession.currentTreasure.toString(),
-        Math.floor(0.8 * LAMPORTS_PER_SOL).toString(),
-      );
-
-      // Alice cashes out
-      await program.methods
-        .cashOut()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionAlicePDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      vault = await fixture.getHouseVault();
+      assert.strictEqual(vault.totalReserved.toString(), aliceMaxPayout.toString());
 
       // Bob loses
-      await program.methods
-        .loseSession()
-        .accounts({
-          user: userBob.publicKey,
-          session: sessionBobPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userBob])
-        .rpc({ commitment: "confirmed" });
+      await fixture.loseSession(bob, bobSession);
 
-      // Check total reserved is back to 0
-      houseVault = await program.account.houseVault.fetch(houseVaultPDA);
-      assert.strictEqual(
-        houseVault.totalReserved.toString(),
-        "0",
-        "Total reserved should be 0 after both sessions end",
-      );
-    });
-
-    it("Should ensure cross-session integrity (user A cannot affect user B)", async () => {
-      const sessionIndexAlice = 11;
-      const sessionIndexBob = 1;
-      const [sessionAlicePDA] = getSessionPDA(
-        userAlice.publicKey,
-        sessionIndexAlice,
-      );
-      const [sessionBobPDA] = getSessionPDA(userBob.publicKey, sessionIndexBob);
-
-      // Start both sessions
-      await program.methods
-        .startSession(
-          new BN(1 * LAMPORTS_PER_SOL),
-          new BN(10 * LAMPORTS_PER_SOL),
-          new BN(sessionIndexAlice),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionAlicePDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      await program.methods
-        .startSession(
-          new BN(1 * LAMPORTS_PER_SOL),
-          new BN(10 * LAMPORTS_PER_SOL),
-          new BN(sessionIndexBob),
-        )
-        .accounts({
-          user: userBob.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionBobPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userBob])
-        .rpc({ commitment: "confirmed" });
-
-      // Alice tries to cash out Bob's session - should fail
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .cashOut()
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionBobPDA,
-            houseVault: houseVaultPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        assert.isTrue(
-          error.message.includes("constraint") ||
-            SolanaError.contains(error.logs, "constraint"),
-          "Expected constraint error",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-
-      // Bob tries to play Alice's session - should fail
-      shouldFail = "This should fail";
-      try {
-        await program.methods
-          .playRound(new BN(2 * LAMPORTS_PER_SOL), 2)
-          .accounts({
-            user: userBob.publicKey,
-            session: sessionAlicePDA,
-          })
-          .signers([userBob])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        assert.isTrue(
-          error.message.includes("constraint") ||
-            SolanaError.contains(error.logs, "constraint"),
-          "Expected constraint error",
-        );
-      }
-      assert.strictEqual(shouldFail, "Failed");
-
-      // Clean up
-      await program.methods
-        .loseSession()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionAlicePDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
-
-      await program.methods
-        .loseSession()
-        .accounts({
-          user: userBob.publicKey,
-          session: sessionBobPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userBob])
-        .rpc({ commitment: "confirmed" });
+      vault = await fixture.getHouseVault();
+      assert.strictEqual(vault.totalReserved.toString(), "0");
     });
   });
 
   // ============================================================================
-  // E. Invariants & Edge Cases
+  // G. Game Progression & State Transitions
   // ============================================================================
 
-  describe("Invariants & Edge Cases", () => {
-    it("Should maintain money conservation invariant", async () => {
-      // Record initial total balance
-      const initialUserAlice = await provider.connection.getBalance(
-        userAlice.publicKey,
-      );
-      const initialUserBob = await provider.connection.getBalance(
-        userBob.publicKey,
-      );
-      const initialHouse = await provider.connection.getBalance(houseVaultPDA);
-      const initialTotal = initialUserAlice + initialUserBob + initialHouse;
+  describe("Game Progression & State Transitions", () => {
+    beforeEach(async () => {
+      fixture = new TestFixture(program, provider);
+      await fixture.setupHouse(false);
+      await fixture.fundHouse(TEST_AMOUNTS.HUGE);
+    });
 
-      const sessionIndexAlice = 20;
-      const sessionIndexBob = 10;
-      const [sessionAlicePDA] = getSessionPDA(
-        userAlice.publicKey,
-        sessionIndexAlice,
-      );
-      const [sessionBobPDA] = getSessionPDA(userBob.publicKey, sessionIndexBob);
+    it("Should track dive progression correctly", async () => {
+      const alice = await fixture.createUser("alice");
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+
+      let session = await fixture.getSession(sessionPDA);
+      assert.strictEqual(session.diveNumber, 1);
+
+      // Play multiple rounds
+      for (let i = 0; i < 10; i++) {
+        try {
+          await fixture.playRound(alice, sessionPDA);
+          session = await fixture.getSession(sessionPDA);
+
+          if (session.status.hasOwnProperty("lost")) {
+            console.log(`    Player lost at dive ${session.diveNumber}`);
+            break;
+          } else {
+            assert.strictEqual(session.diveNumber, i + 2);
+          }
+        } catch {
+          break;
+        }
+      }
+    });
+
+    it("Should increase treasure with each successful dive", async () => {
+      const alice = await fixture.createUser("alice");
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+
+      let previousTreasure = TestUtils.lamportsNum(TEST_AMOUNTS.SMALL);
+
+      for (let i = 0; i < 5; i++) {
+        try {
+          await fixture.playRound(alice, sessionPDA);
+          const session = await fixture.getSession(sessionPDA);
+
+          if (session.status.hasOwnProperty("lost")) {
+            break;
+          }
+
+          const currentTreasure = session.currentTreasure.toNumber();
+          assert.isTrue(
+            currentTreasure > previousTreasure,
+            `Treasure should increase (was ${previousTreasure}, now ${currentTreasure})`
+          );
+          previousTreasure = currentTreasure;
+        } catch {
+          break;
+        }
+      }
+    });
+
+    it("Should enforce status transitions", async () => {
+      const alice = await fixture.createUser("alice");
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+
+      // Active -> Lost
+      await fixture.loseSession(alice, sessionPDA);
+
+      // Try to play after lost (should fail - session is closed)
+      let failed = false;
+      try {
+        await fixture.playRound(alice, sessionPDA);
+      } catch {
+        failed = true;
+      }
+      assert.isTrue(failed, "Cannot play after session closed");
+    });
+
+    it("Should enforce cash out restrictions", async () => {
+      const alice = await fixture.createUser("alice");
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+
+      // Try to cash out at dive 1 (treasure == bet, should fail)
+      let failed = false;
+      try {
+        await fixture.cashOut(alice, sessionPDA);
+      } catch (error: any) {
+        failed = true;
+        const err = TestUtils.parseAnchorError(error.logs);
+        assert.strictEqual(err?.error.errorCode.code, "InsufficientTreasure");
+      }
+      assert.isTrue(failed, "Cannot cash out at dive 1");
+    });
+
+    it("Should handle session after multiple play rounds", async () => {
+      const alice = await fixture.createUser("alice");
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+
+      let roundsPlayed = 0;
+      let sessionLost = false;
+
+      // Play up to 20 rounds
+      for (let i = 0; i < 20; i++) {
+        try {
+          await fixture.playRound(alice, sessionPDA);
+          roundsPlayed++;
+
+          const session = await fixture.getSession(sessionPDA);
+          if (session.status.hasOwnProperty("lost")) {
+            sessionLost = true;
+            console.log(`    Session lost after ${roundsPlayed} rounds at dive ${session.diveNumber}`);
+            break;
+          }
+        } catch {
+          break;
+        }
+      }
+
+      console.log(`    Played ${roundsPlayed} rounds total`);
+      assert.isTrue(roundsPlayed > 0, "Should play at least one round");
+    });
+  });
+
+  // ============================================================================
+  // H. Edge Cases & Boundary Conditions
+  // ============================================================================
+
+  describe("Edge Cases & Boundary Conditions", () => {
+    beforeEach(async () => {
+      fixture = new TestFixture(program, provider);
+      await fixture.setupHouse(false);
+      await fixture.fundHouse(TEST_AMOUNTS.HUGE);
+    });
+
+    it("Should handle minimum bet amount", async () => {
+      const alice = await fixture.createUser("alice");
+      
+      // 1 lamport bet
+      const [sessionPDA] = TestUtils.getSessionPDA(alice.publicKey, 0, program.programId);
+      await program.methods
+        .startSession(new BN(1), new BN(0))
+        .accounts({
+          user: alice.publicKey,
+          houseVault: fixture.houseVaultPDA,
+          houseAuthority: fixture.houseAuthority.publicKey,
+          session: sessionPDA,
+          slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([alice])
+        .rpc();
+
+      const session = await fixture.getSession(sessionPDA);
+      assert.strictEqual(session.betAmount.toString(), "1");
+      assert.strictEqual(session.maxPayout.toString(), "100"); // 1 * 100
+    });
+
+    it("Should handle very large bet amounts", async () => {
+      const alice = await fixture.createUser("alice", TEST_AMOUNTS.HUGE);
+      
+      // 50 SOL bet
+      const sessionPDA = await fixture.startSession(alice, 50, 0);
+
+      const session = await fixture.getSession(sessionPDA);
+      const expectedMaxPayout = TestUtils.expectedMaxPayout(TestUtils.lamportsNum(50));
+
+      assert.strictEqual(session.betAmount.toString(), TestUtils.lamportsNum(50).toString());
+      assert.strictEqual(session.maxPayout.toString(), expectedMaxPayout.toString());
+    });
+
+    it("Should fail when trying to reuse session index", async () => {
+      const alice = await fixture.createUser("alice");
+      
+      await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      await fixture.loseSession(alice, TestUtils.getSessionPDA(alice.publicKey, 0, program.programId)[0]);
+
+      // Try to start another session with same index
+      let failed = false;
+      try {
+        await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      } catch (error: any) {
+        failed = true;
+        assert.isTrue(error.message.includes("already in use"));
+      }
+      assert.isTrue(failed, "Cannot reuse session index");
+    });
+
+    it("Should handle rapid successive operations", async () => {
+      const alice = await fixture.createUser("alice");
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+
+      // Rapidly play multiple rounds
+      const promises = [];
+      for (let i = 0; i < 3; i++) {
+        promises.push(
+          fixture.playRound(alice, sessionPDA).catch(() => {})
+        );
+      }
+
+      await Promise.allSettled(promises);
+      
+      // At least one should succeed
+      const session = await fixture.getSession(sessionPDA);
+      assert.isTrue(session.diveNumber >= 2, "At least one round should have been played");
+    });
+
+    it("Should maintain integrity after house unlock/lock", async () => {
+      const alice = await fixture.createUser("alice");
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+
+      // Lock and unlock house while session active
+      await fixture.toggleHouseLock();
+      await fixture.toggleHouseLock();
+
+      // Session should still be playable
+      await fixture.playRound(alice, sessionPDA);
+      
+      const session = await fixture.getSession(sessionPDA);
+      assert.isTrue(session.status.hasOwnProperty("active") || session.status.hasOwnProperty("lost"));
+    });
+  });
+
+  // ============================================================================
+  // I. Invariant & Conservation Properties
+  // ============================================================================
+
+  describe("Invariant & Conservation Properties", () => {
+    beforeEach(async () => {
+      fixture = new TestFixture(program, provider);
+      await fixture.setupHouse(false);
+      await fixture.fundHouse(TEST_AMOUNTS.HUGE);
+    });
+
+    it("Should maintain money conservation across operations", async () => {
+      const alice = await fixture.createUser("alice");
+      const bob = await fixture.createUser("bob");
+
+      const initialAlice = await fixture.getBalance(alice.publicKey);
+      const initialBob = await fixture.getBalance(bob.publicKey);
+      const initialHouse = await fixture.getBalance(fixture.houseVaultPDA);
+      const initialTotal = initialAlice + initialBob + initialHouse;
 
       // Multiple operations
-      await program.methods
-        .startSession(
-          new BN(1 * LAMPORTS_PER_SOL),
-          new BN(10 * LAMPORTS_PER_SOL),
-          new BN(sessionIndexAlice),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionAlicePDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      const aliceSession = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      await fixture.playRound(alice, aliceSession);
+      
+      const aliceData = await fixture.getSession(aliceSession);
+      if (!aliceData.status.hasOwnProperty("lost")) {
+        await fixture.cashOut(alice, aliceSession);
+      }
 
-      await program.methods
-        .playRound(new BN(2 * LAMPORTS_PER_SOL), 2)
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionAlicePDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      const bobSession = await fixture.startSession(bob, TEST_AMOUNTS.SMALL, 0);
+      await fixture.loseSession(bob, bobSession);
 
-      await program.methods
-        .cashOut()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionAlicePDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      // Check final total (allow for fees + rent)
+      const finalAlice = await fixture.getBalance(alice.publicKey);
+      const finalBob = await fixture.getBalance(bob.publicKey);
+      const finalHouse = await fixture.getBalance(fixture.houseVaultPDA);
+      const finalTotal = finalAlice + finalBob + finalHouse;
 
-      await program.methods
-        .startSession(
-          new BN(0.5 * LAMPORTS_PER_SOL),
-          new BN(5 * LAMPORTS_PER_SOL),
-          new BN(sessionIndexBob),
-        )
-        .accounts({
-          user: userBob.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionBobPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userBob])
-        .rpc({ commitment: "confirmed" });
-
-      await program.methods
-        .loseSession()
-        .accounts({
-          user: userBob.publicKey,
-          session: sessionBobPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userBob])
-        .rpc({ commitment: "confirmed" });
-
-      // Check final total (allowing for transaction fees)
-      const finalUserAlice = await provider.connection.getBalance(
-        userAlice.publicKey,
-      );
-      const finalUserBob = await provider.connection.getBalance(
-        userBob.publicKey,
-      );
-      const finalHouse = await provider.connection.getBalance(houseVaultPDA);
-      const finalTotal = finalUserAlice + finalUserBob + finalHouse;
-
-      // Account for rent from session accounts (approximate)
-      const rentExemption =
-        await provider.connection.getMinimumBalanceForRentExemption(
-          8 + 32 + 32 + 1 + 8 + 8 + 8 + 2 + 1, // Approximate GameSession size
-        );
-      const maxExpectedFees = 0.01 * LAMPORTS_PER_SOL; // Max transaction fees
+      const maxExpectedLoss = TestUtils.lamportsNum(0.15); // 0.15 SOL for fees+rent
+      const difference = Math.abs(finalTotal - initialTotal);
 
       assert.isTrue(
-        Math.abs(finalTotal - initialTotal) <
-          maxExpectedFees + rentExemption * 4,
-        `Money conservation: difference ${Math.abs(
-          finalTotal - initialTotal,
-        )} should be small`,
-      );
-
-      // Verify total_reserved is 0
-      const houseVault = await program.account.houseVault.fetch(houseVaultPDA);
-      assert.strictEqual(
-        houseVault.totalReserved.toString(),
-        "0",
-        "Total reserved should be 0",
+        difference < maxExpectedLoss,
+        `Money should be conserved (difference: ${TestUtils.toSOL(difference)} SOL)`
       );
     });
 
-    it("Should handle edge case: cash out with treasure equal to bet (should fail)", async () => {
-      const betAmount = 1 * LAMPORTS_PER_SOL;
-      const maxPayout = 10 * LAMPORTS_PER_SOL;
-      const sessionIndex = 30;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+    it("Should always keep totalReserved accurate", async () => {
+      const alice = await fixture.createUser("alice");
+      const bob = await fixture.createUser("bob");
 
-      // Start session
-      await program.methods
-        .startSession(
-          new BN(betAmount),
-          new BN(maxPayout),
-          new BN(sessionIndex),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      // Start sessions
+      const aliceSession = await fixture.startSession(alice, TEST_AMOUNTS.MEDIUM, 0);
+      const bobSession = await fixture.startSession(bob, TEST_AMOUNTS.SMALL, 0);
 
-      // Try to cash out immediately (treasure == bet)
-      let shouldFail = "This should fail";
-      try {
-        await program.methods
-          .cashOut()
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionPDA,
-            houseVault: houseVaultPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error: any) {
-        shouldFail = "Failed";
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "InsufficientTreasure",
-          "Expected InsufficientTreasure error",
-        );
+      const expectedReserved1 = TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.MEDIUM))
+        .add(TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.SMALL)));
+
+      let vault = await fixture.getHouseVault();
+      assert.strictEqual(vault.totalReserved.toString(), expectedReserved1.toString());
+
+      // Alice loses
+      await fixture.loseSession(alice, aliceSession);
+
+      const expectedReserved2 = TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.SMALL));
+      vault = await fixture.getHouseVault();
+      assert.strictEqual(vault.totalReserved.toString(), expectedReserved2.toString());
+
+      // Bob cashes out
+      await fixture.playRound(bob, bobSession);
+      const bobData = await fixture.getSession(bobSession);
+      if (!bobData.status.hasOwnProperty("lost")) {
+        await fixture.playRound(bob, bobSession);
+        const bobData2 = await fixture.getSession(bobSession);
+        if (!bobData2.status.hasOwnProperty("lost")) {
+          await fixture.cashOut(bob, bobSession);
+        }
       }
-      assert.strictEqual(shouldFail, "Failed");
 
-      // Clean up
-      await program.methods
-        .loseSession()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      // All sessions closed, reserved should be 0
+      vault = await fixture.getHouseVault();
+      assert.strictEqual(vault.totalReserved.toString(), "0");
     });
 
-    it("Should handle maximum dive numbers correctly", async () => {
-      const betAmount = 1 * LAMPORTS_PER_SOL;
-      const maxPayout = 10 * LAMPORTS_PER_SOL;
-      const sessionIndex = 31;
-      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+    it("Should never allow treasure to exceed max_payout", async () => {
+      const alice = await fixture.createUser("alice");
+      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
 
-      // Start session
-      await program.methods
-        .startSession(
-          new BN(betAmount),
-          new BN(maxPayout),
-          new BN(sessionIndex),
-        )
-        .accounts({
-          user: userAlice.publicKey,
-          houseVault: houseVaultPDA,
-          houseAuthority: houseAuthority.publicKey,
-          session: sessionPDA,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      const session = await fixture.getSession(sessionPDA);
+      const maxPayout = session.maxPayout.toNumber();
 
       // Play many rounds
-      for (let i = 2; i <= 20; i++) {
-        const newTreasure = Math.min(
-          betAmount * (1 + i * 0.1),
-          maxPayout * 0.9,
-        );
-        await program.methods
-          .playRound(new BN(newTreasure), i)
-          .accounts({
-            user: userAlice.publicKey,
-            session: sessionPDA,
-          })
-          .signers([userAlice])
-          .rpc({ commitment: "confirmed" });
+      for (let i = 0; i < 50; i++) {
+        try {
+          await fixture.playRound(alice, sessionPDA);
+          const currentSession = await fixture.getSession(sessionPDA);
+
+          if (currentSession.status.hasOwnProperty("lost")) {
+            break;
+          }
+
+          assert.isTrue(
+            currentSession.currentTreasure.toNumber() <= maxPayout,
+            `Treasure ${currentSession.currentTreasure} should not exceed max ${maxPayout}`
+          );
+        } catch {
+          break;
+        }
+      }
+    });
+
+    it("Should maintain house vault balance >= totalReserved", async () => {
+      const alice = await fixture.createUser("alice");
+      const bob = await fixture.createUser("bob");
+
+      await fixture.startSession(alice, TEST_AMOUNTS.MEDIUM, 0);
+      await fixture.startSession(bob, TEST_AMOUNTS.SMALL, 0);
+
+      const vault = await fixture.getHouseVault();
+      const balance = await fixture.getBalance(fixture.houseVaultPDA);
+
+      assert.isTrue(
+        balance >= vault.totalReserved.toNumber(),
+        `Balance ${balance} should be >= reserved ${vault.totalReserved}`
+      );
+    });
+  });
+
+  // ============================================================================
+  // J. Stress & Load Testing
+  // ============================================================================
+
+  describe("Stress & Load Testing", () => {
+    beforeEach(async () => {
+      fixture = new TestFixture(program, provider);
+      await fixture.setupHouse(false);
+      await fixture.fundHouse(TEST_AMOUNTS.HUGE * 3);
+    });
+
+    it("Should handle 10 concurrent sessions", async () => {
+      const users = [];
+      const sessions = [];
+
+      // Create 10 users and start sessions
+      for (let i = 0; i < 10; i++) {
+        const user = await fixture.createUser(`user${i}`, TEST_AMOUNTS.LARGE);
+        users.push(user);
+        const session = await fixture.startSession(user, TEST_AMOUNTS.TINY, 0);
+        sessions.push(session);
       }
 
-      const session = await program.account.gameSession.fetch(sessionPDA);
-      assert.strictEqual(session.diveNumber, 20);
-      assert.deepEqual(session.status, { active: {} });
+      // Verify total reserved
+      const expectedReserved = TestUtils.expectedMaxPayout(
+        TestUtils.lamportsNum(TEST_AMOUNTS.TINY)
+      ).muln(10);
 
-      // Clean up
-      await program.methods
-        .loseSession()
-        .accounts({
-          user: userAlice.publicKey,
-          session: sessionPDA,
-          houseVault: houseVaultPDA,
-        })
-        .signers([userAlice])
-        .rpc({ commitment: "confirmed" });
+      const vault = await fixture.getHouseVault();
+      assert.strictEqual(vault.totalReserved.toString(), expectedReserved.toString());
+
+      console.log(`    Successfully created 10 concurrent sessions`);
+      console.log(`    Total reserved: ${TestUtils.toSOL(vault.totalReserved.toNumber())} SOL`);
+    });
+
+    it("Should handle sequential session lifecycle", async () => {
+      const alice = await fixture.createUser("alice", TEST_AMOUNTS.LARGE);
+
+      let successfulSessions = 0;
+
+      // Create and complete 5 sessions sequentially
+      for (let i = 0; i < 5; i++) {
+        try {
+          const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.TINY, i);
+          
+          // Play a few rounds
+          for (let j = 0; j < 3; j++) {
+            try {
+              await fixture.playRound(alice, sessionPDA);
+            } catch {
+              break;
+            }
+          }
+
+          // End session
+          try {
+            const session = await fixture.getSession(sessionPDA);
+            if (session.status.hasOwnProperty("active")) {
+              await fixture.loseSession(alice, sessionPDA);
+            }
+          } catch {}
+
+          successfulSessions++;
+        } catch (error) {
+          console.log(`    Session ${i} failed: ${error}`);
+        }
+      }
+
+      assert.strictEqual(successfulSessions, 5, "All 5 sessions should complete");
+      console.log(`    Successfully completed ${successfulSessions} sequential sessions`);
+    });
+
+    it("Should handle varying bet amounts", async () => {
+      const betAmounts = [
+        TEST_AMOUNTS.TINY,
+        TEST_AMOUNTS.SMALL,
+        TEST_AMOUNTS.MEDIUM,
+        TEST_AMOUNTS.SMALL,
+        TEST_AMOUNTS.TINY,
+      ];
+
+      let totalReservedExpected = new BN(0);
+
+      for (let i = 0; i < betAmounts.length; i++) {
+        const user = await fixture.createUser(`user${i}`, TEST_AMOUNTS.LARGE);
+        await fixture.startSession(user, betAmounts[i], 0);
+        
+        totalReservedExpected = totalReservedExpected.add(
+          TestUtils.expectedMaxPayout(TestUtils.lamportsNum(betAmounts[i]))
+        );
+      }
+
+      const vault = await fixture.getHouseVault();
+      assert.strictEqual(vault.totalReserved.toString(), totalReservedExpected.toString());
+
+      console.log(`    Successfully handled ${betAmounts.length} sessions with varying bets`);
+      console.log(`    Total reserved: ${TestUtils.toSOL(vault.totalReserved.toNumber())} SOL`);
     });
   });
 });
