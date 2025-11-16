@@ -39,7 +39,11 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
         .to_account_info()
         .try_borrow_mut_lamports()? += session.current_treasure;
 
-    // Release reserved funds
+    // Release reserved funds with safety check
+    require!(
+        house_vault.total_reserved >= session.max_payout,
+        GameError::Overflow
+    );
     house_vault.total_reserved = house_vault
         .total_reserved
         .checked_sub(session.max_payout)
@@ -69,6 +73,7 @@ pub struct CashOut<'info> {
         mut,
         has_one = user,
         has_one = house_vault,
+        close = user,
     )]
     pub session: Account<'info, GameSession>,
 

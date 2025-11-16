@@ -8,11 +8,8 @@ pub enum GameError {
     #[msg("Session is not active")]
     InvalidSessionStatus,
 
-    #[msg("Caller is not session user")]
-    WrongUser,
-
-    #[msg("Session does not belong to this house vault")]
-    WrongHouseVault,
+    #[msg("Bet amount must be greater than zero")]
+    InvalidBetAmount,
 
     #[msg("Round number mismatch")]
     RoundMismatch,

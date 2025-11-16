@@ -35,6 +35,15 @@ describe("dive-game", () => {
   let houseVaultPDA: PublicKey;
   let houseVaultBump: number;
 
+  // Helper: Convert SOL to lamports (integer-only math)
+  function lamports(sol: number): BN {
+    return new BN(BigInt(Math.round(sol * LAMPORTS_PER_SOL)).toString());
+  }
+
+  function lamportsNum(sol: number): number {
+    return Number(BigInt(Math.round(sol * LAMPORTS_PER_SOL)));
+  }
+
   // Helper: Airdrop SOL to an address
   async function airdrop(
     connection: any,
@@ -160,12 +169,8 @@ describe("dive-game", () => {
       );
 
       // assert.strictEqual(events.length, 1, "Should emit one event");
-      assert.strictEqual(
-        houseVaultPDA.toString()
-      );
-      assert.strictEqual(
-        houseAuthority.publicKey.toString()
-      );
+      assert.strictEqual(houseVaultPDA.toString());
+      assert.strictEqual(houseAuthority.publicKey.toString());
     });
 
     it("Should fail to initialize house vault twice", async () => {
@@ -284,18 +289,24 @@ describe("dive-game", () => {
     });
   });
 
-    after(async () => {
-      // Unlock house for next suite
-      try {
-        const vault = await program.account.houseVault.fetch(houseVaultPDA);
-        if (vault.locked) {
-          await program.methods.toggleHouseLock()
-            .accounts({ houseAuthority: houseAuthority.publicKey, houseVault: houseVaultPDA })
-            .signers([houseAuthority]).rpc({ commitment: "confirmed" });
-        }
-      } catch (e) { /* ignore */ }
-    });
-
+  after(async () => {
+    // Unlock house for next suite
+    try {
+      const vault = await program.account.houseVault.fetch(houseVaultPDA);
+      if (vault.locked) {
+        await program.methods
+          .toggleHouseLock()
+          .accounts({
+            houseAuthority: houseAuthority.publicKey,
+            houseVault: houseVaultPDA,
+          })
+          .signers([houseAuthority])
+          .rpc({ commitment: "confirmed" });
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  });
 
   // ============================================================================
   // B. Session Lifecycle - Happy Paths
@@ -307,7 +318,7 @@ describe("dive-game", () => {
       userBob = Keypair.generate();
       await airdrop(provider.connection, userAlice.publicKey);
       await airdrop(provider.connection, userBob.publicKey);
-    
+
       // Fund house vault with enough SOL for payouts
       await airdrop(provider.connection, houseVaultPDA, 100 * LAMPORTS_PER_SOL);
     });
@@ -405,9 +416,7 @@ describe("dive-game", () => {
         "SessionStartedEvent"
       );
       // assert.strictEqual(events.length, 1);
-      assert.strictEqual(
-        userAlice.publicKey.toString()
-      );
+      assert.strictEqual(userAlice.publicKey.toString());
     });
 
     it("Should successfully play several rounds", async () => {
@@ -553,9 +562,7 @@ describe("dive-game", () => {
         "SessionCashedOutEvent"
       );
       // assert.strictEqual(events.length, 1);
-      assert.strictEqual(
-        expectedPayout.toString()
-      );
+      assert.strictEqual(expectedPayout.toString());
     });
 
     it("Should successfully handle a losing session", async () => {
@@ -1125,6 +1132,128 @@ describe("dive-game", () => {
         Math.abs(userBalanceFinal - userBalanceAfter) < 10000,
         "Balance should not change after failed second cash out"
       );
+    });
+
+    it("Should fail to start session with zero bet amount", async () => {
+      const sessionIndex = 100;
+      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+
+      let shouldFail = "This should fail";
+      try {
+        await program.methods
+          .startSession(
+            new BN(0),
+            new BN(10 * LAMPORTS_PER_SOL),
+            new BN(sessionIndex)
+          )
+          .accounts({
+            user: userAlice.publicKey,
+            houseVault: houseVaultPDA,
+            houseAuthority: houseAuthority.publicKey,
+            session: sessionPDA,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .signers([userAlice])
+          .rpc({ commitment: "confirmed" });
+      } catch (error: any) {
+        shouldFail = "Failed";
+        const err = anchor.AnchorError.parse(error.logs);
+        assert.strictEqual(
+          err.error.errorCode.code,
+          "InvalidBetAmount",
+          "Expected InvalidBetAmount error"
+        );
+      }
+      assert.strictEqual(shouldFail, "Failed");
+    });
+
+    it("Should fail to start session when max_payout < bet_amount", async () => {
+      const sessionIndex = 101;
+      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+
+      let shouldFail = "This should fail";
+      try {
+        await program.methods
+          .startSession(
+            new BN(10 * LAMPORTS_PER_SOL),
+            new BN(5 * LAMPORTS_PER_SOL),
+            new BN(sessionIndex)
+          )
+          .accounts({
+            user: userAlice.publicKey,
+            houseVault: houseVaultPDA,
+            houseAuthority: houseAuthority.publicKey,
+            session: sessionPDA,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .signers([userAlice])
+          .rpc({ commitment: "confirmed" });
+      } catch (error: any) {
+        shouldFail = "Failed";
+        const err = anchor.AnchorError.parse(error.logs);
+        assert.strictEqual(
+          err.error.errorCode.code,
+          "TreasureInvalid",
+          "Expected TreasureInvalid error"
+        );
+      }
+      assert.strictEqual(shouldFail, "Failed");
+    });
+
+    it("Should fail to lose a session twice", async () => {
+      const betAmount = 1 * LAMPORTS_PER_SOL;
+      const maxPayout = 10 * LAMPORTS_PER_SOL;
+      const sessionIndex = 102;
+      const [sessionPDA] = getSessionPDA(userAlice.publicKey, sessionIndex);
+
+      // Start and lose session
+      await program.methods
+        .startSession(
+          new BN(betAmount),
+          new BN(maxPayout),
+          new BN(sessionIndex)
+        )
+        .accounts({
+          user: userAlice.publicKey,
+          houseVault: houseVaultPDA,
+          houseAuthority: houseAuthority.publicKey,
+          session: sessionPDA,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([userAlice])
+        .rpc({ commitment: "confirmed" });
+
+      await program.methods
+        .loseSession()
+        .accounts({
+          user: userAlice.publicKey,
+          session: sessionPDA,
+          houseVault: houseVaultPDA,
+        })
+        .signers([userAlice])
+        .rpc({ commitment: "confirmed" });
+
+      // Try to lose again
+      let shouldFail = "This should fail";
+      try {
+        await program.methods
+          .loseSession()
+          .accounts({
+            user: userAlice.publicKey,
+            session: sessionPDA,
+            houseVault: houseVaultPDA,
+          })
+          .signers([userAlice])
+          .rpc({ commitment: "confirmed" });
+      } catch (error: any) {
+        shouldFail = "Failed";
+        assert.isTrue(
+          error.message.includes("AccountNotInitialized") ||
+            error.message.includes("Account does not exist"),
+          "Expected account not found error after close"
+        );
+      }
+      assert.strictEqual(shouldFail, "Failed");
     });
   });
 

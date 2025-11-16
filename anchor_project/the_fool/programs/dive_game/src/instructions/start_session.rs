@@ -18,6 +18,10 @@ pub fn start_session(
     // Check house not locked
     require!(!house_vault.locked, GameError::HouseLocked);
 
+    // Validate bet / payout relationship
+    require!(bet_amount > 0, GameError::InvalidBetAmount);
+    require!(max_payout >= bet_amount, GameError::TreasureInvalid);
+
     // Transfer bet from user to house vault
     let transfer_ix = system_program::Transfer {
         from: ctx.accounts.user.to_account_info(),
@@ -25,6 +29,16 @@ pub fn start_session(
     };
     let cpi_ctx = CpiContext::new(ctx.accounts.system_program.to_account_info(), transfer_ix);
     system_program::transfer(cpi_ctx, bet_amount)?;
+
+    // Check free liquidity vs new reservation
+    let vault_balance = house_vault.to_account_info().lamports();
+    let available = vault_balance
+        .checked_sub(house_vault.total_reserved)
+        .ok_or(GameError::Overflow)?;
+    require!(
+        available >= max_payout,
+        GameError::InsufficientVaultBalance
+    );
 
     // Reserve max_payout in house vault
     house_vault.total_reserved = house_vault
