@@ -14,6 +14,7 @@ import {
 import type { GameState, Shipwreck, DiveStats } from "@/lib/types";
 import { GAME_CONFIG } from "@/lib/constants";
 import { GAME_COLORS } from "@/lib/gameColors";
+import { playSound, stopSound, getSoundManager } from "@/lib/soundManager";
 
 export default function Home() {
   // Generate a fixed userId for this session (in production, would come from auth)
@@ -45,6 +46,7 @@ export default function Home() {
   // Debug mode states
   const [debugMode, setDebugMode] = useState(false); // House wallet debug
   const [kaplayDebug, setKaplayDebug] = useState(false); // Kaplay debug mode
+  const [soundMuted, setSoundMuted] = useState(false); // Sound mute state
   const [houseWalletInfo, setHouseWalletInfo] = useState({
     balance: 0,
     reservedFunds: 0,
@@ -194,6 +196,7 @@ export default function Home() {
       // STEP 1: Start diving animation
       setIsDiving(true);
       setAnimationMessage('DIVING...');
+      playSound('BUBBLES'); // Play diving sound
       console.log('[GAME] 🎬 Starting diving animation (2.5s)...');
       
       // Wait for diving animation (2.5 seconds as defined in OceanScene)
@@ -226,8 +229,10 @@ export default function Home() {
       setSurvived(result.survived);
       if (result.survived) {
         setAnimationMessage('TREASURE FOUND!');
+        playSound('COIN'); // Play treasure sound
       } else {
         setAnimationMessage('DROWNED!');
+        playSound('EXPLOSION'); // Play death sound
       }
       
       // Wait for result animation to play
@@ -449,8 +454,19 @@ export default function Home() {
           }}>
             <p className="title" style={{ fontSize: '12px' }}>ABYSS FORTUNE</p>
             
-            {/* Debug Button */}
-            <div className="flex justify-end mb-4">
+            {/* Debug & Mute Buttons */}
+            <div className="flex justify-between mb-4">
+              <button
+                onClick={() => {
+                  getSoundManager().toggleMute();
+                  setSoundMuted(getSoundManager().isMuted());
+                }}
+                className={`nes-btn ${soundMuted ? 'is-error' : 'is-success'}`}
+                style={{ padding: '4px 8px', fontSize: '8px' }}
+                title="Toggle sound"
+              >
+                {soundMuted ? '🔇 MUTED' : '🔊 SOUND'}
+              </button>
               <button
                 onClick={() => setDebugMode(!debugMode)}
                 className="nes-btn is-warning"
