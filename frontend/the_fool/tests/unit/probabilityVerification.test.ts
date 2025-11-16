@@ -168,13 +168,13 @@ describe("Probability Verification", () => {
     console.log(`  Total wagered: $${totalWagered}`);
     console.log(`  Net change: $${netChange}`);
     console.log(
-      `  Actual edge: ${(actualEdge * 100).toFixed(1)}% (expected: 15%)`
+      `  Actual edge: ${(actualEdge * 100).toFixed(1)}% (expected: 5%)`
     );
 
-    // House edge should be roughly 15% (±10% due to variance)
+    // House edge should be roughly 5% (±10% due to variance)
     assert.ok(
       actualEdge >= 0.05 && actualEdge <= 0.25,
-      "House edge should be roughly 15% (±10%)"
+      "House edge should be roughly 5% (±10%)"
     );
 
     console.log("✓ House edge verified over many games");
@@ -301,7 +301,7 @@ describe("Multiplier Calculations", () => {
       });
 
       const ev = stats.winProbability * stats.multiplier;
-      const expected = 0.85; // 1 - 0.15 house edge
+      const expected = 0.95; // 1 - 0.15 house edge
 
       // Allow small rounding error
       assert.ok(
@@ -310,7 +310,7 @@ describe("Multiplier Calculations", () => {
       );
     }
 
-    console.log("✓ All rounds have constant EV (15% house edge)");
+    console.log("✓ All rounds have constant EV (5% house edge)");
   });
 
   it("should verify treasure decreases on average", async () => {
@@ -342,7 +342,7 @@ describe("Multiplier Calculations", () => {
       "Average treasure should decrease due to house edge"
     );
 
-    // Should be around $42-$45 (50 * 0.85)
+    // Should be around $42-$45 (50 * 0.95)
     assert.ok(
       avgTreasure >= 35 && avgTreasure <= 48,
       "Average should be ~$42.50"

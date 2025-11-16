@@ -579,7 +579,7 @@ describe("Wallet + Game Integration - Edge Cases", () => {
 
   it("should demonstrate house edge over many games", () => {
     // This test shows that EV calculation is correct
-    // The cumulative EV (0.85^n) represents the house edge
+    // The cumulative EV (0.95^n) represents the house edge
     // After 5 successful dives, player has beaten the odds
 
     const bet = 100;
@@ -602,7 +602,7 @@ describe("Wallet + Game Integration - Edge Cases", () => {
       "Lucky player beats expected value"
     );
 
-    // But on average, players lose 15% per dive
+    // But on average, players lose 5% per dive
     assert.ok(cumulativeEV < 1, "Expected value decreases (house edge)");
 
     console.log(

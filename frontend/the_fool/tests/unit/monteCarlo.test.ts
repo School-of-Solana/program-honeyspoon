@@ -226,7 +226,7 @@ describe("Monte Carlo Statistical Verification", () => {
 
     // Calculate empirical EV
     const empiricalEV = calculateEmpiricalEV(results);
-    const theoreticalEV = 0.85; // 15% house edge
+    const theoreticalEV = 0.95; // 5% house edge
 
     console.log(`  Empirical EV: ${empiricalEV.toFixed(4)}`);
     console.log(`  Theoretical EV: ${theoreticalEV.toFixed(4)}`);

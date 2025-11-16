@@ -27,10 +27,14 @@ describe("Game Logic - calculateDiveStats", () => {
     );
     assert.ok(stats.multiplier > 0, "Multiplier should be > 0");
     assert.ok(
-      stats.multiplier < 1,
-      "Multiplier should be < 1 (house edge means you lose value)"
+      stats.multiplier > 1,
+      "Multiplier should be > 1 (players profit on wins with 5% house edge)"
     );
-    assert.strictEqual(stats.expectedValue, 0.85, "EV should always be 0.85");
+    assert.strictEqual(
+      stats.expectedValue,
+      0.95,
+      "EV should always be 0.95 (5% house edge)"
+    );
     assert.strictEqual(stats.depth, 50, "Depth should be 50m");
     assert.strictEqual(stats.oxygenRemaining, 96, "Oxygen should be 96%");
 
@@ -43,7 +47,11 @@ describe("Game Logic - calculateDiveStats", () => {
     const stats = calculateDiveStats(5);
 
     assert.strictEqual(stats.diveNumber, 5, "Dive number should be 5");
-    assert.strictEqual(stats.expectedValue, 0.85, "EV should always be 0.85");
+    assert.strictEqual(
+      stats.expectedValue,
+      0.95,
+      "EV should always be 0.95 (5% house edge)"
+    );
     assert.strictEqual(stats.depth, 250, "Depth should be 250m");
     assert.strictEqual(stats.oxygenRemaining, 80, "Oxygen should be 80%");
 
@@ -56,7 +64,11 @@ describe("Game Logic - calculateDiveStats", () => {
     const stats = calculateDiveStats(10);
 
     assert.strictEqual(stats.diveNumber, 10, "Dive number should be 10");
-    assert.strictEqual(stats.expectedValue, 0.85, "EV should always be 0.85");
+    assert.strictEqual(
+      stats.expectedValue,
+      0.95,
+      "EV should always be 0.95 (5% house edge)"
+    );
     assert.strictEqual(stats.depth, 500, "Depth should be 500m");
     assert.strictEqual(stats.oxygenRemaining, 60, "Oxygen should be 60%");
 
@@ -103,17 +115,17 @@ describe("Game Logic - calculateDiveStats", () => {
     );
   });
 
-  it("should maintain 0.85 EV across all dives", () => {
+  it("should maintain 0.95 EV across all dives", () => {
     for (let i = 1; i <= 20; i++) {
       const stats = calculateDiveStats(i);
       assert.strictEqual(
         stats.expectedValue,
-        0.85,
-        `EV should be 0.85 for dive ${i}`
+        0.95,
+        `EV should be 0.95 for dive ${i} (5% house edge)`
       );
     }
 
-    console.log("✓ EV constant at 0.85 for dives 1-20");
+    console.log("✓ EV constant at 0.95 for dives 1-20 (5% house edge)");
   });
 
   it("should calculate mathematically correct EV", () => {
@@ -121,15 +133,15 @@ describe("Game Logic - calculateDiveStats", () => {
       const stats = calculateDiveStats(i);
       const calculatedEV = stats.survivalProbability * stats.multiplier;
 
-      // Should be approximately 0.85 (within rounding error)
+      // Should be approximately 0.95 (within rounding error)
       assert.ok(
-        Math.abs(calculatedEV - 0.85) < 0.01,
+        Math.abs(calculatedEV - 0.95) < 0.01,
         `EV calculation incorrect for dive ${i}: ${calculatedEV}`
       );
     }
 
     console.log(
-      "✓ EV calculation mathematically verified (survivalProb × multiplier = 0.85)"
+      "✓ EV calculation mathematically verified (survivalProb × multiplier = 0.95)"
     );
   });
 
@@ -555,7 +567,11 @@ describe("Game Logic - calculateCumulativeEV", () => {
   it("should calculate EV for 1 dive", () => {
     const ev = calculateCumulativeEV(1);
 
-    assert.strictEqual(ev, 0.85, "EV after 1 dive should be 0.85");
+    assert.strictEqual(
+      ev,
+      0.95,
+      "EV after 1 dive should be 0.95 (5% house edge)"
+    );
 
     console.log(`✓ Cumulative EV after 1 dive: ${ev}`);
   });
@@ -563,10 +579,11 @@ describe("Game Logic - calculateCumulativeEV", () => {
   it("should calculate EV for 2 dives", () => {
     const ev = calculateCumulativeEV(2);
 
+    // 0.95^2 = 0.9025
     assert.strictEqual(
       Math.round(ev * 10000) / 10000,
-      0.7225,
-      "EV after 2 dives should be 0.7225"
+      0.9025,
+      "EV after 2 dives should be 0.9025 (0.95^2)"
     );
 
     console.log(`✓ Cumulative EV after 2 dives: ${ev.toFixed(4)}`);
@@ -575,8 +592,11 @@ describe("Game Logic - calculateCumulativeEV", () => {
   it("should calculate EV for 5 dives", () => {
     const ev = calculateCumulativeEV(5);
 
-    // 0.85^5 ≈ 0.4437
-    assert.ok(ev < 0.5, "EV after 5 dives should be < 0.5");
+    // 0.95^5 ≈ 0.7738
+    assert.ok(
+      ev > 0.77 && ev < 0.78,
+      "EV after 5 dives should be ~0.7738 (0.95^5)"
+    );
 
     console.log(`✓ Cumulative EV after 5 dives: ${ev.toFixed(4)}`);
   });
@@ -584,8 +604,11 @@ describe("Game Logic - calculateCumulativeEV", () => {
   it("should calculate EV for 10 dives", () => {
     const ev = calculateCumulativeEV(10);
 
-    // 0.85^10 ≈ 0.1969
-    assert.ok(ev < 0.2, "EV after 10 dives should be < 0.2");
+    // 0.95^10 ≈ 0.5987
+    assert.ok(
+      ev > 0.59 && ev < 0.6,
+      "EV after 10 dives should be ~0.5987 (0.95^10)"
+    );
 
     console.log(`✓ Cumulative EV after 10 dives: ${ev.toFixed(4)}`);
   });
@@ -674,7 +697,11 @@ describe("Game Logic - Edge Cases & Integration", () => {
 
     assert.ok(dive50, "Should handle dive 50");
     assert.strictEqual(dive50.diveNumber, 50, "Dive number should be 50");
-    assert.strictEqual(dive50.expectedValue, 0.85, "EV should still be 0.85");
+    assert.strictEqual(
+      dive50.expectedValue,
+      0.95,
+      "EV should still be 0.95 (5% house edge)"
+    );
 
     console.log(
       `✓ Dive 50: ${(dive50.survivalProbability * 100).toFixed(1)}% survival, ${dive50.multiplier}x multiplier`

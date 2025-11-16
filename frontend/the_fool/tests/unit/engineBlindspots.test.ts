@@ -95,7 +95,7 @@ describe("Round Stats - Edge Cases", () => {
     // Verify multiplier maintains house edge (using actual probability, not rounded)
     const actualProb = 0.95; // We know round 1 starts at 95%
     const ev = actualProb * stats.multiplier;
-    assert.ok(Math.abs(ev - 0.85) < 0.02, "EV should be ~0.85 (15% edge)");
+    assert.ok(Math.abs(ev - 0.95) < 0.02, "EV should be ~0.95 (5% edge)");
 
     console.log(
       `  Round 1: P=${stats.winProbability}, M=${stats.multiplier.toFixed(3)}x, EV=${ev.toFixed(3)}`
@@ -189,7 +189,7 @@ describe("Round Stats - Edge Cases", () => {
   });
 
   it("should maintain constant EV across all rounds", () => {
-    const targetEV = 1 - DEFAULT_CONFIG.houseEdge; // 0.85
+    const targetEV = 1 - DEFAULT_CONFIG.houseEdge; // 0.95
 
     for (let round = 1; round <= 20; round++) {
       const stats = calculateRoundStats(round, DEFAULT_CONFIG);
@@ -258,8 +258,8 @@ describe("Invalid Config Tests", () => {
     );
     assert.strictEqual(
       stats.multiplier,
-      0.85,
-      "Multiplier should be 0.85 (1 - 0.15 edge)"
+      0.95,
+      "Multiplier should be 0.95 (1 - 0.15 edge)"
     );
   });
 
