@@ -13,6 +13,11 @@ import { createBubble } from "./entities/bubble";
 import { createFish } from "./entities/fish";
 import { createJellyfish } from "./entities/jellyfish";
 import { createSeagull } from "./entities/seagull";
+import { createAmbientPredator } from "./entities/predator";
+import { createTreasureParticles } from "./entities/particles";
+import { showTreasureChest } from "./entities/treasure";
+import { triggerDeathAnimation } from "./entities/death";
+import { createLayerPart } from "./entities/parallax";
 
 interface OceanSceneProps {
   depth: number;
@@ -699,33 +704,7 @@ export default function OceanScene({
         }>;
       }
 
-      // Helper: Create a container with random sprites
-      function createLayerPart(
-        spriteName: string,
-        frames: number,
-        count: number,
-        scaleRange: [number, number],
-        opacityRange: [number, number],
-        zIndex: number,
-        yOffset: number = 0
-      ) {
-        const container = k.add([
-          k.pos(0, yOffset),
-          k.z(zIndex),
-        ]);
-
-        for (let i = 0; i < count; i++) {
-          const sprite = container.add([
-            k.sprite(spriteName, { frame: Math.floor(Math.random() * frames) }),
-            k.pos(Math.random() * k.width(), Math.random() * CANVAS_HEIGHT),
-            k.anchor("center"),
-            k.scale(scaleRange[0] + Math.random() * (scaleRange[1] - scaleRange[0])),
-            k.opacity(opacityRange[0] + Math.random() * (opacityRange[1] - opacityRange[0])),
-          ]);
-        }
-
-        return container;
-      }
+      // Parallax layer creation moved to entities/parallax.ts
 
       const parallaxLayers: ParallaxLayer[] = [
         // Layer 1: Far background - Seaweed (slowest, darkest)
@@ -734,6 +713,8 @@ export default function OceanScene({
           parts: [
             {
               container: createLayerPart(
+                k,
+                CANVAS_HEIGHT,
                 CONST.PARALLAX.LAYERS[0].sprite,
                 CONST.PARALLAX.LAYERS[0].frames,
                 CONST.PARALLAX.LAYERS[0].count,
@@ -746,6 +727,8 @@ export default function OceanScene({
             },
             {
               container: createLayerPart(
+                k,
+                CANVAS_HEIGHT,
                 CONST.PARALLAX.LAYERS[0].sprite,
                 CONST.PARALLAX.LAYERS[0].frames,
                 CONST.PARALLAX.LAYERS[0].count,
@@ -764,6 +747,8 @@ export default function OceanScene({
           parts: [
             {
               container: createLayerPart(
+                k,
+                CANVAS_HEIGHT,
                 CONST.PARALLAX.LAYERS[1].sprite,
                 CONST.PARALLAX.LAYERS[1].frames,
                 CONST.PARALLAX.LAYERS[1].count,
@@ -776,6 +761,8 @@ export default function OceanScene({
             },
             {
               container: createLayerPart(
+                k,
+                CANVAS_HEIGHT,
                 CONST.PARALLAX.LAYERS[1].sprite,
                 CONST.PARALLAX.LAYERS[1].frames,
                 CONST.PARALLAX.LAYERS[1].count,
@@ -794,6 +781,8 @@ export default function OceanScene({
           parts: [
             {
               container: createLayerPart(
+                k,
+                CANVAS_HEIGHT,
                 CONST.PARALLAX.LAYERS[2].sprite,
                 CONST.PARALLAX.LAYERS[2].frames,
                 CONST.PARALLAX.LAYERS[2].count,
@@ -806,6 +795,8 @@ export default function OceanScene({
             },
             {
               container: createLayerPart(
+                k,
+                CANVAS_HEIGHT,
                 CONST.PARALLAX.LAYERS[2].sprite,
                 CONST.PARALLAX.LAYERS[2].frames,
                 CONST.PARALLAX.LAYERS[2].count,
@@ -901,263 +892,17 @@ export default function OceanScene({
         }
       });
 
-      // Depth-based predators
-      function getDepthPredator(depth: number): string | null {
-        if (depth < 100) return null; // Safe zone
-        if (depth < 200) return "shark"; // Already used for death
-        if (depth < 400) return "sawshark"; // Mid-depth menace
-        if (depth < 600) return "swordfish"; // Deep hunter (fast!)
-        return "seaangler"; // Abyss zone (glowing lure)
-      }
-
-      function createAmbientPredator() {
-        const predator = getDepthPredator(depthRef.current);
-        if (!predator || predator === "shark") return; // Skip shark (used for death)
-
-        const direction = Math.random() > 0.5 ? 1 : -1;
-        const startX = direction > 0 ? -100 : k.width() + 100;
-        const predatorY = 100 + Math.random() * 400;
-
-        const creature = k.add([
-          k.sprite(predator, { anim: "swim" }),
-          k.pos(startX, predatorY),
-          k.anchor("center"),
-          k.z(9),
-          k.scale(direction * 2.5, 2.5),
-          k.opacity(0.8 * lightLevel),
-        ]);
-
-        // Add glowing light for seaangler
-        if (predator === "seaangler") {
-          const light = creature.add([
-            k.circle(15),
-            k.pos(direction > 0 ? 20 : -20, -10), // Lure position
-            k.color(...CONST.COLORS.GLOW_YELLOW),
-            k.opacity(0.6),
-          ]);
-
-          // Pulsing glow
-          light.onUpdate(() => {
-            light.opacity = 0.4 + Math.sin(k.time() * 8) * 0.3;
-            light.radius = 15 + Math.sin(k.time() * 8) * 5;
-          });
-        }
-
-        creature.onUpdate(() => {
-          const speed = predator === "swordfish" ? 120 : 60;
-          creature.pos.x += direction * speed * k.dt();
-          creature.pos.y += Math.sin(k.time() * 2 + predatorY) * 20 * k.dt();
-
-          if (
-            (direction > 0 && creature.pos.x > k.width() + 100) ||
-            (direction < 0 && creature.pos.x < -100)
-          ) {
-            k.destroy(creature);
-          }
-        });
-      }
+      // Predator creation moved to entities/predator.ts
 
       // Spawn predators based on depth
       k.loop(6, () => {
         if (depthRef.current > 100 && Math.random() > 0.6) {
-          createAmbientPredator();
+          createAmbientPredator(k, depthRef.current, lightLevel);
         }
       });
 
-      // Treasure Chest System
-      function showTreasureChest(x: number, y: number) {
-        const chest = k.add([
-          k.sprite("chest", { anim: "closed" }),
-          k.pos(x, y + 120), // Position WAY below diver (was 60, now 120)
-          k.anchor("center"),
-          k.scale(5), // Make it BIGGER (was 3, now 5)
-          k.opacity(0),
-          k.z(18), // Behind diver (diver is z:20)
-        ]);
-
-        // Fade in
-        let fadeIn = 0;
-        const fadeInInterval = setInterval(() => {
-          fadeIn += CONST.ANIMATION_TIMINGS.CHEST_FADE_IN;
-          chest.opacity = Math.min(fadeIn, 1);
-          if (fadeIn >= 1) clearInterval(fadeInInterval);
-        }, CONST.ANIMATION_TIMINGS.FADE_INTERVAL);
-
-        // Opening sequence
-        setTimeout(() => {
-          chest.play("opening");
-
-          setTimeout(() => {
-            chest.play("open");
-
-            // Spawn coin particles
-            for (let i = 0; i < CONST.SPAWN_RATES.COIN_COUNT; i++) {
-              setTimeout(() => createCoinParticle(x, y + 120), i * CONST.ANIMATION_TIMINGS.COIN_SPAWN_INTERVAL);
-            }
-          }, CONST.ANIMATION_TIMINGS.CHEST_ANIMATION_DELAY);
-        }, CONST.ANIMATION_TIMINGS.CHEST_OPEN_DELAY);
-
-        // Fade out after animation
-        setTimeout(() => {
-          let fadeOut = 1;
-          const fadeOutInterval = setInterval(() => {
-            fadeOut -= CONST.ANIMATION_TIMINGS.CHEST_FADE_IN;
-            chest.opacity = Math.max(fadeOut, 0);
-            if (fadeOut <= 0) {
-              clearInterval(fadeOutInterval);
-              k.destroy(chest);
-            }
-          }, CONST.ANIMATION_TIMINGS.FADE_INTERVAL);
-        }, CONST.ANIMATION_TIMINGS.CHEST_FADE_OUT_START);
-      }
-
-      function createCoinParticle(x: number, y: number) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = CONST.COIN.SPEED_MIN + Math.random() * CONST.COIN.SPEED_RANDOM;
-
-        const coin = k.add([
-          k.sprite("coin", { anim: "spin" }),
-          k.pos(x, y),
-          k.anchor("center"),
-          k.scale(CONST.COIN.SCALE_MIN + Math.random() * CONST.COIN.SCALE_RANDOM),
-          k.opacity(1),
-          k.z(CONST.Z_LAYERS.COIN),
-          k.lifespan(CONST.COIN.LIFESPAN),
-        ]);
-
-        coin.onUpdate(() => {
-          coin.pos.x += Math.cos(angle) * speed * k.dt();
-          coin.pos.y += Math.sin(angle) * speed * k.dt() - CONST.COIN.UPWARD_BIAS * k.dt();
-          coin.opacity -= k.dt() * CONST.COIN.OPACITY_FADE_RATE;
-        });
-      }
-
-      // Particle effects (gold circles)
-      function createTreasureParticles(x: number, y: number) {
-        for (let i = 0; i < CONST.SPAWN_RATES.PARTICLE_COUNT; i++) {
-          const angle = (Math.PI * 2 * i) / CONST.SPAWN_RATES.PARTICLE_COUNT;
-          const speed = CONST.PARTICLE.SPEED_MIN + Math.random() * CONST.PARTICLE.SPEED_RANDOM;
-
-          const particle = k.add([
-            k.circle(CONST.PARTICLE.CIRCLE_RADIUS),
-            k.pos(x, y),
-            k.anchor("center"),
-            k.color(...CONST.COLORS.PARTICLE_GOLD),
-            k.opacity(1),
-            k.z(CONST.Z_LAYERS.PARTICLE),
-            k.lifespan(CONST.PARTICLE.LIFESPAN),
-          ]);
-
-          particle.onUpdate(() => {
-            particle.pos.x += Math.cos(angle) * speed * k.dt();
-            particle.pos.y += Math.sin(angle) * speed * k.dt();
-            particle.opacity -= k.dt();
-          });
-        }
-      }
-
-      // Death animation - WITH VARIETY!
-      function triggerDeathAnimation() {
-        console.log('[CANVAS] Triggering death animation!');
-        isAnimating = true;
-        animationType = AnimationType.DEATH;
-        divingSpeed = 0;
-
-        // Choose predator based on current depth
-        const predatorChoice = getDepthPredator(depthRef.current) || "shark";
-
-        const direction = Math.random() > 0.5 ? 1 : -1;
-        const startX = direction > 0 ? -100 : k.width() + 100;
-
-        const creature = k.add([
-          k.sprite(predatorChoice, { anim: "swim" }),
-          k.pos(startX, diver.pos.y),
-          k.anchor("center"),
-          k.z(25),
-          k.scale(direction * 3, 3),
-        ]);
-
-        // Custom death messages per predator
-        const deathMessages: Record<string, string> = {
-          shark: "SHARK ATTACK!",
-          sawshark: "SAWSHARK!",
-          swordfish: "IMPALED!",
-          seaangler: "LURED TO DEATH!",
-        };
-
-        // Message now handled by React overlay
-
-        let attackComplete = false;
-        let deathAnimationComplete = false;
-        let deathTimer = 0;
-        
-        creature.onUpdate(() => {
-          if (attackComplete) {
-            // After attack completes, wait 3 seconds then return to beach
-            if (!deathAnimationComplete) {
-              deathTimer += k.dt();
-              if (deathTimer > CONST.DEATH.DELAY_BEFORE_FADE) {
-                console.log('[CANVAS] ✅ Death animation complete! Returning to beach...');
-                deathAnimationComplete = true;
-                // Fade to black then go to beach
-                const fadeOverlay = k.add([
-                  k.rect(k.width(), k.height()),
-                  k.pos(0, 0),
-                  k.color(...CONST.COLORS.FADE_BLACK),
-                  k.opacity(0),
-                  k.z(CONST.Z_LAYERS.FADE_OVERLAY),
-                ]);
-                
-                let fadeProgress = 0;
-                const fadeInterval = k.onUpdate(() => {
-                  fadeProgress += k.dt() * CONST.DEATH.FADE_SPEED;
-                  fadeOverlay.opacity = Math.min(fadeProgress, 1);
-                  
-                  if (fadeProgress >= 1) {
-                    fadeInterval.cancel();
-                    // Reset animation state before going to beach
-                    isAnimating = false;
-                    animationType = AnimationType.IDLE;
-                    k.go("beach");
-                  }
-                });
-              }
-            }
-            return;
-          }
-
-          const speed = CONST.ATTACK.SPEED;
-          creature.pos.x += direction * speed * k.dt();
-          creature.pos.y = diver.pos.y + Math.sin(k.time() * CONST.ATTACK.SHAKE_SPEED) * CONST.ATTACK.SHAKE_AMPLITUDE;
-
-          if (Math.abs(creature.pos.x - diver.pos.x) < CONST.ATTACK.DISTANCE_THRESHOLD) {
-            attackComplete = true;
-
-            k.add([
-              k.rect(k.width(), k.height()),
-              k.pos(0, 0),
-              k.color(...CONST.COLORS.ATTACK_FLASH),
-              k.opacity(CONST.OPACITY.ATTACK_FLASH),
-              k.z(CONST.Z_LAYERS.ATTACK_FLASH),
-              k.lifespan(CONST.ATTACK.FLASH_DURATION),
-            ]);
-
-            // Message now handled by React overlay
-
-            diver.onUpdate(() => {
-              diver.pos.y += CONST.DEATH.SINK_SPEED * k.dt();
-              diver.opacity -= k.dt() * CONST.DEATH.FADE_RATE;
-            });
-
-            creature.onUpdate(() => {
-              creature.pos.x += direction * CONST.ATTACK.RETREAT_SPEED * k.dt();
-              if (Math.abs(creature.pos.x) > k.width() + CONST.ATTACK.RETREAT_DISTANCE) {
-                k.destroy(creature);
-              }
-            });
-          }
-        });
-      }
+      // Treasure chest creation moved to entities/treasure.ts
+      // Death animation moved to entities/death.ts
 
       // ======= CENTRALIZED MAIN UPDATE LOOP =======
       let lastLogTime = 0;
@@ -1339,11 +1084,17 @@ export default function OceanScene({
           isAnimating = true;
           animationType = AnimationType.TREASURE;
           treasurePulseTime = 0;
-          createTreasureParticles(diver.pos.x, diver.pos.y);
-          showTreasureChest(diver.pos.x, diver.pos.y); // Show animated chest!
+          createTreasureParticles(k, diver.pos.x, diver.pos.y);
+          showTreasureChest(k, diver.pos.x, diver.pos.y); // Show animated chest!
         } else if (survivedRef.current === false && !isAnimating && animationType === AnimationType.IDLE) {
           console.log('[CANVAS] 💀 Death triggered! Playing attack animation');
-          triggerDeathAnimation();
+          triggerDeathAnimation(
+            k,
+            diver,
+            depthRef.current,
+            { isAnimating, animationType, divingSpeed },
+            () => k.go("beach")
+          );
         }
       });
     });
