@@ -21,8 +21,9 @@ use crate::states::*;
 pub fn start_session(
     ctx: Context<StartSession>,
     bet_amount: u64,
-    session_index: u64,
+    _session_index: u64,
 ) -> Result<()> {
+    let config = &ctx.accounts.config;
     let house_vault = &mut ctx.accounts.house_vault;
     let session = &mut ctx.accounts.session;
     let clock = Clock::get()?;
@@ -30,11 +31,14 @@ pub fn start_session(
     // Check house not locked
     require!(!house_vault.locked, GameError::HouseLocked);
 
-    // Validate bet amount
-    require!(bet_amount > 0, GameError::InvalidBetAmount);
+    // Validate bet amount against config limits
+    require!(bet_amount >= config.min_bet, GameError::InvalidBetAmount);
+    if config.max_bet > 0 {
+        require!(bet_amount <= config.max_bet, GameError::InvalidBetAmount);
+    }
 
-    // Calculate max payout on-chain (no user input!)
-    let max_payout = game_math::max_payout_for_bet(bet_amount);
+    // Calculate max payout on-chain using config (no user input!)
+    let max_payout = game_math::max_payout_for_bet(config, bet_amount);
 
     // Transfer bet from user to house vault
     let transfer_ix = system_program::Transfer {
@@ -106,6 +110,13 @@ pub fn start_session(
 pub struct StartSession<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+
+    /// Game configuration account (single source of truth for all game parameters)
+    #[account(
+        seeds = [GAME_CONFIG_SEED.as_bytes()],
+        bump = config.bump,
+    )]
+    pub config: Account<'info, GameConfig>,
 
     #[account(
         mut,

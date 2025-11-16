@@ -17,6 +17,7 @@ use crate::states::*;
 /// The user can only choose WHEN to play a round, not the OUTCOME.
 /// All randomness and treasure calculations happen on-chain.
 pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
+    let config = &ctx.accounts.config;
     let session = &mut ctx.accounts.session;
     let house_vault = &mut ctx.accounts.house_vault;
     let clock = Clock::get()?;
@@ -27,21 +28,27 @@ pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
         GameError::InvalidSessionStatus
     );
 
+    // Validate dive number is within limits
+    require!(
+        session.dive_number <= config.max_dives,
+        GameError::InvalidSessionStatus
+    );
+
     // Generate random roll from stored seed + current dive number
     // rng_seed is now a fixed [u8; 32], no length check needed
     let roll = rng::random_roll_bps(&session.rng_seed, session.dive_number);
 
-    // Get survival probability for current dive
-    let survival_prob = game_math::survival_probability_bps(session.dive_number);
+    // Get survival probability for current dive from config
+    let survival_prob = game_math::survival_probability_bps(config, session.dive_number);
 
     // Determine outcome
     if roll < survival_prob {
         // SURVIVED: Player continues to next dive
         session.dive_number += 1;
 
-        // Calculate new treasure based on dive number
+        // Calculate new treasure based on dive number using config
         session.current_treasure =
-            game_math::treasure_for_dive(session.bet_amount, session.dive_number);
+            game_math::treasure_for_dive(config, session.bet_amount, session.dive_number);
 
         // Emit round played event
         emit!(RoundPlayedEvent {
@@ -83,6 +90,13 @@ pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
 pub struct PlayRound<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
+
+    /// Game configuration account
+    #[account(
+        seeds = [GAME_CONFIG_SEED.as_bytes()],
+        bump = config.bump,
+    )]
+    pub config: Account<'info, GameConfig>,
 
     #[account(
         mut,

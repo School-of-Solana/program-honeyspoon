@@ -1,6 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { PublicKey, Keypair, LAMPORTS_PER_SOL, SYSVAR_SLOT_HASHES_PUBKEY } from "@solana/web3.js";
+import {
+  PublicKey,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  SYSVAR_SLOT_HASHES_PUBKEY,
+} from "@solana/web3.js";
 import { BN } from "bn.js";
 import { assert } from "chai";
 
@@ -10,6 +15,7 @@ import { assert } from "chai";
 
 const HOUSE_VAULT_SEED = "house_vault";
 const SESSION_SEED = "session";
+const GAME_CONFIG_SEED = "game_config";
 
 // Test amounts (in SOL, converted to lamports via helper)
 const TEST_AMOUNTS = {
@@ -37,7 +43,8 @@ class TestUtils {
   }
 
   static toSOL(lamports: number | BN): number {
-    const amount = typeof lamports === "number" ? lamports : lamports.toNumber();
+    const amount =
+      typeof lamports === "number" ? lamports : lamports.toNumber();
     return amount / LAMPORTS_PER_SOL;
   }
 
@@ -77,6 +84,13 @@ class TestUtils {
     );
   }
 
+  static getConfigPDA(programId: PublicKey): [PublicKey, number] {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from(GAME_CONFIG_SEED)],
+      programId
+    );
+  }
+
   static expectedMaxPayout(betAmount: number | BN): BN {
     const bet = typeof betAmount === "number" ? new BN(betAmount) : betAmount;
     return bet.mul(new BN(MAX_PAYOUT_MULTIPLIER));
@@ -106,6 +120,8 @@ class TestFixture {
   houseAuthority: Keypair;
   houseVaultPDA: PublicKey;
   houseVaultBump: number;
+  configPDA: PublicKey;
+  configBump: number;
   users: Map<string, Keypair>;
 
   constructor(program: Program, provider: anchor.AnchorProvider) {
@@ -114,10 +130,34 @@ class TestFixture {
     this.users = new Map();
   }
 
+  async setupConfig(admin?: Keypair): Promise<void> {
+    if (!admin) {
+      admin = Keypair.generate();
+      await TestUtils.airdrop(this.provider.connection, admin.publicKey, 1);
+    }
+
+    [this.configPDA, this.configBump] = TestUtils.getConfigPDA(
+      this.program.programId
+    );
+
+    await this.program.methods
+      .initConfig(null, null, null, null, null, null, null, null, null)
+      .accounts({
+        admin: admin.publicKey,
+        config: this.configPDA,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([admin])
+      .rpc();
+  }
+
   async setupHouse(locked: boolean = false): Promise<void> {
     this.houseAuthority = Keypair.generate();
-    await TestUtils.airdrop(this.provider.connection, this.houseAuthority.publicKey);
-    
+    await TestUtils.airdrop(
+      this.provider.connection,
+      this.houseAuthority.publicKey
+    );
+
     [this.houseVaultPDA, this.houseVaultBump] = TestUtils.getHouseVaultPDA(
       this.houseAuthority.publicKey,
       this.program.programId
@@ -135,12 +175,23 @@ class TestFixture {
   }
 
   async fundHouse(solAmount: number): Promise<void> {
-    await TestUtils.airdrop(this.provider.connection, this.houseVaultPDA, solAmount);
+    await TestUtils.airdrop(
+      this.provider.connection,
+      this.houseVaultPDA,
+      solAmount
+    );
   }
 
-  async createUser(name: string, fundAmount: number = AIRDROP_AMOUNT): Promise<Keypair> {
+  async createUser(
+    name: string,
+    fundAmount: number = AIRDROP_AMOUNT
+  ): Promise<Keypair> {
     const user = Keypair.generate();
-    await TestUtils.airdrop(this.provider.connection, user.publicKey, fundAmount);
+    await TestUtils.airdrop(
+      this.provider.connection,
+      user.publicKey,
+      fundAmount
+    );
     this.users.set(name, user);
     return user;
   }
@@ -151,13 +202,22 @@ class TestFixture {
     return user;
   }
 
-  async startSession(user: Keypair, betSol: number, sessionIndex: number): Promise<PublicKey> {
-    const [sessionPDA] = TestUtils.getSessionPDA(user.publicKey, sessionIndex, this.program.programId);
+  async startSession(
+    user: Keypair,
+    betSol: number,
+    sessionIndex: number
+  ): Promise<PublicKey> {
+    const [sessionPDA] = TestUtils.getSessionPDA(
+      user.publicKey,
+      sessionIndex,
+      this.program.programId
+    );
 
     await this.program.methods
       .startSession(TestUtils.lamports(betSol), new BN(sessionIndex))
       .accounts({
         user: user.publicKey,
+        config: this.configPDA,
         houseVault: this.houseVaultPDA,
         houseAuthority: this.houseAuthority.publicKey,
         session: sessionPDA,
@@ -175,6 +235,7 @@ class TestFixture {
       .playRound()
       .accounts({
         user: user.publicKey,
+        config: this.configPDA,
         session: sessionPDA,
         houseVault: this.houseVaultPDA,
       })
@@ -242,15 +303,20 @@ describe("dive-game (Secure Implementation)", () => {
   let fixture: TestFixture;
 
   describe("House Vault Management", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       fixture = new TestFixture(program, provider);
+      await fixture.setupConfig();
+      await fixture.setupConfig();
     });
 
     it("Should initialize house vault", async () => {
       await fixture.setupHouse(false);
       const vault = await fixture.getHouseVault();
 
-      assert.strictEqual(vault.houseAuthority.toString(), fixture.houseAuthority.publicKey.toString());
+      assert.strictEqual(
+        vault.houseAuthority.toString(),
+        fixture.houseAuthority.publicKey.toString()
+      );
       assert.strictEqual(vault.locked, false);
       assert.strictEqual(vault.totalReserved.toString(), "0");
     });
@@ -258,7 +324,7 @@ describe("dive-game (Secure Implementation)", () => {
     it("Should toggle house lock", async () => {
       await fixture.setupHouse(false);
       await fixture.toggleHouseLock();
-      
+
       let vault = await fixture.getHouseVault();
       assert.strictEqual(vault.locked, true);
 
@@ -271,6 +337,7 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Session Lifecycle", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
+      await fixture.setupConfig();
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE);
     });
@@ -278,19 +345,30 @@ describe("dive-game (Secure Implementation)", () => {
     it("Should start session with on-chain max_payout", async () => {
       const alice = await fixture.createUser("alice");
       const betAmount = TestUtils.lamportsNum(TEST_AMOUNTS.MEDIUM);
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.MEDIUM, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.MEDIUM,
+        0
+      );
 
       const session = await fixture.getSession(sessionPDA);
       const expectedMaxPayout = TestUtils.expectedMaxPayout(betAmount);
 
       assert.strictEqual(session.betAmount.toString(), betAmount.toString());
-      assert.strictEqual(session.maxPayout.toString(), expectedMaxPayout.toString());
+      assert.strictEqual(
+        session.maxPayout.toString(),
+        expectedMaxPayout.toString()
+      );
       assert.strictEqual(session.rngSeed.length, 32);
     });
 
     it("Should play rounds with on-chain outcomes", async () => {
       const alice = await fixture.createUser("alice");
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
 
       for (let i = 0; i < 3; i++) {
         try {
@@ -305,14 +383,18 @@ describe("dive-game (Secure Implementation)", () => {
 
     it("Should cash out successfully", async () => {
       const alice = await fixture.createUser("alice");
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
 
       await fixture.playRound(alice, sessionPDA);
       const session = await fixture.getSession(sessionPDA);
-      
+
       if (!session.status.hasOwnProperty("lost")) {
         await fixture.cashOut(alice, sessionPDA);
-        
+
         let failed = false;
         try {
           await fixture.getSession(sessionPDA);
@@ -327,6 +409,7 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Failure Modes", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
+      await fixture.setupConfig();
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE);
     });
@@ -348,7 +431,11 @@ describe("dive-game (Secure Implementation)", () => {
 
     it("Should fail with zero bet", async () => {
       const alice = await fixture.createUser("alice");
-      const [sessionPDA] = TestUtils.getSessionPDA(alice.publicKey, 0, program.programId);
+      const [sessionPDA] = TestUtils.getSessionPDA(
+        alice.publicKey,
+        0,
+        program.programId
+      );
 
       let failed = false;
       try {
@@ -372,7 +459,6 @@ describe("dive-game (Secure Implementation)", () => {
       assert.isTrue(failed);
     });
   });
-});
 
   // ============================================================================
   // F. Multi-User Concurrent Sessions
@@ -381,6 +467,7 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Multi-User Concurrent Sessions", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
+      await fixture.setupConfig();
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE * 2); // Extra funding for multiple sessions
     });
@@ -391,17 +478,34 @@ describe("dive-game (Secure Implementation)", () => {
       const charlie = await fixture.createUser("charlie");
 
       // Start sessions for all users
-      const aliceSession = await fixture.startSession(alice, TEST_AMOUNTS.MEDIUM, 0);
+      const aliceSession = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.MEDIUM,
+        0
+      );
       const bobSession = await fixture.startSession(bob, TEST_AMOUNTS.SMALL, 0);
-      const charlieSession = await fixture.startSession(charlie, TEST_AMOUNTS.LARGE, 0);
+      const charlieSession = await fixture.startSession(
+        charlie,
+        TEST_AMOUNTS.LARGE,
+        0
+      );
 
       // Verify total reserved
       const vault = await fixture.getHouseVault();
-      const expectedReserved = TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.MEDIUM))
-        .add(TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.SMALL)))
-        .add(TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.LARGE)));
+      const expectedReserved = TestUtils.expectedMaxPayout(
+        TestUtils.lamportsNum(TEST_AMOUNTS.MEDIUM)
+      )
+        .add(
+          TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.SMALL))
+        )
+        .add(
+          TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.LARGE))
+        );
 
-      assert.strictEqual(vault.totalReserved.toString(), expectedReserved.toString());
+      assert.strictEqual(
+        vault.totalReserved.toString(),
+        expectedReserved.toString()
+      );
 
       // Each user plays independently
       await fixture.playRound(alice, aliceSession);
@@ -414,9 +518,9 @@ describe("dive-game (Secure Implementation)", () => {
       const charlieData = await fixture.getSession(charlieSession);
 
       // Each should have different RNG seeds
-      const aliceSeed = Buffer.from(aliceData.rngSeed).toString('hex');
-      const bobSeed = Buffer.from(bobData.rngSeed).toString('hex');
-      const charlieSeed = Buffer.from(charlieData.rngSeed).toString('hex');
+      const aliceSeed = Buffer.from(aliceData.rngSeed).toString("hex");
+      const bobSeed = Buffer.from(bobData.rngSeed).toString("hex");
+      const charlieSeed = Buffer.from(charlieData.rngSeed).toString("hex");
 
       assert.notEqual(aliceSeed, bobSeed);
       assert.notEqual(bobSeed, charlieSeed);
@@ -427,7 +531,11 @@ describe("dive-game (Secure Implementation)", () => {
       const alice = await fixture.createUser("alice");
       const bob = await fixture.createUser("bob");
 
-      const aliceSession = await fixture.startSession(alice, TEST_AMOUNTS.MEDIUM, 0);
+      const aliceSession = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.MEDIUM,
+        0
+      );
 
       // Bob tries to play Alice's session
       let failed = false;
@@ -473,9 +581,9 @@ describe("dive-game (Secure Implementation)", () => {
       const data2 = await fixture.getSession(session2);
       const data3 = await fixture.getSession(session3);
 
-      const seed1 = Buffer.from(data1.rngSeed).toString('hex');
-      const seed2 = Buffer.from(data2.rngSeed).toString('hex');
-      const seed3 = Buffer.from(data3.rngSeed).toString('hex');
+      const seed1 = Buffer.from(data1.rngSeed).toString("hex");
+      const seed2 = Buffer.from(data2.rngSeed).toString("hex");
+      const seed3 = Buffer.from(data3.rngSeed).toString("hex");
 
       assert.notEqual(seed1, seed2);
       assert.notEqual(seed2, seed3);
@@ -491,27 +599,42 @@ describe("dive-game (Secure Implementation)", () => {
         TestUtils.lamportsNum(TEST_AMOUNTS.TINY)
       ).muln(3);
 
-      assert.strictEqual(vault.totalReserved.toString(), expectedReserved.toString());
+      assert.strictEqual(
+        vault.totalReserved.toString(),
+        expectedReserved.toString()
+      );
     });
 
     it("Should correctly update reserved funds as sessions complete", async () => {
       const alice = await fixture.createUser("alice");
       const bob = await fixture.createUser("bob");
 
-      const aliceSession = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const aliceSession = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
       const bobSession = await fixture.startSession(bob, TEST_AMOUNTS.SMALL, 0);
 
-      const aliceMaxPayout = TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.SMALL));
+      const aliceMaxPayout = TestUtils.expectedMaxPayout(
+        TestUtils.lamportsNum(TEST_AMOUNTS.SMALL)
+      );
       const initialReserved = aliceMaxPayout.muln(2);
 
       let vault = await fixture.getHouseVault();
-      assert.strictEqual(vault.totalReserved.toString(), initialReserved.toString());
+      assert.strictEqual(
+        vault.totalReserved.toString(),
+        initialReserved.toString()
+      );
 
       // Alice loses
       await fixture.loseSession(alice, aliceSession);
 
       vault = await fixture.getHouseVault();
-      assert.strictEqual(vault.totalReserved.toString(), aliceMaxPayout.toString());
+      assert.strictEqual(
+        vault.totalReserved.toString(),
+        aliceMaxPayout.toString()
+      );
 
       // Bob loses
       await fixture.loseSession(bob, bobSession);
@@ -528,13 +651,18 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Game Progression & State Transitions", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
+      await fixture.setupConfig();
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE);
     });
 
     it("Should track dive progression correctly", async () => {
       const alice = await fixture.createUser("alice");
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
 
       let session = await fixture.getSession(sessionPDA);
       assert.strictEqual(session.diveNumber, 1);
@@ -559,7 +687,11 @@ describe("dive-game (Secure Implementation)", () => {
 
     it("Should increase treasure with each successful dive", async () => {
       const alice = await fixture.createUser("alice");
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
 
       let previousTreasure = TestUtils.lamportsNum(TEST_AMOUNTS.SMALL);
 
@@ -586,7 +718,11 @@ describe("dive-game (Secure Implementation)", () => {
 
     it("Should enforce status transitions", async () => {
       const alice = await fixture.createUser("alice");
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
 
       // Active -> Lost
       await fixture.loseSession(alice, sessionPDA);
@@ -603,7 +739,11 @@ describe("dive-game (Secure Implementation)", () => {
 
     it("Should enforce cash out restrictions", async () => {
       const alice = await fixture.createUser("alice");
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
 
       // Try to cash out at dive 1 (treasure == bet, should fail)
       let failed = false;
@@ -619,7 +759,11 @@ describe("dive-game (Secure Implementation)", () => {
 
     it("Should handle session after multiple play rounds", async () => {
       const alice = await fixture.createUser("alice");
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
 
       let roundsPlayed = 0;
       let sessionLost = false;
@@ -633,7 +777,9 @@ describe("dive-game (Secure Implementation)", () => {
           const session = await fixture.getSession(sessionPDA);
           if (session.status.hasOwnProperty("lost")) {
             sessionLost = true;
-            console.log(`    Session lost after ${roundsPlayed} rounds at dive ${session.diveNumber}`);
+            console.log(
+              `    Session lost after ${roundsPlayed} rounds at dive ${session.diveNumber}`
+            );
             break;
           }
         } catch {
@@ -653,15 +799,20 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Edge Cases & Boundary Conditions", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
+      await fixture.setupConfig();
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE);
     });
 
     it("Should handle minimum bet amount", async () => {
       const alice = await fixture.createUser("alice");
-      
+
       // 1 lamport bet
-      const [sessionPDA] = TestUtils.getSessionPDA(alice.publicKey, 0, program.programId);
+      const [sessionPDA] = TestUtils.getSessionPDA(
+        alice.publicKey,
+        0,
+        program.programId
+      );
       await program.methods
         .startSession(new BN(1), new BN(0))
         .accounts({
@@ -682,22 +833,33 @@ describe("dive-game (Secure Implementation)", () => {
 
     it("Should handle very large bet amounts", async () => {
       const alice = await fixture.createUser("alice", TEST_AMOUNTS.HUGE);
-      
+
       // 50 SOL bet
       const sessionPDA = await fixture.startSession(alice, 50, 0);
 
       const session = await fixture.getSession(sessionPDA);
-      const expectedMaxPayout = TestUtils.expectedMaxPayout(TestUtils.lamportsNum(50));
+      const expectedMaxPayout = TestUtils.expectedMaxPayout(
+        TestUtils.lamportsNum(50)
+      );
 
-      assert.strictEqual(session.betAmount.toString(), TestUtils.lamportsNum(50).toString());
-      assert.strictEqual(session.maxPayout.toString(), expectedMaxPayout.toString());
+      assert.strictEqual(
+        session.betAmount.toString(),
+        TestUtils.lamportsNum(50).toString()
+      );
+      assert.strictEqual(
+        session.maxPayout.toString(),
+        expectedMaxPayout.toString()
+      );
     });
 
     it("Should fail when trying to reuse session index", async () => {
       const alice = await fixture.createUser("alice");
-      
+
       await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
-      await fixture.loseSession(alice, TestUtils.getSessionPDA(alice.publicKey, 0, program.programId)[0]);
+      await fixture.loseSession(
+        alice,
+        TestUtils.getSessionPDA(alice.publicKey, 0, program.programId)[0]
+      );
 
       // Try to start another session with same index
       let failed = false;
@@ -712,26 +874,35 @@ describe("dive-game (Secure Implementation)", () => {
 
     it("Should handle rapid successive operations", async () => {
       const alice = await fixture.createUser("alice");
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
 
       // Rapidly play multiple rounds
       const promises = [];
       for (let i = 0; i < 3; i++) {
-        promises.push(
-          fixture.playRound(alice, sessionPDA).catch(() => {})
-        );
+        promises.push(fixture.playRound(alice, sessionPDA).catch(() => {}));
       }
 
       await Promise.allSettled(promises);
-      
+
       // At least one should succeed
       const session = await fixture.getSession(sessionPDA);
-      assert.isTrue(session.diveNumber >= 2, "At least one round should have been played");
+      assert.isTrue(
+        session.diveNumber >= 2,
+        "At least one round should have been played"
+      );
     });
 
     it("Should maintain integrity after house unlock/lock", async () => {
       const alice = await fixture.createUser("alice");
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
 
       // Lock and unlock house while session active
       await fixture.toggleHouseLock();
@@ -739,9 +910,12 @@ describe("dive-game (Secure Implementation)", () => {
 
       // Session should still be playable
       await fixture.playRound(alice, sessionPDA);
-      
+
       const session = await fixture.getSession(sessionPDA);
-      assert.isTrue(session.status.hasOwnProperty("active") || session.status.hasOwnProperty("lost"));
+      assert.isTrue(
+        session.status.hasOwnProperty("active") ||
+          session.status.hasOwnProperty("lost")
+      );
     });
   });
 
@@ -752,6 +926,7 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Invariant & Conservation Properties", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
+      await fixture.setupConfig();
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE);
     });
@@ -766,9 +941,13 @@ describe("dive-game (Secure Implementation)", () => {
       const initialTotal = initialAlice + initialBob + initialHouse;
 
       // Multiple operations
-      const aliceSession = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const aliceSession = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
       await fixture.playRound(alice, aliceSession);
-      
+
       const aliceData = await fixture.getSession(aliceSession);
       if (!aliceData.status.hasOwnProperty("lost")) {
         await fixture.cashOut(alice, aliceSession);
@@ -788,7 +967,9 @@ describe("dive-game (Secure Implementation)", () => {
 
       assert.isTrue(
         difference < maxExpectedLoss,
-        `Money should be conserved (difference: ${TestUtils.toSOL(difference)} SOL)`
+        `Money should be conserved (difference: ${TestUtils.toSOL(
+          difference
+        )} SOL)`
       );
     });
 
@@ -797,21 +978,36 @@ describe("dive-game (Secure Implementation)", () => {
       const bob = await fixture.createUser("bob");
 
       // Start sessions
-      const aliceSession = await fixture.startSession(alice, TEST_AMOUNTS.MEDIUM, 0);
+      const aliceSession = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.MEDIUM,
+        0
+      );
       const bobSession = await fixture.startSession(bob, TEST_AMOUNTS.SMALL, 0);
 
-      const expectedReserved1 = TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.MEDIUM))
-        .add(TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.SMALL)));
+      const expectedReserved1 = TestUtils.expectedMaxPayout(
+        TestUtils.lamportsNum(TEST_AMOUNTS.MEDIUM)
+      ).add(
+        TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.SMALL))
+      );
 
       let vault = await fixture.getHouseVault();
-      assert.strictEqual(vault.totalReserved.toString(), expectedReserved1.toString());
+      assert.strictEqual(
+        vault.totalReserved.toString(),
+        expectedReserved1.toString()
+      );
 
       // Alice loses
       await fixture.loseSession(alice, aliceSession);
 
-      const expectedReserved2 = TestUtils.expectedMaxPayout(TestUtils.lamportsNum(TEST_AMOUNTS.SMALL));
+      const expectedReserved2 = TestUtils.expectedMaxPayout(
+        TestUtils.lamportsNum(TEST_AMOUNTS.SMALL)
+      );
       vault = await fixture.getHouseVault();
-      assert.strictEqual(vault.totalReserved.toString(), expectedReserved2.toString());
+      assert.strictEqual(
+        vault.totalReserved.toString(),
+        expectedReserved2.toString()
+      );
 
       // Bob cashes out
       await fixture.playRound(bob, bobSession);
@@ -831,7 +1027,11 @@ describe("dive-game (Secure Implementation)", () => {
 
     it("Should never allow treasure to exceed max_payout", async () => {
       const alice = await fixture.createUser("alice");
-      const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
+      const sessionPDA = await fixture.startSession(
+        alice,
+        TEST_AMOUNTS.SMALL,
+        0
+      );
 
       const session = await fixture.getSession(sessionPDA);
       const maxPayout = session.maxPayout.toNumber();
@@ -880,6 +1080,7 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Stress & Load Testing", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
+      await fixture.setupConfig();
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE * 3);
     });
@@ -902,10 +1103,17 @@ describe("dive-game (Secure Implementation)", () => {
       ).muln(10);
 
       const vault = await fixture.getHouseVault();
-      assert.strictEqual(vault.totalReserved.toString(), expectedReserved.toString());
+      assert.strictEqual(
+        vault.totalReserved.toString(),
+        expectedReserved.toString()
+      );
 
       console.log(`    Successfully created 10 concurrent sessions`);
-      console.log(`    Total reserved: ${TestUtils.toSOL(vault.totalReserved.toNumber())} SOL`);
+      console.log(
+        `    Total reserved: ${TestUtils.toSOL(
+          vault.totalReserved.toNumber()
+        )} SOL`
+      );
     });
 
     it("Should handle sequential session lifecycle", async () => {
@@ -916,8 +1124,12 @@ describe("dive-game (Secure Implementation)", () => {
       // Create and complete 5 sessions sequentially
       for (let i = 0; i < 5; i++) {
         try {
-          const sessionPDA = await fixture.startSession(alice, TEST_AMOUNTS.TINY, i);
-          
+          const sessionPDA = await fixture.startSession(
+            alice,
+            TEST_AMOUNTS.TINY,
+            i
+          );
+
           // Play a few rounds
           for (let j = 0; j < 3; j++) {
             try {
@@ -941,8 +1153,14 @@ describe("dive-game (Secure Implementation)", () => {
         }
       }
 
-      assert.strictEqual(successfulSessions, 5, "All 5 sessions should complete");
-      console.log(`    Successfully completed ${successfulSessions} sequential sessions`);
+      assert.strictEqual(
+        successfulSessions,
+        5,
+        "All 5 sessions should complete"
+      );
+      console.log(
+        `    Successfully completed ${successfulSessions} sequential sessions`
+      );
     });
 
     it("Should handle varying bet amounts", async () => {
@@ -959,17 +1177,26 @@ describe("dive-game (Secure Implementation)", () => {
       for (let i = 0; i < betAmounts.length; i++) {
         const user = await fixture.createUser(`user${i}`, TEST_AMOUNTS.LARGE);
         await fixture.startSession(user, betAmounts[i], 0);
-        
+
         totalReservedExpected = totalReservedExpected.add(
           TestUtils.expectedMaxPayout(TestUtils.lamportsNum(betAmounts[i]))
         );
       }
 
       const vault = await fixture.getHouseVault();
-      assert.strictEqual(vault.totalReserved.toString(), totalReservedExpected.toString());
+      assert.strictEqual(
+        vault.totalReserved.toString(),
+        totalReservedExpected.toString()
+      );
 
-      console.log(`    Successfully handled ${betAmounts.length} sessions with varying bets`);
-      console.log(`    Total reserved: ${TestUtils.toSOL(vault.totalReserved.toNumber())} SOL`);
+      console.log(
+        `    Successfully handled ${betAmounts.length} sessions with varying bets`
+      );
+      console.log(
+        `    Total reserved: ${TestUtils.toSOL(
+          vault.totalReserved.toNumber()
+        )} SOL`
+      );
     });
   });
 });
