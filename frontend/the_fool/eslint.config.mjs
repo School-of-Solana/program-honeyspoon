@@ -14,6 +14,17 @@ const eslintConfig = defineConfig([
     rules: {
       ...prettierConfig.rules,
       "prettier/prettier": "error",
+      // Downgrade some strict rules to warnings for game code
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+      "@typescript-eslint/no-require-imports": "warn",
     },
   },
   // Override default ignores of eslint-config-next.

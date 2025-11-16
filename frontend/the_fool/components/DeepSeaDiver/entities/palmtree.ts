@@ -2,7 +2,7 @@
  * Palm Tree Entity - Creates palm trees for beach scene
  */
 
-import type { KAPLAYCtx, GameObj } from "kaplay";
+import type { GameObj, KAPLAYCtx } from "kaplay";
 
 /**
  * Create a palm tree
@@ -18,7 +18,7 @@ export function createPalmTree(
   x: number,
   y: number,
   scale: number = 3,
-  zIndex: number = 5
+  zIndex: number = 5,
 ): GameObj {
   const palm = k.add([
     k.sprite("palmtree"),

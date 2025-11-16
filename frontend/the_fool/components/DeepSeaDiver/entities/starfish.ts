@@ -2,7 +2,7 @@
  * Starfish Entity - Creates decorative starfish for beach scene
  */
 
-import type { KAPLAYCtx, GameObj } from "kaplay";
+import type { GameObj, KAPLAYCtx } from "kaplay";
 
 /**
  * Create a static starfish decoration
@@ -18,7 +18,7 @@ export function createStarfish(
   x: number,
   y: number,
   scale: number = 1.5,
-  zIndex: number = 5
+  zIndex: number = 5,
 ): GameObj {
   const starfish = k.add([
     k.sprite("starfish"),

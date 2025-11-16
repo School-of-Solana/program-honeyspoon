@@ -3,14 +3,14 @@
  * Handles balance validation and risk calculations
  */
 
-import type {
-  UserWallet,
-  HouseWallet,
-  BetValidation,
-  WalletLimits,
-  GameSession,
-} from "./walletTypes";
 import { calculateDiveStats } from "./gameLogic";
+import type {
+  BetValidation,
+  GameSession,
+  HouseWallet,
+  UserWallet,
+  WalletLimits,
+} from "./walletTypes";
 
 // Default limits
 export const DEFAULT_LIMITS: WalletLimits = {
@@ -26,7 +26,7 @@ export const DEFAULT_LIMITS: WalletLimits = {
  */
 export function calculateMaxPotentialPayout(
   initialBet: number,
-  maxDives: number = 10
+  maxDives: number = 10,
 ): number {
   let maxPayout = initialBet;
 
@@ -45,7 +45,7 @@ export function calculateMaxPotentialPayout(
  */
 export function calculateMaxBetFromHouseWallet(
   houseWallet: HouseWallet,
-  limits: WalletLimits = DEFAULT_LIMITS
+  limits: WalletLimits = DEFAULT_LIMITS,
 ): number {
   const availableFunds = houseWallet.balance - houseWallet.reservedFunds;
   const houseReserve = houseWallet.balance * limits.houseReserveRatio;
@@ -54,7 +54,7 @@ export function calculateMaxBetFromHouseWallet(
   // Maximum bet where max potential payout doesn't exceed what house can risk
   const maxBetForHouse = Math.min(
     canRisk / 50, // Conservative: assume max payout is 50x initial bet
-    limits.maxPotentialWin / 50
+    limits.maxPotentialWin / 50,
   );
 
   return Math.floor(Math.min(maxBetForHouse, limits.maxBet));
@@ -67,7 +67,7 @@ export function validateBet(
   betAmount: number,
   userWallet: UserWallet,
   houseWallet: HouseWallet,
-  limits: WalletLimits = DEFAULT_LIMITS
+  limits: WalletLimits = DEFAULT_LIMITS,
 ): BetValidation {
   // Check minimum bet
   if (betAmount < limits.minBet) {
@@ -145,14 +145,14 @@ export function validateBet(
 export function validateDiveDeeper(
   gameSession: GameSession,
   houseWallet: HouseWallet,
-  limits: WalletLimits = DEFAULT_LIMITS
+  limits: WalletLimits = DEFAULT_LIMITS,
 ): BetValidation {
   const nextDiveNumber = gameSession.diveNumber + 1;
   const stats = calculateDiveStats(nextDiveNumber);
 
   // Calculate what the new treasure value would be if they survive
   const potentialNewTreasure = Math.floor(
-    gameSession.currentTreasure * stats.multiplier
+    gameSession.currentTreasure * stats.multiplier,
   );
 
   // Calculate the increase in potential payout
@@ -193,7 +193,7 @@ export function validateDiveDeeper(
  */
 export function reserveHouseFunds(
   houseWallet: HouseWallet,
-  amount: number
+  amount: number,
 ): HouseWallet {
   return {
     ...houseWallet,
@@ -207,7 +207,7 @@ export function reserveHouseFunds(
  */
 export function releaseHouseFunds(
   houseWallet: HouseWallet,
-  amount: number
+  amount: number,
 ): HouseWallet {
   return {
     ...houseWallet,
@@ -234,7 +234,7 @@ export function processBet(userWallet: UserWallet, amount: number): UserWallet {
 export function processWin(
   userWallet: UserWallet,
   amount: number,
-  betAmount: number
+  betAmount: number,
 ): UserWallet {
   const profit = amount - betAmount;
   return {
@@ -251,7 +251,7 @@ export function processWin(
  */
 export function processLoss(
   userWallet: UserWallet,
-  betAmount: number
+  betAmount: number,
 ): UserWallet {
   return {
     ...userWallet,
@@ -267,7 +267,7 @@ export function processLoss(
 export function processHousePayout(
   houseWallet: HouseWallet,
   amount: number,
-  reservedAmount: number
+  reservedAmount: number,
 ): HouseWallet {
   return {
     ...houseWallet,
@@ -283,7 +283,7 @@ export function processHousePayout(
  */
 export function processHouseReceiveBet(
   houseWallet: HouseWallet,
-  amount: number
+  amount: number,
 ): HouseWallet {
   return {
     ...houseWallet,
@@ -298,7 +298,7 @@ export function processHouseReceiveBet(
  */
 export function getHouseRiskExposure(
   houseWallet: HouseWallet,
-  limits: WalletLimits = DEFAULT_LIMITS
+  limits: WalletLimits = DEFAULT_LIMITS,
 ): {
   totalReserved: number;
   availableFunds: number;

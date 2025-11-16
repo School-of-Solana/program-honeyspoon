@@ -3,8 +3,8 @@
  * Now with object pooling for improved performance
  */
 
-import type { KAPLAYCtx, GameObj } from "kaplay";
 import { ObjectPool } from "@/lib/objectPool";
+import type { GameObj, KAPLAYCtx } from "kaplay";
 import * as CONST from "../sceneConstants";
 
 /**
@@ -16,7 +16,7 @@ interface PooledBubble extends GameObj {
     y: number,
     scale: number,
     frame: number,
-    initialY: number
+    initialY: number,
   ) => void;
   divingSpeed: number;
   initialY: number;
@@ -55,7 +55,7 @@ export function initBubblePool(k: KAPLAYCtx): void {
         y: number,
         scale: number,
         frame: number,
-        initialY: number
+        initialY: number,
       ) => {
         bubble.pos.x = x;
         bubble.pos.y = y;
@@ -80,7 +80,7 @@ export function initBubblePool(k: KAPLAYCtx): void {
 
       // Update loop - only runs when active
       bubble.onUpdate(() => {
-        if (bubble.state !== "active") return;
+        if (bubble.state !== "active") { return; }
 
         bubble.lifeTime += k.dt();
 
@@ -89,7 +89,7 @@ export function initBubblePool(k: KAPLAYCtx): void {
           (CONST.BUBBLE.RISE_BASE_SPEED + bubble.divingSpeed) * k.dt();
         bubble.pos.x +=
           Math.sin(
-            k.time() * CONST.BUBBLE.HORIZONTAL_WAVE_SPEED + bubble.initialY
+            k.time() * CONST.BUBBLE.HORIZONTAL_WAVE_SPEED + bubble.initialY,
           ) *
           CONST.BUBBLE.HORIZONTAL_WAVE_AMPLITUDE *
           k.dt();
@@ -111,7 +111,7 @@ export function initBubblePool(k: KAPLAYCtx): void {
         if (bubble.lifeTime >= CONST.BUBBLE.LIFESPAN || bubble.pos.y < -100) {
           bubble.hidden = true;
           bubble.enterState("idle");
-          if (bubblePool) bubblePool.release(bubble);
+          if (bubblePool) { bubblePool.release(bubble); }
         }
       });
 
@@ -124,7 +124,7 @@ export function initBubblePool(k: KAPLAYCtx): void {
       bubble.lifeTime = 0;
     },
     20, // Initial pool size (preallocate 20 bubbles)
-    100 // Max pool size (up to 100 bubbles can be created)
+    100, // Max pool size (up to 100 bubbles can be created)
   );
 
   console.log("[POOL] ✅ Bubble pool initialized (size: 20, max: 100)");
@@ -144,11 +144,11 @@ export function getBubbleFromPool(
   diverPos: { x: number; y: number },
   divingSpeed: number,
   x?: number,
-  y?: number
+  y?: number,
 ): PooledBubble | null {
   if (!bubblePool) {
     console.error(
-      "[POOL] ❌ Bubble pool not initialized! Call initBubblePool() first."
+      "[POOL] ❌ Bubble pool not initialized! Call initBubblePool() first.",
     );
     return null;
   }
@@ -207,7 +207,7 @@ export function createBubble(
   diverPos: { x: number; y: number },
   divingSpeed: number,
   x?: number,
-  y?: number
+  y?: number,
 ): GameObj {
   // Try to use pool if available
   const pooledBubble = bubblePool

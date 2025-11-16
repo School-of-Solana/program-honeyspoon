@@ -2,7 +2,7 @@
  * Predator Entity - Creates depth-based predator fish
  */
 
-import type { KAPLAYCtx, GameObj } from "kaplay";
+import type { GameObj, KAPLAYCtx } from "kaplay";
 import * as CONST from "../sceneConstants";
 
 /**
@@ -11,10 +11,10 @@ import * as CONST from "../sceneConstants";
  * @returns Predator sprite name or null if safe zone
  */
 export function getDepthPredator(depth: number): string | null {
-  if (depth < 100) return null; // Safe zone
-  if (depth < 200) return "shark"; // Already used for death
-  if (depth < 400) return "sawshark"; // Mid-depth menace
-  if (depth < 600) return "swordfish"; // Deep hunter (fast!)
+  if (depth < 100) { return null; } // Safe zone
+  if (depth < 200) { return "shark"; } // Already used for death
+  if (depth < 400) { return "sawshark"; } // Mid-depth menace
+  if (depth < 600) { return "swordfish"; } // Deep hunter (fast!)
   return "seaangler"; // Abyss zone (glowing lure)
 }
 
@@ -28,10 +28,10 @@ export function getDepthPredator(depth: number): string | null {
 export function createAmbientPredator(
   k: KAPLAYCtx,
   currentDepth: number,
-  lightLevel: number
+  lightLevel: number,
 ): GameObj | undefined {
   const predator = getDepthPredator(currentDepth);
-  if (!predator || predator === "shark") return; // Skip shark (used for death)
+  if (!predator || predator === "shark") { return; } // Skip shark (used for death)
 
   const direction = Math.random() > 0.5 ? 1 : -1;
   const startX = direction > 0 ? -100 : k.width() + 100;

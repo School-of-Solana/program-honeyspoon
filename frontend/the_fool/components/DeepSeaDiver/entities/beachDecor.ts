@@ -11,7 +11,7 @@ export function createCloud(
   k: KAPLAYCtx,
   x: number,
   y: number,
-  speed: number = 10
+  speed: number = 10,
 ): GameObj {
   const cloud = k.add([
     k.rect(80 + Math.random() * 40, 30 + Math.random() * 20),
@@ -43,7 +43,7 @@ export function createCloud(
 export function createBeachUmbrella(
   k: KAPLAYCtx,
   x: number,
-  groundY: number
+  groundY: number,
 ): GameObj {
   const umbrella = k.add([k.pos(x, groundY - 60), k.z(15), "umbrella"]);
 
@@ -84,7 +84,7 @@ export function createBeachUmbrella(
 export function createSandcastle(
   k: KAPLAYCtx,
   x: number,
-  groundY: number
+  groundY: number,
 ): GameObj {
   const castle = k.add([k.pos(x, groundY - 30), k.z(14), "sandcastle"]);
 
@@ -130,7 +130,7 @@ export function createSandcastle(
 export function createBeachBall(
   k: KAPLAYCtx,
   x: number,
-  groundY: number
+  groundY: number,
 ): GameObj {
   const ball = k.add([
     k.circle(15),
@@ -158,7 +158,7 @@ export function createBeachBall(
 export function createShoreWave(
   k: KAPLAYCtx,
   groundY: number,
-  waterY: number
+  waterY: number,
 ): GameObj {
   const wave = k.add([
     k.rect(k.width(), 8),
@@ -190,7 +190,7 @@ export function createFootprints(
   k: KAPLAYCtx,
   x: number,
   groundY: number,
-  count: number = 5
+  count: number = 5,
 ): GameObj[] {
   const prints: GameObj[] = [];
 
@@ -217,7 +217,7 @@ export function createBeachSign(
   k: KAPLAYCtx,
   x: number,
   groundY: number,
-  text: string
+  text: string,
 ): GameObj {
   const sign = k.add([k.pos(x, groundY - 80), k.z(15), "sign"]);
 
@@ -266,7 +266,7 @@ export function createBeachSign(
 export function createTidePool(
   k: KAPLAYCtx,
   x: number,
-  groundY: number
+  groundY: number,
 ): GameObj {
   const pool = k.add([
     k.circle(30),
@@ -306,7 +306,7 @@ export function createTidePool(
 export function createDriftwood(
   k: KAPLAYCtx,
   x: number,
-  groundY: number
+  groundY: number,
 ): GameObj {
   const wood = k.add([
     k.rect(60 + Math.random() * 40, 8 + Math.random() * 4),
@@ -359,7 +359,7 @@ export function createDistantBird(k: KAPLAYCtx, x: number, y: number): GameObj {
 export function spawnBeachDecorations(
   k: KAPLAYCtx,
   groundY: number,
-  waterY: number
+  waterY: number,
 ): void {
   const width = k.width();
 
@@ -369,7 +369,7 @@ export function spawnBeachDecorations(
       k,
       Math.random() * width,
       30 + Math.random() * 100,
-      5 + Math.random() * 15
+      5 + Math.random() * 15,
     );
   }
 

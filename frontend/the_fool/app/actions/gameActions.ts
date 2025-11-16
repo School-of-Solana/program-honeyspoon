@@ -15,15 +15,15 @@
  * The generic engine is theme-agnostic and can be reused for other games.
  */
 
-import { generateShipwreck, calculateDiveStats } from "@/lib/gameLogic";
+import { calculateDiveStats, generateShipwreck } from "@/lib/gameLogic";
 import type { DiveResult } from "@/lib/types";
 import {
-  startGameSession,
-  executeRound,
   cashOut,
+  executeRound,
   generateSessionId as genSessionId,
-  getWalletInfo as getWallet,
   getHouseStatus as getHouse,
+  getWalletInfo as getWallet,
+  startGameSession,
 } from "./gameEngine";
 
 /**
@@ -33,7 +33,7 @@ import {
 export async function startGame(
   betAmount: number,
   userId: string,
-  sessionId: string
+  sessionId: string,
 ): Promise<{ success: boolean; error?: string; sessionId?: string }> {
   return startGameSession(betAmount, userId, sessionId);
 }
@@ -47,7 +47,7 @@ export async function performDive(
   currentTreasure: number,
   sessionId: string,
   userId: string,
-  testSeed?: string
+  testSeed?: string,
 ): Promise<DiveResult> {
   // Execute the round using generic engine
   const result = await executeRound(
@@ -55,7 +55,7 @@ export async function performDive(
     currentTreasure,
     sessionId,
     userId,
-    testSeed
+    testSeed,
   );
 
   // Add diving theme: get dive stats for depth info
@@ -90,7 +90,7 @@ export async function performDive(
 export async function surfaceWithTreasure(
   finalTreasure: number,
   sessionId: string,
-  userId: string
+  userId: string,
 ): Promise<{ success: boolean; finalAmount: number; profit: number }> {
   return cashOut(finalTreasure, sessionId, userId);
 }
@@ -136,7 +136,7 @@ export async function validateBetAmount(betAmount: number, userId: string) {
  */
 export async function getTransactionHistory(
   userId: string,
-  limit: number = 10
+  limit: number = 10,
 ): Promise<
   Array<{
     id: string;
@@ -172,7 +172,7 @@ export async function getHouseStatus() {
  */
 export async function addBalance(
   userId: string,
-  amount: number
+  amount: number,
 ): Promise<{ success: boolean; newBalance: number }> {
   const { addUserBalance } = await import("@/lib/walletStore");
   const updatedWallet = addUserBalance(userId, amount);

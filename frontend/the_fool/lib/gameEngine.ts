@@ -73,7 +73,7 @@ export interface RoundResult {
 function validateGameConfig(config: GameConfig): void {
   if (config.minWinProbability > config.baseWinProbability) {
     throw new Error(
-      `Invalid game config: minWinProbability (${config.minWinProbability}) > baseWinProbability (${config.baseWinProbability})`
+      `Invalid game config: minWinProbability (${config.minWinProbability}) > baseWinProbability (${config.baseWinProbability})`,
     );
   }
   if (config.maxRounds <= 0) {
@@ -96,7 +96,7 @@ function validateGameConfig(config: GameConfig): void {
  */
 export function calculateRoundStats(
   roundNumber: number,
-  config: GameConfig = DEFAULT_CONFIG
+  config: GameConfig = DEFAULT_CONFIG,
 ): RoundStats {
   // Validate config
   validateGameConfig(config);
@@ -114,7 +114,7 @@ export function calculateRoundStats(
   const winProb = Math.max(
     config.minWinProbability,
     config.baseWinProbability *
-      Math.exp(-config.decayConstant * (roundNumber - 1))
+      Math.exp(-config.decayConstant * (roundNumber - 1)),
   );
 
   // Calculate multiplier to maintain fixed EV
@@ -141,7 +141,7 @@ export function calculateRoundStats(
 export function calculateMaxPotentialPayout(
   initialBet: number,
   maxRounds: number = DEFAULT_CONFIG.maxRounds,
-  config: GameConfig = DEFAULT_CONFIG
+  config: GameConfig = DEFAULT_CONFIG,
 ): number {
   let maxPayout = initialBet;
 
@@ -167,7 +167,7 @@ export function simulateRound(
   roundNumber: number,
   currentValue: number,
   randomRoll: number,
-  config: GameConfig = DEFAULT_CONFIG
+  config: GameConfig = DEFAULT_CONFIG,
 ): RoundResult {
   // Validate inputs
   if (randomRoll < 0 || randomRoll > 99) {
@@ -216,7 +216,7 @@ export function simulateRound(
  */
 export function validateBetAmount(
   amount: number,
-  config: GameConfig = DEFAULT_CONFIG
+  config: GameConfig = DEFAULT_CONFIG,
 ): { valid: boolean; error?: string } {
   // Check for invalid numeric values
   if (!Number.isFinite(amount) || Number.isNaN(amount)) {
@@ -249,7 +249,7 @@ export function validateBetAmount(
  */
 export function calculateCumulativeEV(
   rounds: number,
-  config: GameConfig = DEFAULT_CONFIG
+  config: GameConfig = DEFAULT_CONFIG,
 ): number {
   return Math.pow(1 - config.houseEdge, rounds);
 }

@@ -5,14 +5,14 @@
  * Refactored to use Zustand store - no more refs!
  */
 
-import * as CONST from "../sceneConstants";
+import { useGameStore } from "@/lib/gameStore";
 import { createBoat } from "../entities/boat";
+import { createCrab } from "../entities/crab";
 import { createPalmTree } from "../entities/palmtree";
 import { createSeagull } from "../entities/seagull";
-import { createCrab } from "../entities/crab";
 import { createStarfish } from "../entities/starfish";
+import * as CONST from "../sceneConstants";
 import type { SceneConfig } from "./sceneTypes";
-import { useGameStore } from "@/lib/gameStore";
 
 export function createBeachScene(config: SceneConfig) {
   const { k } = config;
@@ -114,7 +114,7 @@ export function createBeachScene(config: SceneConfig) {
         k.width() * palm.x,
         k.height() * palm.y,
         palm.scale,
-        CONST.Z_LAYERS.LIGHT_RAYS
+        CONST.Z_LAYERS.LIGHT_RAYS,
       );
     });
 
@@ -188,7 +188,7 @@ export function createBeachScene(config: SceneConfig) {
         k,
         k.width() * seagull.x,
         k.height() * seagull.y,
-        seagull.speed
+        seagull.speed,
       );
     });
 
@@ -200,7 +200,7 @@ export function createBeachScene(config: SceneConfig) {
         k.height() * crab.y,
         crab.direction,
         crab.speed,
-        CONST.Z_LAYERS.SUN
+        CONST.Z_LAYERS.SUN,
       );
     });
 
@@ -211,7 +211,7 @@ export function createBeachScene(config: SceneConfig) {
         k.width() * starfish.x,
         k.height() * starfish.y,
         starfish.scale,
-        CONST.Z_LAYERS.SUN
+        CONST.Z_LAYERS.SUN,
       );
     });
 
@@ -258,7 +258,7 @@ export function createBeachScene(config: SceneConfig) {
 
       if (isDiving && !isInOcean) {
         console.log(
-          "[CANVAS] 🏖️ → 🤿 Dive started! Transitioning to diving scene..."
+          "[CANVAS] 🏖️ → 🤿 Dive started! Transitioning to diving scene...",
         );
         useGameStore.getState().enterOcean(); // Mark that we're now in the ocean
         k.go("diving");

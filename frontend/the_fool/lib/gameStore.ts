@@ -82,7 +82,7 @@ interface GameState extends CanvasState, GameLogicState, UIState {
   initializeSession: (
     userId: string,
     sessionId: string,
-    balance: number
+    balance: number,
   ) => void;
   startGame: (betAmount: number) => void;
   completeDive: (result: {

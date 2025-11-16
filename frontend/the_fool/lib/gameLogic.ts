@@ -15,18 +15,18 @@
  */
 
 import {
-  GAME_CONFIG,
   DEPTH_ZONES,
-  SHIP_TYPES,
   ERAS,
-  TREASURE_TYPES,
-  SHIP_NAME_PREFIXES,
+  GAME_CONFIG,
   SHIP_NAME_ADJECTIVES,
   SHIP_NAME_NOUNS,
+  SHIP_NAME_PREFIXES,
+  SHIP_TYPES,
   SHIPWRECK_VISUALS,
+  TREASURE_TYPES,
 } from "./constants";
-import type { DiveStats, DepthZone, Shipwreck } from "./types";
 import { calculateRoundStats } from "./gameEngine";
+import type { DepthZone, DiveStats, Shipwreck } from "./types";
 
 /**
  * Calculate dive statistics for any round
@@ -100,7 +100,7 @@ export function generateShipwreck(diveNumber: number, seed: string): Shipwreck {
   // Treasure value increases with depth
   const baseTreasure = 50;
   const treasureValue = Math.floor(
-    baseTreasure * Math.pow(1.1, diveNumber - 1)
+    baseTreasure * Math.pow(1.1, diveNumber - 1),
   );
 
   return {
@@ -127,7 +127,7 @@ function seededRandom(seed: string): () => number {
     hash = hash & hash; // Convert to 32bit integer
   }
 
-  return function () {
+  return function() {
     hash = (hash + 0x6d2b79f5) | 0;
     let t = Math.imul(hash ^ (hash >>> 15), 1 | hash);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
@@ -195,10 +195,10 @@ export function getSeaCreatureForDepth(depth: number): string {
   const { SEA_CREATURES } = require("./constants");
   const validCreatures = SEA_CREATURES.filter(
     (c: { minDepth: number; maxDepth: number }) =>
-      depth >= c.minDepth && depth <= c.maxDepth
+      depth >= c.minDepth && depth <= c.maxDepth,
   );
 
-  if (validCreatures.length === 0) return "🐟";
+  if (validCreatures.length === 0) { return "🐟"; }
 
   const random = Math.floor(Math.random() * validCreatures.length);
   return validCreatures[random].visual;

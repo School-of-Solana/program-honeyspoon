@@ -2,7 +2,7 @@
  * Fish Entity - Creates animated fish that swim horizontally
  */
 
-import type { KAPLAYCtx, GameObj } from "kaplay";
+import type { GameObj, KAPLAYCtx } from "kaplay";
 import * as CONST from "../sceneConstants";
 
 /**
@@ -31,7 +31,7 @@ export function createFish(k: KAPLAYCtx, lightLevel: number): GameObj {
     k.z(CONST.Z_LAYERS.FISH),
     k.scale(
       direction > 0 ? scaleMultiplier : -scaleMultiplier,
-      scaleMultiplier
+      scaleMultiplier,
     ),
     k.opacity(lightLevel * CONST.FISH.OPACITY_BASE),
   ]);

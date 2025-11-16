@@ -2,7 +2,7 @@
  * Boat Entity - Creates a decorative boat on the beach scene
  */
 
-import type { KAPLAYCtx, GameObj } from "kaplay";
+import type { GameObj, KAPLAYCtx } from "kaplay";
 import * as CONST from "../sceneConstants";
 
 /**
@@ -17,7 +17,7 @@ export function createBoat(
   k: KAPLAYCtx,
   x: number,
   y: number,
-  zIndex: number = CONST.Z_LAYERS.BOAT
+  zIndex: number = CONST.Z_LAYERS.BOAT,
 ): GameObj {
   const boat = k.add([
     k.pos(x, y),
@@ -39,7 +39,7 @@ export function createBoat(
     k.color(...CONST.COLORS.BOAT_HULL),
     k.outline(
       CONST.BOAT.OUTLINE_WIDTH,
-      k.rgb(...CONST.COLORS.OUTLINE_BOAT_HULL)
+      k.rgb(...CONST.COLORS.OUTLINE_BOAT_HULL),
     ),
   ]);
 
@@ -92,7 +92,7 @@ export function createBoat(
     k.color(...CONST.COLORS.BOAT_FLAG),
     k.outline(
       CONST.BOAT.OUTLINE_WIDTH_FLAG,
-      k.rgb(...CONST.COLORS.OUTLINE_FLAG)
+      k.rgb(...CONST.COLORS.OUTLINE_FLAG),
     ),
   ]);
 
@@ -103,7 +103,7 @@ export function createBoat(
     k.color(...CONST.COLORS.ANCHOR_ROPE),
     k.outline(
       CONST.BOAT.OUTLINE_WIDTH_THIN,
-      k.rgb(...CONST.COLORS.OUTLINE_ANCHOR)
+      k.rgb(...CONST.COLORS.OUTLINE_ANCHOR),
     ),
   ]);
 

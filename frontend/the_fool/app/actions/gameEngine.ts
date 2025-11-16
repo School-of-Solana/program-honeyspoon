@@ -13,37 +13,37 @@
  * This can be used for ANY multiplier-based game (diving, space, mining, etc.)
  */
 
-import crypto from "crypto";
+import { GAME_CONFIG as LIB_CONFIG } from "@/lib/constants";
 import {
-  calculateRoundStats,
-  simulateRound,
   calculateMaxPotentialPayout,
-  validateBetAmount,
+  calculateRoundStats,
   DEFAULT_CONFIG,
+  simulateRound,
   type GameConfig,
   type RoundResult,
+  validateBetAmount,
 } from "@/lib/gameEngine";
 import {
-  validateBet,
   processBet,
-  processWin,
-  processLoss,
   processHousePayout,
   processHouseReceiveBet,
-  reserveHouseFunds,
+  processLoss,
+  processWin,
   releaseHouseFunds,
+  reserveHouseFunds,
+  validateBet,
 } from "@/lib/walletLogic";
 import {
-  getUserWallet,
-  updateUserWallet,
-  getHouseWallet,
-  updateHouseWallet,
   addTransaction,
-  setGameSession,
-  getGameSession,
   deleteGameSession,
+  getGameSession,
+  getHouseWallet,
+  getUserWallet,
+  setGameSession,
+  updateHouseWallet,
+  updateUserWallet,
 } from "@/lib/walletStore";
-import { GAME_CONFIG as LIB_CONFIG } from "@/lib/constants";
+import crypto from "crypto";
 
 // Server-side game configuration (synced from lib/constants.ts)
 const GAME_CONFIG: GameConfig = {
@@ -63,7 +63,7 @@ if (process.env.NODE_ENV === "development") {
   console.log("[CONFIG] ✅ Server config synced from lib/constants.ts");
   console.log(`[CONFIG] House edge: ${GAME_CONFIG.houseEdge * 100}%`);
   console.log(
-    `[CONFIG] Base win prob: ${GAME_CONFIG.baseWinProbability * 100}%`
+    `[CONFIG] Base win prob: ${GAME_CONFIG.baseWinProbability * 100}%`,
   );
 }
 
@@ -73,7 +73,7 @@ if (process.env.NODE_ENV === "development") {
 export async function startGameSession(
   betAmount: number,
   userId: string,
-  sessionId: string
+  sessionId: string,
 ): Promise<{ success: boolean; error?: string; sessionId?: string }> {
   // Validate bet amount
   const betValidation = validateBetAmount(betAmount, GAME_CONFIG);
@@ -101,7 +101,7 @@ export async function startGameSession(
   const maxPayout = calculateMaxPotentialPayout(
     betAmount,
     GAME_CONFIG.maxRounds,
-    GAME_CONFIG
+    GAME_CONFIG,
   );
 
   // Process bet: deduct from user, add to house, reserve funds
@@ -156,7 +156,7 @@ export async function executeRound(
   currentValue: number,
   sessionId: string,
   userId: string,
-  testSeed?: string
+  testSeed?: string,
 ): Promise<RoundResult> {
   // Validate inputs
   if (roundNumber < 1 || roundNumber > GAME_CONFIG.maxRounds) {
@@ -186,7 +186,7 @@ export async function executeRound(
   // This prevents clients from replaying old rounds or skipping ahead
   if (roundNumber !== gameSession.diveNumber) {
     throw new Error(
-      `Round mismatch: Expected round ${gameSession.diveNumber}, received ${roundNumber}. Please refresh.`
+      `Round mismatch: Expected round ${gameSession.diveNumber}, received ${roundNumber}. Please refresh.`,
     );
   }
 
@@ -197,7 +197,7 @@ export async function executeRound(
 
   if (currentValue !== expectedValue) {
     throw new Error(
-      `Treasure mismatch: Expected $${expectedValue}, received $${currentValue}. Data corruption detected.`
+      `Treasure mismatch: Expected $${expectedValue}, received $${currentValue}. Data corruption detected.`,
     );
   }
 
@@ -221,7 +221,7 @@ export async function executeRound(
     roundNumber,
     currentValue,
     randomRoll,
-    GAME_CONFIG
+    GAME_CONFIG,
   );
 
   // Update game session based on outcome
@@ -239,7 +239,7 @@ export async function executeRound(
     const houseWallet = getHouseWallet();
     const houseWithRelease = releaseHouseFunds(
       houseWallet,
-      gameSession.reservedPayout
+      gameSession.reservedPayout,
     );
     updateHouseWallet(houseWithRelease);
 
@@ -276,7 +276,7 @@ export async function executeRound(
 export async function cashOut(
   finalValue: number,
   sessionId: string,
-  userId: string
+  userId: string,
 ): Promise<{ success: boolean; finalAmount: number; profit: number }> {
   // Validate
   if (finalValue <= 0) {
@@ -302,7 +302,7 @@ export async function cashOut(
   // This prevents client tampering (sending inflated finalValue)
   if (finalValue !== gameSession.currentTreasure) {
     throw new Error(
-      `Cash-out mismatch: Session has $${gameSession.currentTreasure}, attempting to cash out $${finalValue}. Please contact support.`
+      `Cash-out mismatch: Session has $${gameSession.currentTreasure}, attempting to cash out $${finalValue}. Please contact support.`,
     );
   }
 
@@ -314,12 +314,12 @@ export async function cashOut(
   const updatedUser = processWin(
     userWallet,
     finalValue,
-    gameSession.initialBet
+    gameSession.initialBet,
   );
   const updatedHouse = processHousePayout(
     houseWallet,
     finalValue,
-    gameSession.reservedPayout
+    gameSession.reservedPayout,
   );
 
   // Update wallets

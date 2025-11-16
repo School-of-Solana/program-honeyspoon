@@ -3,7 +3,7 @@
  * NOW USING ANIMATED SPRITES!
  */
 
-import type { KAPLAYCtx, GameObj } from "kaplay";
+import type { GameObj, KAPLAYCtx } from "kaplay";
 import * as CONST from "../sceneConstants";
 
 /**
@@ -18,7 +18,7 @@ export function createSeagull(
   k: KAPLAYCtx,
   startX: number,
   startY: number,
-  speed: number
+  speed: number,
 ): GameObj {
   const seagull = k.add([
     k.sprite("seagull", { anim: "fly" }),

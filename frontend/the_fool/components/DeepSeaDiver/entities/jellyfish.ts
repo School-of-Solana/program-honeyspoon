@@ -2,7 +2,7 @@
  * Jellyfish Entity - Creates floating jellyfish
  */
 
-import type { KAPLAYCtx, GameObj } from "kaplay";
+import type { GameObj, KAPLAYCtx } from "kaplay";
 import * as CONST from "../sceneConstants";
 
 /**

@@ -21,7 +21,7 @@ export class ObjectPool<T extends GameObj> {
     createFn: () => T,
     resetFn: (obj: T) => void,
     initialSize: number = 10,
-    maxSize: number = 100
+    maxSize: number = 100,
   ) {
     this.createFn = createFn;
     this.resetFn = resetFn;
@@ -39,7 +39,7 @@ export class ObjectPool<T extends GameObj> {
   /**
    * Get an object from the pool
    */
-  get(): T | null {
+  public get(): T | null {
     // Find unused object
     for (const item of this.pool) {
       if (!item.inUse) {
@@ -62,7 +62,7 @@ export class ObjectPool<T extends GameObj> {
   /**
    * Return object to pool
    */
-  release(obj: T): void {
+  public release(obj: T): void {
     const item = this.pool.find((item) => item.obj === obj);
     if (item) {
       item.inUse = false;
@@ -76,7 +76,7 @@ export class ObjectPool<T extends GameObj> {
   /**
    * Get pool statistics
    */
-  getStats() {
+  public getStats() {
     const inUse = this.pool.filter((item) => item.inUse).length;
     return {
       total: this.pool.length,
@@ -89,7 +89,7 @@ export class ObjectPool<T extends GameObj> {
   /**
    * Clear all objects
    */
-  clear(): void {
+  public clear(): void {
     this.pool.forEach((item) => {
       if ("destroy" in item.obj) {
         (item.obj as any).destroy();
@@ -113,11 +113,11 @@ export class SpawnManager {
   /**
    * Check if entity should spawn based on rate limiting
    */
-  shouldSpawn(
+  public shouldSpawn(
     entityType: string,
     minInterval: number,
     maxActive: number = Infinity,
-    probability: number = 1.0
+    probability: number = 1.0,
   ): boolean {
     const now = Date.now();
     const lastSpawn = this.lastSpawnTimes.get(entityType) || 0;
@@ -147,7 +147,7 @@ export class SpawnManager {
   /**
    * Notify when entity is destroyed
    */
-  onDestroy(entityType: string): void {
+  public onDestroy(entityType: string): void {
     const count = this.spawnCounts.get(entityType) || 0;
     this.spawnCounts.set(entityType, Math.max(0, count - 1));
   }
@@ -155,7 +155,7 @@ export class SpawnManager {
   /**
    * Get spawn statistics
    */
-  getStats(): Record<string, number> {
+  public getStats(): Record<string, number> {
     const stats: Record<string, number> = {};
     this.spawnCounts.forEach((count, type) => {
       stats[type] = count;
@@ -166,7 +166,7 @@ export class SpawnManager {
   /**
    * Reset all counters
    */
-  reset(): void {
+  public reset(): void {
     this.lastSpawnTimes.clear();
     this.spawnCounts.clear();
   }
@@ -181,14 +181,14 @@ export class PerformanceMonitor {
   private lastReportTime: number = 0;
   private reportInterval: number = 5000; // 5 seconds
 
-  recordFrame(deltaTime: number): void {
+  public recordFrame(deltaTime: number): void {
     this.frameTimes.push(deltaTime);
     if (this.frameTimes.length > this.maxSamples) {
       this.frameTimes.shift();
     }
   }
 
-  getStats() {
+  public getStats() {
     if (this.frameTimes.length === 0) {
       return { fps: 0, avgFrameTime: 0, minFps: 0, maxFps: 0 };
     }
@@ -206,7 +206,7 @@ export class PerformanceMonitor {
     };
   }
 
-  shouldReport(): boolean {
+  public shouldReport(): boolean {
     const now = Date.now();
     if (now - this.lastReportTime > this.reportInterval) {
       this.lastReportTime = now;

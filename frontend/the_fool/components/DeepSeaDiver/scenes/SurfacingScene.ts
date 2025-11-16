@@ -4,10 +4,10 @@
  */
 
 import { getDepthZone } from "@/lib/gameLogic";
-import * as CONST from "../sceneConstants";
-import { createBoat } from "../entities/boat";
-import type { SceneConfig, SurfacingSceneData } from "./sceneTypes";
 import { useGameStore } from "@/lib/gameStore";
+import { createBoat } from "../entities/boat";
+import * as CONST from "../sceneConstants";
+import type { SceneConfig, SurfacingSceneData } from "./sceneTypes";
 
 /**
  * Create surfacing scene
@@ -19,7 +19,7 @@ export function createSurfacingScene(config: SceneConfig) {
   k.scene("surfacing", (data: SurfacingSceneData = {}) => {
     console.log(
       "[CANVAS] 🌊 Surfacing scene created! Treasure:",
-      data.treasure
+      data.treasure,
     );
 
     let surfacingProgress = 0;
@@ -27,7 +27,7 @@ export function createSurfacingScene(config: SceneConfig) {
 
     // Start with underwater colors, transition to surface
     const underwaterColor = hexToRgb(
-      getDepthZone(useGameStore.getState().depth).color
+      getDepthZone(useGameStore.getState().depth).color,
     );
     const surfaceColor = { r: 135, g: 206, b: 250 };
 
@@ -157,7 +157,7 @@ export function createSurfacingScene(config: SceneConfig) {
         underwaterColor.g * (1 - surfacingProgress) +
           surfaceColor.g * surfacingProgress,
         underwaterColor.b * (1 - surfacingProgress) +
-          surfaceColor.b * surfacingProgress
+          surfaceColor.b * surfacingProgress,
       );
 
       // Move speed lines

@@ -2,7 +2,7 @@
  * Crab Entity - Creates animated crabs for beach scene
  */
 
-import type { KAPLAYCtx, GameObj } from "kaplay";
+import type { GameObj, KAPLAYCtx } from "kaplay";
 
 /**
  * Create a walking crab
@@ -20,7 +20,7 @@ export function createCrab(
   startY: number,
   direction: number = 1,
   speed: number = 30,
-  zIndex: number = 5
+  zIndex: number = 5,
 ): GameObj {
   const crab = k.add([
     k.sprite("crab", { anim: "walk" }),

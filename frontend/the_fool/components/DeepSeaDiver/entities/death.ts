@@ -3,8 +3,8 @@
  * Handles predator attack animations with variety based on depth
  */
 
-import type { KAPLAYCtx, GameObj } from "kaplay";
 import { AnimationType } from "@/lib/types";
+import type { GameObj, KAPLAYCtx } from "kaplay";
 import * as CONST from "../sceneConstants";
 import { getDepthPredator } from "./predator";
 
@@ -27,7 +27,7 @@ export function triggerDeathAnimation(
   diver: GameObj,
   depth: number,
   state: DeathAnimationState,
-  onComplete: () => void
+  onComplete: () => void,
 ) {
   console.log("[CANVAS] Triggering death animation!");
   state.isAnimating = true;
@@ -69,7 +69,7 @@ export function triggerDeathAnimation(
         deathTimer += k.dt();
         if (deathTimer > CONST.DEATH.DELAY_BEFORE_FADE) {
           console.log(
-            "[CANVAS] ✅ Death animation complete! Returning to beach..."
+            "[CANVAS] ✅ Death animation complete! Returning to beach...",
           );
           deathAnimationComplete = true;
           // Fade to black then go to beach

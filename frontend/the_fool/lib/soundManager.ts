@@ -73,7 +73,7 @@ class SoundManager {
   /**
    * Play a sound effect
    */
-  play(
+  public play(
     soundType: SoundType,
     options?: { loop?: boolean; volume?: number }
   ): void {
@@ -142,7 +142,7 @@ class SoundManager {
   /**
    * Stop a specific sound
    */
-  stop(soundType: SoundType): void {
+  public stop(soundType: SoundType): void {
     const sound = this.sounds.get(soundType);
     if (sound) {
       sound.pause();
@@ -153,7 +153,7 @@ class SoundManager {
   /**
    * Stop all sounds
    */
-  stopAll(): void {
+  public stopAll(): void {
     this.sounds.forEach((sound) => {
       sound.pause();
       sound.currentTime = 0;
@@ -163,7 +163,7 @@ class SoundManager {
   /**
    * Set master volume (0.0 to 1.0)
    */
-  setMasterVolume(volume: number): void {
+  public setMasterVolume(volume: number): void {
     this.masterVolume = Math.max(0, Math.min(1, volume));
     this.sounds.forEach((sound, key) => {
       sound.volume = DEFAULT_VOLUMES[key] * this.masterVolume;
@@ -173,7 +173,7 @@ class SoundManager {
   /**
    * Mute all sounds
    */
-  mute(): void {
+  public mute(): void {
     this.muted = true;
     this.stopAll();
   }
@@ -181,14 +181,14 @@ class SoundManager {
   /**
    * Unmute all sounds
    */
-  unmute(): void {
+  public unmute(): void {
     this.muted = false;
   }
 
   /**
    * Toggle mute
    */
-  toggleMute(): void {
+  public toggleMute(): void {
     this.muted = !this.muted;
     if (this.muted) {
       this.stopAll();
@@ -198,7 +198,7 @@ class SoundManager {
   /**
    * Check if muted
    */
-  isMuted(): boolean {
+  public isMuted(): boolean {
     return this.muted;
   }
 }
