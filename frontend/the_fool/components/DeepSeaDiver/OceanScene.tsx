@@ -1262,36 +1262,70 @@ export default function OceanScene({
         // Message now handled by React overlay
 
         let attackComplete = false;
+        let deathAnimationComplete = false;
+        let deathTimer = 0;
+        
         creature.onUpdate(() => {
-          if (attackComplete) return;
+          if (attackComplete) {
+            // After attack completes, wait 3 seconds then return to beach
+            if (!deathAnimationComplete) {
+              deathTimer += k.dt();
+              if (deathTimer > CONST.DEATH.DELAY_BEFORE_FADE) {
+                console.log('[CANVAS] ✅ Death animation complete! Returning to beach...');
+                deathAnimationComplete = true;
+                // Fade to black then go to beach
+                const fadeOverlay = k.add([
+                  k.rect(k.width(), k.height()),
+                  k.pos(0, 0),
+                  k.color(...CONST.COLORS.FADE_BLACK),
+                  k.opacity(0),
+                  k.z(CONST.Z_LAYERS.FADE_OVERLAY),
+                ]);
+                
+                let fadeProgress = 0;
+                const fadeInterval = k.onUpdate(() => {
+                  fadeProgress += k.dt() * CONST.DEATH.FADE_SPEED;
+                  fadeOverlay.opacity = Math.min(fadeProgress, 1);
+                  
+                  if (fadeProgress >= 1) {
+                    fadeInterval.cancel();
+                    // Reset animation state before going to beach
+                    isAnimating = false;
+                    animationType = 'idle';
+                    k.go("beach");
+                  }
+                });
+              }
+            }
+            return;
+          }
 
-          const speed = 300;
+          const speed = CONST.ATTACK.SPEED;
           creature.pos.x += direction * speed * k.dt();
-          creature.pos.y = diver.pos.y + Math.sin(k.time() * 20) * 10;
+          creature.pos.y = diver.pos.y + Math.sin(k.time() * CONST.ATTACK.SHAKE_SPEED) * CONST.ATTACK.SHAKE_AMPLITUDE;
 
-          if (Math.abs(creature.pos.x - diver.pos.x) < 50) {
+          if (Math.abs(creature.pos.x - diver.pos.x) < CONST.ATTACK.DISTANCE_THRESHOLD) {
             attackComplete = true;
 
             k.add([
               k.rect(k.width(), k.height()),
               k.pos(0, 0),
-              k.color(255, 0, 0),
-              k.opacity(0.8),
-              k.z(99),
-              k.lifespan(0.3),
+              k.color(...CONST.COLORS.ATTACK_FLASH),
+              k.opacity(CONST.OPACITY.ATTACK_FLASH),
+              k.z(CONST.Z_LAYERS.ATTACK_FLASH),
+              k.lifespan(CONST.ATTACK.FLASH_DURATION),
             ]);
 
             // Message now handled by React overlay
 
             diver.onUpdate(() => {
-              diver.pos.y += 100 * k.dt();
-              diver.opacity -= k.dt() * 0.5;
+              diver.pos.y += CONST.DEATH.SINK_SPEED * k.dt();
+              diver.opacity -= k.dt() * CONST.DEATH.FADE_RATE;
             });
-            // Treasure bag removed - cleaner view
 
             creature.onUpdate(() => {
-              creature.pos.x += direction * 150 * k.dt();
-              if (Math.abs(creature.pos.x) > k.width() + 200) {
+              creature.pos.x += direction * CONST.ATTACK.RETREAT_SPEED * k.dt();
+              if (Math.abs(creature.pos.x) > k.width() + CONST.ATTACK.RETREAT_DISTANCE) {
                 k.destroy(creature);
               }
             });
