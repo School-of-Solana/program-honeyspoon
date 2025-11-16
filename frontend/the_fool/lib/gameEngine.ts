@@ -1,13 +1,13 @@
 /**
  * Generic Multiplier-Based Game Engine
- * 
+ *
  * This is a theme-agnostic gambling engine that can be skinned with any theme:
  * - Submarine diving (current)
  * - Space exploration
  * - Mining expedition
  * - Mountain climbing
  * - etc.
- * 
+ *
  * Core mechanic: Progressive multiplier with increasing risk
  * - Player places bet
  * - Each round: survive to apply multiplier, or lose everything
@@ -18,17 +18,17 @@
 export interface GameConfig {
   // Fixed house edge (e.g., 0.15 = 15% edge)
   houseEdge: number;
-  
+
   // Probability curve parameters
   baseWinProbability: number; // Starting probability (e.g., 0.95 = 95%)
   decayConstant: number; // How fast probability decreases
   minWinProbability: number; // Floor (e.g., 0.01 = 1%)
-  
+
   // Limits
   minBet: number;
   maxBet: number;
   maxPotentialWin: number;
-  
+
   // Max rounds per game
   maxRounds: number;
 }
@@ -67,12 +67,12 @@ export interface RoundResult {
 
 /**
  * Calculate statistics for a specific round
- * 
+ *
  * Math:
  * - Win probability decreases exponentially: P(round) = max(minP, baseP * e^(-decay * (round-1)))
  * - Multiplier ensures fixed EV: multiplier = (1 - houseEdge) / P(round)
  * - Expected value: EV = P(round) * multiplier = (1 - houseEdge)
- * 
+ *
  * This guarantees the house edge is EXACTLY what's configured, regardless of rounds played.
  */
 export function calculateRoundStats(
@@ -83,7 +83,7 @@ export function calculateRoundStats(
   if (roundNumber < 1) {
     throw new Error("Round number must be >= 1");
   }
-  
+
   if (roundNumber > config.maxRounds) {
     throw new Error(`Round number exceeds maximum (${config.maxRounds})`);
   }
@@ -91,7 +91,8 @@ export function calculateRoundStats(
   // Calculate win probability (exponential decay)
   const winProb = Math.max(
     config.minWinProbability,
-    config.baseWinProbability * Math.exp(-config.decayConstant * (roundNumber - 1))
+    config.baseWinProbability *
+      Math.exp(-config.decayConstant * (roundNumber - 1))
   );
 
   // Calculate multiplier to maintain fixed EV
@@ -121,19 +122,19 @@ export function calculateMaxPotentialPayout(
   config: GameConfig = DEFAULT_CONFIG
 ): number {
   let maxPayout = initialBet;
-  
+
   // Calculate theoretical max if player survives all rounds
   for (let round = 1; round <= maxRounds; round++) {
     const stats = calculateRoundStats(round, config);
     maxPayout *= stats.multiplier;
   }
-  
+
   return Math.floor(Math.min(maxPayout, config.maxPotentialWin));
 }
 
 /**
  * Simulate a round outcome
- * 
+ *
  * @param roundNumber - Current round number (1-indexed)
  * @param currentValue - Current accumulated value
  * @param randomRoll - Random number 0-99 (from crypto.randomBytes)
@@ -150,7 +151,7 @@ export function simulateRound(
   if (randomRoll < 0 || randomRoll > 99) {
     throw new Error("Random roll must be 0-99");
   }
-  
+
   if (currentValue < 0) {
     throw new Error("Current value must be non-negative");
   }
@@ -199,24 +200,24 @@ export function validateBetAmount(
   if (!Number.isFinite(amount) || Number.isNaN(amount)) {
     return {
       valid: false,
-      error: 'Bet amount must be a valid number'
+      error: "Bet amount must be a valid number",
     };
   }
-  
+
   if (amount < config.minBet) {
-    return { 
-      valid: false, 
-      error: `Minimum bet is $${config.minBet}` 
+    return {
+      valid: false,
+      error: `Minimum bet is $${config.minBet}`,
     };
   }
-  
+
   if (amount > config.maxBet) {
-    return { 
-      valid: false, 
-      error: `Maximum bet is $${config.maxBet}` 
+    return {
+      valid: false,
+      error: `Maximum bet is $${config.maxBet}`,
     };
   }
-  
+
   return { valid: true };
 }
 

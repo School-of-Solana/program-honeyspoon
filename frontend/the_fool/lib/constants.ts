@@ -146,7 +146,13 @@ export const SEA_CREATURES = [
   { type: "shark", visual: "🦈", minDepth: 100, maxDepth: 1500, danger: 3 },
   { type: "whale", visual: "🐋", minDepth: 0, maxDepth: 2000, danger: 0 },
   { type: "squid", visual: "🦑", minDepth: 500, maxDepth: 2000, danger: 4 },
-  { type: "anglerfish", visual: "🐡", minDepth: 1000, maxDepth: 2000, danger: 2 },
+  {
+    type: "anglerfish",
+    visual: "🐡",
+    minDepth: 1000,
+    maxDepth: 2000,
+    danger: 2,
+  },
 ] as const;
 
 // Visual emojis for treasure visualization
@@ -163,10 +169,4 @@ export const TREASURE_VISUALS = [
   "📜",
 ] as const;
 
-export const SHIPWRECK_VISUALS = [
-  "🚢",
-  "⚓",
-  "🏴‍☠️",
-  "⛵",
-  "🛥️",
-] as const;
+export const SHIPWRECK_VISUALS = ["🚢", "⚓", "🏴‍☠️", "⛵", "🛥️"] as const;

@@ -41,7 +41,7 @@ export function createDivingScene(
   const { depthRef, survivedRef, treasureRef } = refs;
 
   k.scene("diving", () => {
-    console.log('[CANVAS] 🤿 Diving scene created!');
+    console.log("[CANVAS] 🤿 Diving scene created!");
 
     // Get depth zone for colors
     let currentZone = getDepthZone(depth);
@@ -52,7 +52,11 @@ export function createDivingScene(
     const bg = k.add([
       k.rect(k.width(), k.height()),
       k.pos(0, 0),
-      k.color(bgColor.r * lightLevel, bgColor.g * lightLevel, bgColor.b * lightLevel),
+      k.color(
+        bgColor.r * lightLevel,
+        bgColor.g * lightLevel,
+        bgColor.b * lightLevel
+      ),
       k.z(0),
     ]);
 
@@ -90,7 +94,11 @@ export function createDivingScene(
         k.z(250),
       ]);
 
-      splashParticles.push({ obj: splash, angle, speed: 150 + Math.random() * 100 });
+      splashParticles.push({
+        obj: splash,
+        angle,
+        speed: 150 + Math.random() * 100,
+      });
     }
 
     // Animate splash particles
@@ -269,8 +277,10 @@ export function createDivingScene(
     for (let i = 0; i < CONST.SPAWN_RATES.SPEED_LINE_COUNT; i++) {
       const line = k.add([
         k.rect(
-          CONST.SPEED_LINES.WIDTH_MIN + Math.random() * CONST.SPEED_LINES.WIDTH_RANDOM,
-          CONST.SPEED_LINES.HEIGHT_MIN + Math.random() * CONST.SPEED_LINES.HEIGHT_RANDOM
+          CONST.SPEED_LINES.WIDTH_MIN +
+            Math.random() * CONST.SPEED_LINES.WIDTH_RANDOM,
+          CONST.SPEED_LINES.HEIGHT_MIN +
+            Math.random() * CONST.SPEED_LINES.HEIGHT_RANDOM
         ),
         k.pos(Math.random() * k.width(), Math.random() * k.height()),
         k.anchor("center"),
@@ -283,21 +293,30 @@ export function createDivingScene(
 
     // Spawn bubbles
     k.loop(CONST.SPAWN_RATES.BUBBLE_INTERVAL, () => {
-      if (!state.isAnimating && Math.random() > CONST.SPAWN_RATES.BUBBLE_CHANCE) {
+      if (
+        !state.isAnimating &&
+        Math.random() > CONST.SPAWN_RATES.BUBBLE_CHANCE
+      ) {
         createBubble(k, diver.pos, state.divingSpeed);
       }
     });
 
     // Spawn fish
     k.loop(CONST.SPAWN_RATES.FISH_INTERVAL, () => {
-      if (Math.random() > CONST.SPAWN_RATES.FISH_CHANCE && lightLevel > CONST.OPACITY.LIGHT_RAY_MIN) {
+      if (
+        Math.random() > CONST.SPAWN_RATES.FISH_CHANCE &&
+        lightLevel > CONST.OPACITY.LIGHT_RAY_MIN
+      ) {
         createFish(k, lightLevel);
       }
     });
 
     // Spawn jellyfish
     k.loop(CONST.SPAWN_RATES.JELLYFISH_INTERVAL, () => {
-      if (Math.random() > CONST.SPAWN_RATES.JELLYFISH_CHANCE && lightLevel > CONST.OPACITY.LIGHT_RAY_MIN) {
+      if (
+        Math.random() > CONST.SPAWN_RATES.JELLYFISH_CHANCE &&
+        lightLevel > CONST.OPACITY.LIGHT_RAY_MIN
+      ) {
         createJellyfish(k, lightLevel);
       }
     });
@@ -317,7 +336,7 @@ export function createDivingScene(
 
       // Log state every 3 seconds
       if (now - lastLogTime > 3000) {
-        console.log('[CANVAS] 🎮 State update', {
+        console.log("[CANVAS] 🎮 State update", {
           animation: state.animationType,
           isAnimating: state.isAnimating,
           depth: `${depthRef.current}m`,
@@ -338,12 +357,18 @@ export function createDivingScene(
         bgColor.b * lightLevel
       );
 
-      darknessOverlay.opacity = Math.min(0.1 + (depthRef.current! / 1000) * 0.7, 0.8);
+      darknessOverlay.opacity = Math.min(
+        0.1 + (depthRef.current! / 1000) * 0.7,
+        0.8
+      );
 
       // Diving animation logic
       if (state.animationType === AnimationType.DIVING) {
         state.divingElapsed += k.dt();
-        const progress = Math.min(state.divingElapsed / state.divingDuration, 1);
+        const progress = Math.min(
+          state.divingElapsed / state.divingDuration,
+          1
+        );
 
         // Acceleration curve
         let acceleration;
@@ -359,7 +384,7 @@ export function createDivingScene(
         state.divingSpeed = maxSpeed * acceleration;
 
         // Update parallax layers
-        parallaxLayers.forEach(layer => {
+        parallaxLayers.forEach((layer) => {
           if (layer.parts[0].y < -CANVAS_HEIGHT) {
             layer.parts[0].y = layer.parts[1].y + CANVAS_HEIGHT;
             layer.parts[0].container.pos.y = layer.parts[0].y;
@@ -373,9 +398,9 @@ export function createDivingScene(
         });
 
         // Update speed lines
-        speedLines.forEach(line => {
+        speedLines.forEach((line) => {
           line.opacity = Math.min(state.divingSpeed / 200, 0.8);
-          line.pos.y += (state.divingSpeed * 1.5) * k.dt();
+          line.pos.y += state.divingSpeed * 1.5 * k.dt();
 
           if (line.pos.y > k.height() + 50) {
             line.pos.y = -50;
@@ -385,7 +410,7 @@ export function createDivingScene(
 
         // Update debris
         debrisList.forEach(({ obj, driftSpeed }) => {
-          obj.pos.y += (state.divingSpeed * 0.8) * k.dt();
+          obj.pos.y += state.divingSpeed * 0.8 * k.dt();
           obj.pos.x += driftSpeed * k.dt();
           obj.angle += 30 * k.dt();
 
@@ -412,37 +437,62 @@ export function createDivingScene(
           state.isAnimating = false;
           state.divingSpeed = 0;
           state.divingElapsed = 0;
-          console.log('[CANVAS] ✅ Diving animation complete');
+          console.log("[CANVAS] ✅ Diving animation complete");
         }
       }
 
       // Check for surfacing request (player cashed out)
-      if (refs.shouldSurfaceRef.current && !state.isAnimating && state.animationType === AnimationType.IDLE) {
-        console.log('[CANVAS] 🌊 Player cashed out! Transitioning to surfacing...');
+      if (
+        refs.shouldSurfaceRef.current &&
+        !state.isAnimating &&
+        state.animationType === AnimationType.IDLE
+      ) {
+        console.log(
+          "[CANVAS] 🌊 Player cashed out! Transitioning to surfacing..."
+        );
         k.go("surfacing", { treasure: treasureRef.current });
-      } else if (refs.isDivingRef.current && !state.isAnimating && state.animationType === AnimationType.IDLE) {
-        console.log('[CANVAS] 🤿 Starting dive animation (2.5s)');
+      } else if (
+        refs.isDivingRef.current &&
+        !state.isAnimating &&
+        state.animationType === AnimationType.IDLE
+      ) {
+        console.log("[CANVAS] 🤿 Starting dive animation (2.5s)");
         state.isAnimating = true;
         state.animationType = AnimationType.DIVING;
         state.divingElapsed = 0;
       }
 
       // Treasure collection animation
-      if (survivedRef.current === true && !state.isAnimating && state.animationType === AnimationType.IDLE) {
-        console.log('[CANVAS] 💰 Treasure collected! Playing celebration');
+      if (
+        survivedRef.current === true &&
+        !state.isAnimating &&
+        state.animationType === AnimationType.IDLE
+      ) {
+        console.log("[CANVAS] 💰 Treasure collected! Playing celebration");
         state.isAnimating = true;
         state.animationType = AnimationType.TREASURE;
         state.treasurePulseTime = 0;
         createTreasureParticles(k, diver.pos.x, diver.pos.y);
         // Treasure chest animation removed - just showing particles
-      } else if (survivedRef.current === false && !state.isAnimating && state.animationType === AnimationType.IDLE) {
-        console.log('[CANVAS] 💀 Death triggered! Playing attack animation');
+      } else if (
+        survivedRef.current === false &&
+        !state.isAnimating &&
+        state.animationType === AnimationType.IDLE
+      ) {
+        console.log("[CANVAS] 💀 Death triggered! Playing attack animation");
         triggerDeathAnimation(
           k,
           diver,
           depthRef.current!,
-          { isAnimating: state.isAnimating, animationType: state.animationType, divingSpeed: state.divingSpeed },
-          () => k.go("beach")
+          {
+            isAnimating: state.isAnimating,
+            animationType: state.animationType,
+            divingSpeed: state.divingSpeed,
+          },
+          () => {
+            refs.isInOceanRef.current = false; // Reset ocean flag so we can dive again
+            k.go("beach");
+          }
         );
       }
     });

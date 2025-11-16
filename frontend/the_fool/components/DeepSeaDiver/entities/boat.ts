@@ -37,11 +37,18 @@ export function createBoat(
     ]),
     k.pos(0, 0),
     k.color(...CONST.COLORS.BOAT_HULL),
-    k.outline(CONST.BOAT.OUTLINE_WIDTH, k.rgb(...CONST.COLORS.OUTLINE_BOAT_HULL)),
+    k.outline(
+      CONST.BOAT.OUTLINE_WIDTH,
+      k.rgb(...CONST.COLORS.OUTLINE_BOAT_HULL)
+    ),
   ]);
 
   // Deck planks
-  for (let i = CONST.BOAT.DECK_PLANK_START; i < CONST.BOAT.DECK_PLANK_END; i += CONST.BOAT.DECK_PLANK_SPACING) {
+  for (
+    let i = CONST.BOAT.DECK_PLANK_START;
+    i < CONST.BOAT.DECK_PLANK_END;
+    i += CONST.BOAT.DECK_PLANK_SPACING
+  ) {
     boat.add([
       k.rect(CONST.BOAT.DECK_PLANK_WIDTH, CONST.BOAT.DECK_PLANK_HEIGHT),
       k.pos(i, -2),
@@ -83,7 +90,10 @@ export function createBoat(
     ]),
     k.pos(CONST.BOAT.MAST_OFFSET_X, CONST.BOAT.FLAG_OFFSET_Y),
     k.color(...CONST.COLORS.BOAT_FLAG),
-    k.outline(CONST.BOAT.OUTLINE_WIDTH_FLAG, k.rgb(...CONST.COLORS.OUTLINE_FLAG)),
+    k.outline(
+      CONST.BOAT.OUTLINE_WIDTH_FLAG,
+      k.rgb(...CONST.COLORS.OUTLINE_FLAG)
+    ),
   ]);
 
   // Anchor rope coil
@@ -91,7 +101,10 @@ export function createBoat(
     k.circle(CONST.BOAT.ANCHOR_ROPE_RADIUS),
     k.pos(CONST.BOAT.ANCHOR_ROPE_X, CONST.BOAT.ANCHOR_ROPE_Y),
     k.color(...CONST.COLORS.ANCHOR_ROPE),
-    k.outline(CONST.BOAT.OUTLINE_WIDTH_THIN, k.rgb(...CONST.COLORS.OUTLINE_ANCHOR)),
+    k.outline(
+      CONST.BOAT.OUTLINE_WIDTH_THIN,
+      k.rgb(...CONST.COLORS.OUTLINE_ANCHOR)
+    ),
   ]);
 
   return boat;

@@ -29,7 +29,7 @@ export function triggerDeathAnimation(
   state: DeathAnimationState,
   onComplete: () => void
 ) {
-  console.log('[CANVAS] Triggering death animation!');
+  console.log("[CANVAS] Triggering death animation!");
   state.isAnimating = true;
   state.animationType = AnimationType.DEATH;
   state.divingSpeed = 0;
@@ -68,7 +68,9 @@ export function triggerDeathAnimation(
       if (!deathAnimationComplete) {
         deathTimer += k.dt();
         if (deathTimer > CONST.DEATH.DELAY_BEFORE_FADE) {
-          console.log('[CANVAS] ✅ Death animation complete! Returning to beach...');
+          console.log(
+            "[CANVAS] ✅ Death animation complete! Returning to beach..."
+          );
           deathAnimationComplete = true;
           // Fade to black then go to beach
           const fadeOverlay = k.add([
@@ -99,9 +101,14 @@ export function triggerDeathAnimation(
 
     const speed = CONST.ATTACK.SPEED;
     creature.pos.x += direction * speed * k.dt();
-    creature.pos.y = diver.pos.y + Math.sin(k.time() * CONST.ATTACK.SHAKE_SPEED) * CONST.ATTACK.SHAKE_AMPLITUDE;
+    creature.pos.y =
+      diver.pos.y +
+      Math.sin(k.time() * CONST.ATTACK.SHAKE_SPEED) *
+        CONST.ATTACK.SHAKE_AMPLITUDE;
 
-    if (Math.abs(creature.pos.x - diver.pos.x) < CONST.ATTACK.DISTANCE_THRESHOLD) {
+    if (
+      Math.abs(creature.pos.x - diver.pos.x) < CONST.ATTACK.DISTANCE_THRESHOLD
+    ) {
       attackComplete = true;
 
       k.add([
@@ -122,7 +129,10 @@ export function triggerDeathAnimation(
 
       creature.onUpdate(() => {
         creature.pos.x += direction * CONST.ATTACK.RETREAT_SPEED * k.dt();
-        if (Math.abs(creature.pos.x) > k.width() + CONST.ATTACK.RETREAT_DISTANCE) {
+        if (
+          Math.abs(creature.pos.x) >
+          k.width() + CONST.ATTACK.RETREAT_DISTANCE
+        ) {
           k.destroy(creature);
         }
       });

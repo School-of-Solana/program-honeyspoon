@@ -72,11 +72,7 @@ export default function KaplayGame() {
 
       // Balloon tie (small triangle at bottom)
       const balloonTie = k.add([
-        k.polygon([
-          k.vec2(0, 0),
-          k.vec2(-8, 15),
-          k.vec2(8, 15),
-        ]),
+        k.polygon([k.vec2(0, 0), k.vec2(-8, 15), k.vec2(8, 15)]),
         k.pos(k.width() / 2, 200 + balloonSize),
         k.anchor("center"),
         k.color(200, 50, 100),
@@ -218,7 +214,8 @@ export default function KaplayGame() {
           pumpBody.pos.y = 420 + pumpY / 2;
 
           // Balloon wobble effect
-          balloon.pos.x = k.width() / 2 + Math.sin(k.time() * 2) * (balloonSize / 20);
+          balloon.pos.x =
+            k.width() / 2 + Math.sin(k.time() * 2) * (balloonSize / 20);
           balloonTie.pos.x = balloon.pos.x;
 
           // Slow deflation over time

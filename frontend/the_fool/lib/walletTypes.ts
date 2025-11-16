@@ -24,7 +24,14 @@ export interface HouseWallet {
 export interface Transaction {
   id: string;
   userId: string;
-  type: 'bet' | 'win' | 'loss' | 'surface' | 'cashout' | 'deposit' | 'withdrawal';
+  type:
+    | "bet"
+    | "win"
+    | "loss"
+    | "surface"
+    | "cashout"
+    | "deposit"
+    | "withdrawal";
   amount: number;
   balanceBefore: number;
   balanceAfter: number;
@@ -35,7 +42,7 @@ export interface Transaction {
     roundNumber?: number;
     survived?: boolean;
     profit?: number;
-    
+
     // Legacy theme-specific fields (for backward compatibility)
     diveNumber?: number;
     depth?: number;

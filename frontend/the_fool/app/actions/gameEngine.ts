@@ -2,29 +2,29 @@
 
 /**
  * Generic Game Engine Server Actions
- * 
+ *
  * Theme-agnostic gambling API that handles:
  * - Session management
  * - Bet placement
  * - Round execution (with cryptographic randomness)
  * - Cashout
  * - Wallet management
- * 
+ *
  * This can be used for ANY multiplier-based game (diving, space, mining, etc.)
  */
 
 import crypto from "crypto";
-import { 
-  calculateRoundStats, 
+import {
+  calculateRoundStats,
   simulateRound,
   calculateMaxPotentialPayout,
   validateBetAmount,
   DEFAULT_CONFIG,
   type GameConfig,
-  type RoundResult 
+  type RoundResult,
 } from "@/lib/gameEngine";
-import { 
-  validateBet, 
+import {
+  validateBet,
   processBet,
   processWin,
   processLoss,
@@ -88,7 +88,7 @@ export async function startGameSession(
 
   // Calculate max potential payout and reserve house funds
   const maxPayout = calculateMaxPotentialPayout(betAmount, 10, GAME_CONFIG); // Reserve for 10 rounds
-  
+
   // Process bet: deduct from user, add to house, reserve funds
   const updatedUser = processBet(userWallet, betAmount);
   const houseWithBet = processHouseReceiveBet(houseWallet, betAmount);
@@ -112,9 +112,9 @@ export async function startGameSession(
 
   // Record transaction
   addTransaction({
-    id: crypto.randomBytes(8).toString('hex'),
+    id: crypto.randomBytes(8).toString("hex"),
     userId,
-    type: 'bet',
+    type: "bet",
     amount: betAmount,
     balanceBefore: userWallet.balance,
     balanceAfter: updatedUser.balance,
@@ -128,7 +128,7 @@ export async function startGameSession(
 /**
  * Execute a round (server-side for security and fairness)
  * Uses cryptographically secure random number generation
- * 
+ *
  * @param roundNumber - Current round number (1-indexed)
  * @param currentValue - Current accumulated value
  * @param sessionId - Game session ID
@@ -169,7 +169,7 @@ export async function executeRound(
 
   // Generate cryptographically secure random number (0-99)
   let randomRoll: number;
-  
+
   if (testSeed !== undefined && process.env.NODE_ENV === "test") {
     // Use deterministic seed for testing
     randomRoll = parseInt(testSeed, 10);
@@ -183,7 +183,12 @@ export async function executeRound(
   }
 
   // Simulate round outcome
-  const result = simulateRound(roundNumber, currentValue, randomRoll, GAME_CONFIG);
+  const result = simulateRound(
+    roundNumber,
+    currentValue,
+    randomRoll,
+    GAME_CONFIG
+  );
 
   // Update game session based on outcome
   if (result.survived) {
@@ -198,7 +203,10 @@ export async function executeRound(
     setGameSession(gameSession);
 
     const houseWallet = getHouseWallet();
-    const houseWithRelease = releaseHouseFunds(houseWallet, gameSession.reservedPayout);
+    const houseWithRelease = releaseHouseFunds(
+      houseWallet,
+      gameSession.reservedPayout
+    );
     updateHouseWallet(houseWithRelease);
 
     // Record loss
@@ -207,9 +215,9 @@ export async function executeRound(
     updateUserWallet(updatedUser);
 
     addTransaction({
-      id: crypto.randomBytes(8).toString('hex'),
+      id: crypto.randomBytes(8).toString("hex"),
       userId,
-      type: 'loss',
+      type: "loss",
       amount: gameSession.initialBet,
       balanceBefore: userWallet.balance,
       balanceAfter: updatedUser.balance,
@@ -269,8 +277,16 @@ export async function cashOut(
   const houseWallet = getHouseWallet();
 
   // Process win: add to user, deduct from house, release reserves
-  const updatedUser = processWin(userWallet, finalValue, gameSession.initialBet);
-  const updatedHouse = processHousePayout(houseWallet, finalValue, gameSession.reservedPayout);
+  const updatedUser = processWin(
+    userWallet,
+    finalValue,
+    gameSession.initialBet
+  );
+  const updatedHouse = processHousePayout(
+    houseWallet,
+    finalValue,
+    gameSession.reservedPayout
+  );
 
   // Update wallets
   updateUserWallet(updatedUser);
@@ -279,9 +295,9 @@ export async function cashOut(
   // Record transaction
   const profit = finalValue - gameSession.initialBet;
   addTransaction({
-    id: crypto.randomBytes(8).toString('hex'),
+    id: crypto.randomBytes(8).toString("hex"),
     userId,
-    type: 'cashout',
+    type: "cashout",
     amount: finalValue,
     balanceBefore: userWallet.balance,
     balanceAfter: updatedUser.balance,
@@ -338,7 +354,7 @@ export async function getWalletInfo(userId: string): Promise<{
 }> {
   const userWallet = getUserWallet(userId);
   const houseWallet = getHouseWallet();
-  
+
   return {
     balance: userWallet.balance,
     totalWagered: userWallet.totalWagered,
@@ -365,7 +381,7 @@ export async function getHouseStatus(): Promise<{
   const { getHouseRiskExposure } = await import("@/lib/walletLogic");
   const houseWallet = getHouseWallet();
   const riskInfo = getHouseRiskExposure(houseWallet);
-  
+
   return {
     balance: houseWallet.balance,
     reservedFunds: houseWallet.reservedFunds,

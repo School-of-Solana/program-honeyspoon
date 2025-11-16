@@ -6,20 +6,20 @@ This folder contains extracted scene logic from `OceanScene.tsx`.
 
 The game has 3 main scenes - **ALL FULLY EXTRACTED**:
 
-1. **Beach Scene** 
+1. **Beach Scene**
    - Sky, sun, beach, decorations
    - Palm trees, rocks, shells, crabs, starfish
    - Seagulls, clouds
    - Boat with bobbing animation
    - **Status**: ✅ **EXTRACTED to `BeachScene.ts` and integrated** (260 lines extracted)
 
-2. **Surfacing Scene** 
+2. **Surfacing Scene**
    - Rising animation back to surface
    - Bubble trail and speed lines
    - Success/celebration effects
    - **Status**: ✅ **EXTRACTED to `SurfacingScene.ts` and integrated** (165 lines extracted)
 
-3. **Diving Scene** 
+3. **Diving Scene**
    - Underwater gameplay with parallax scrolling (3 layers, infinite loop)
    - Creature spawning (fish, jellyfish, predators)
    - Diving/surfacing mechanics and animations
@@ -30,13 +30,17 @@ The game has 3 main scenes - **ALL FULLY EXTRACTED**:
 ## Files
 
 ### sceneTypes.ts ✅ NEW
+
 Type definitions for scene configuration and shared refs.
+
 - `SceneConfig`: Configuration passed to scene creation functions
 - `SceneRefs`: Shared React refs that scenes need access to
 - `SurfacingSceneData`, `DivingSceneData`: Scene-specific data types
 
 ### BeachScene.ts ✅ **INTEGRATED**
+
 Extracted beach scene with complete setup logic.
+
 - **260 lines** extracted from OceanScene.tsx
 - Sky, sun with rotating rays
 - Diagonal beach with wavy shoreline
@@ -49,7 +53,9 @@ Extracted beach scene with complete setup logic.
 **Status**: ✅ Fully integrated and working!
 
 ### SurfacingScene.ts ✅ **INTEGRATED**
+
 Extracted surfacing scene with complete animation logic.
+
 - **165 lines** extracted from OceanScene.tsx
 - Handles diver rising from depth to surface
 - Bubble trails, speed lines, color transitions
@@ -58,8 +64,10 @@ Extracted surfacing scene with complete animation logic.
 
 **Status**: ✅ Fully integrated and working!
 
-### DivingScene.ts ✅ **INTEGRATED** 
+### DivingScene.ts ✅ **INTEGRATED**
+
 Extracted diving scene with complete underwater gameplay.
+
 - **483 lines** extracted from OceanScene.tsx
 - Infinite parallax scrolling (3 layers: seaweed, corals)
 - Dynamic creature spawning (bubbles, fish, jellyfish, predators)
@@ -74,17 +82,20 @@ Extracted diving scene with complete underwater gameplay.
 ## Extraction Progress - ✅ COMPLETE!
 
 ### ✅ Phase 1-2: COMPLETED
+
 - ✅ Entities extracted (15 files, 850+ lines)
 - ✅ Scene types defined (`sceneTypes.ts`)
 - ✅ Scene interfaces created
 - ✅ Shared refs architecture established
 
 ### ✅ Phase 3: **100% COMPLETED** 🎉
+
 - ✅ Beach Scene: **FULLY EXTRACTED AND INTEGRATED** (260 lines)
 - ✅ Surfacing Scene: **FULLY EXTRACTED AND INTEGRATED** (165 lines)
 - ✅ Diving Scene: **FULLY EXTRACTED AND INTEGRATED** (483 lines)
 
 ### ✅ Phase 4: VERIFIED
+
 - ✅ Build passes (0 TypeScript errors)
 - ✅ All tests still passing (387/415, 93.3%)
 - ✅ No regressions introduced
@@ -93,6 +104,7 @@ Extracted diving scene with complete underwater gameplay.
 ## Why Diving Scene Not Extracted?
 
 The diving scene is tightly coupled with:
+
 - Complex state machine (`AnimationType`, `isAnimating`, etc.)
 - Centralized animation variables (`divingSpeed`, `divingElapsed`, etc.)
 - Infinite parallax scrolling with multi-layer state
@@ -129,6 +141,7 @@ The diving scene is tightly coupled with:
 The codebase is now **exceptionally** organized:
 
 ### Entities (15 files, 850+ lines)
+
 - ✅ `boat.ts`, `bubble.ts`, `fish.ts`, `jellyfish.ts`, `predator.ts`
 - ✅ `seagull.ts`, `crab.ts`, `starfish.ts`, `palmtree.ts`
 - ✅ `death.ts`, `treasure.ts`, `particles.ts`, `parallax.ts`
@@ -136,17 +149,20 @@ The codebase is now **exceptionally** organized:
 - ✅ `beachDecor.ts` (NEW - 11 beach decoration types)
 
 ### Scenes (3 files, 425+ lines extracted!)
+
 - ✅ `sceneTypes.ts` - Type definitions
 - ✅ `BeachScene.ts` - **✅ INTEGRATED** (260 lines)
 - ✅ `SurfacingScene.ts` - **✅ INTEGRATED** (165 lines)
 
 ### Supporting Files
+
 - ✅ `sceneConstants.ts` - All constants centralized
 - ✅ `GameErrorBoundary.tsx` - Error handling
 - ✅ `objectPool.ts` (NEW) - Performance optimization tools
 - ✅ 258 tests (88 new) with 93.3% pass rate
 
 ### Main Files
+
 - `OceanScene.tsx` - **709 lines** (down from 969, **-260 lines, -27%**)
   - Beach scene: **✅ EXTRACTED** to `BeachScene.ts`
   - Surfacing scene: **✅ EXTRACTED** to `SurfacingScene.ts`

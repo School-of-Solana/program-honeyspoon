@@ -45,11 +45,7 @@ export function createBeachUmbrella(
   x: number,
   groundY: number
 ): GameObj {
-  const umbrella = k.add([
-    k.pos(x, groundY - 60),
-    k.z(15),
-    "umbrella",
-  ]);
+  const umbrella = k.add([k.pos(x, groundY - 60), k.z(15), "umbrella"]);
 
   // Pole
   const pole = umbrella.add([
@@ -90,11 +86,7 @@ export function createSandcastle(
   x: number,
   groundY: number
 ): GameObj {
-  const castle = k.add([
-    k.pos(x, groundY - 30),
-    k.z(14),
-    "sandcastle",
-  ]);
+  const castle = k.add([k.pos(x, groundY - 30), k.z(14), "sandcastle"]);
 
   const sandColor = k.rgb(238, 214, 175);
 
@@ -154,7 +146,7 @@ export function createBeachBall(
   ball.onUpdate(() => {
     ball.bounceTime += k.dt() * 2;
     const bounce = Math.abs(Math.sin(ball.bounceTime)) * 10;
-    ball.pos.y = (groundY - 20) - bounce;
+    ball.pos.y = groundY - 20 - bounce;
   });
 
   return ball;
@@ -201,7 +193,7 @@ export function createFootprints(
   count: number = 5
 ): GameObj[] {
   const prints: GameObj[] = [];
-  
+
   for (let i = 0; i < count; i++) {
     const print = k.add([
       k.circle(6),
@@ -211,10 +203,10 @@ export function createFootprints(
       k.z(10),
       "footprint",
     ]);
-    
+
     prints.push(print);
   }
-  
+
   return prints;
 }
 
@@ -227,11 +219,7 @@ export function createBeachSign(
   groundY: number,
   text: string
 ): GameObj {
-  const sign = k.add([
-    k.pos(x, groundY - 80),
-    k.z(15),
-    "sign",
-  ]);
+  const sign = k.add([k.pos(x, groundY - 80), k.z(15), "sign"]);
 
   // Post
   sign.add([
@@ -335,11 +323,7 @@ export function createDriftwood(
 /**
  * Create flying bird (distant)
  */
-export function createDistantBird(
-  k: KAPLAYCtx,
-  x: number,
-  y: number
-): GameObj {
+export function createDistantBird(k: KAPLAYCtx, x: number, y: number): GameObj {
   const bird = k.add([
     k.text("v", { size: 12 }),
     k.pos(x, y),
@@ -378,10 +362,15 @@ export function spawnBeachDecorations(
   waterY: number
 ): void {
   const width = k.width();
-  
+
   // Clouds
   for (let i = 0; i < 5; i++) {
-    createCloud(k, Math.random() * width, 30 + Math.random() * 100, 5 + Math.random() * 15);
+    createCloud(
+      k,
+      Math.random() * width,
+      30 + Math.random() * 100,
+      5 + Math.random() * 15
+    );
   }
 
   // Beach items (spread across beach)
@@ -395,7 +384,7 @@ export function spawnBeachDecorations(
     () => createDriftwood(k, width * 0.85, groundY),
   ];
 
-  beachItems.forEach(createFn => createFn());
+  beachItems.forEach((createFn) => createFn());
 
   // Footprints
   createFootprints(k, width * 0.55, groundY, 8);

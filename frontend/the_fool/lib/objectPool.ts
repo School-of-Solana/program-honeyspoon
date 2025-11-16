@@ -1,6 +1,6 @@
 /**
  * Object Pool for Performance Optimization
- * 
+ *
  * Reduces GC pressure by reusing objects instead of creating/destroying them
  */
 
@@ -63,11 +63,11 @@ export class ObjectPool<T extends GameObj> {
    * Return object to pool
    */
   release(obj: T): void {
-    const item = this.pool.find(item => item.obj === obj);
+    const item = this.pool.find((item) => item.obj === obj);
     if (item) {
       item.inUse = false;
       // Hide object when returned to pool
-      if ('hidden' in obj) {
+      if ("hidden" in obj) {
         (obj as any).hidden = true;
       }
     }
@@ -77,7 +77,7 @@ export class ObjectPool<T extends GameObj> {
    * Get pool statistics
    */
   getStats() {
-    const inUse = this.pool.filter(item => item.inUse).length;
+    const inUse = this.pool.filter((item) => item.inUse).length;
     return {
       total: this.pool.length,
       inUse,
@@ -90,8 +90,8 @@ export class ObjectPool<T extends GameObj> {
    * Clear all objects
    */
   clear(): void {
-    this.pool.forEach(item => {
-      if ('destroy' in item.obj) {
+    this.pool.forEach((item) => {
+      if ("destroy" in item.obj) {
         (item.obj as any).destroy();
       }
     });
@@ -140,7 +140,7 @@ export class SpawnManager {
 
     this.lastSpawnTimes.set(entityType, now);
     this.spawnCounts.set(entityType, currentCount + 1);
-    
+
     return true;
   }
 
@@ -193,7 +193,8 @@ export class PerformanceMonitor {
       return { fps: 0, avgFrameTime: 0, minFps: 0, maxFps: 0 };
     }
 
-    const avg = this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length;
+    const avg =
+      this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length;
     const min = Math.min(...this.frameTimes);
     const max = Math.max(...this.frameTimes);
 

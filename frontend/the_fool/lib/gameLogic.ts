@@ -1,13 +1,13 @@
 /**
  * Core game logic for Abyss Fortune
- * 
+ *
  * THEME LAYER: This wraps the generic game engine with submarine/diving theme
- * 
+ *
  * The generic engine (gameEngine.ts) handles:
  * - Probability/multiplier math
  * - Win/loss determination
  * - EV calculations
- * 
+ *
  * This file adds:
  * - Depth zones (visual)
  * - Shipwrecks (procedural content)
@@ -30,7 +30,7 @@ import { calculateRoundStats } from "./gameEngine";
 
 /**
  * Calculate dive statistics for any round
- * 
+ *
  * This wraps the generic game engine with diving theme:
  * - roundNumber → diveNumber
  * - Adds depth (visual)
@@ -72,10 +72,7 @@ export function getDepthZone(depth: number): DepthZone {
  * PROCEDURAL GENERATION: Create a unique shipwreck
  * Uses seeded randomness for deterministic generation per dive
  */
-export function generateShipwreck(
-  diveNumber: number,
-  seed: string
-): Shipwreck {
+export function generateShipwreck(diveNumber: number, seed: string): Shipwreck {
   const depth = diveNumber * GAME_CONFIG.DEPTH_PER_DIVE;
 
   // Use seed + diveNumber for deterministic randomness
@@ -92,8 +89,7 @@ export function generateShipwreck(
     SHIP_NAME_PREFIXES[Math.floor(random() * SHIP_NAME_PREFIXES.length)];
   const adjective =
     SHIP_NAME_ADJECTIVES[Math.floor(random() * SHIP_NAME_ADJECTIVES.length)];
-  const noun =
-    SHIP_NAME_NOUNS[Math.floor(random() * SHIP_NAME_NOUNS.length)];
+  const noun = SHIP_NAME_NOUNS[Math.floor(random() * SHIP_NAME_NOUNS.length)];
 
   const name = `${prefix} ${adjective} ${noun}`;
 
@@ -145,7 +141,7 @@ function seededRandom(seed: string): () => number {
 export function getTreasureVisual(totalValue: number) {
   // Base size for zero/minimal treasure
   const baseSize = 20;
-  
+
   if (totalValue === 0) {
     return { size: baseSize, glow: 0.1, particles: 0, color: "#FFD700" };
   } else if (totalValue < 100) {
@@ -155,7 +151,12 @@ export function getTreasureVisual(totalValue: number) {
   } else if (totalValue < 1000) {
     return { size: 60, glow: 0.8, particles: 30, color: "#FF6347" };
   } else {
-    return { size: Math.min(120, 80 + Math.floor(totalValue / 10000)), glow: 1.0, particles: 50, color: "#FF00FF" };
+    return {
+      size: Math.min(120, 80 + Math.floor(totalValue / 10000)),
+      glow: 1.0,
+      particles: 50,
+      color: "#FF00FF",
+    };
   }
 }
 
@@ -168,9 +169,9 @@ export function validateBet(amount: number): {
 } {
   // Check for invalid numeric values
   if (!Number.isFinite(amount) || Number.isNaN(amount)) {
-    return { valid: false, error: 'Bet amount must be a valid number' };
+    return { valid: false, error: "Bet amount must be a valid number" };
   }
-  
+
   if (amount < GAME_CONFIG.MIN_BET) {
     return { valid: false, error: `Minimum bet is $${GAME_CONFIG.MIN_BET}` };
   }

@@ -55,25 +55,25 @@ export const SPEEDS = {
 export const Z_LAYERS = {
   BACKGROUND: 0,
   SKY: 1,
-  BEACH: 2,                 // Fixed: was 1, now unique
-  SUN: 3,                   // Fixed: was 2, now unique
-  PARALLAX_FAR: 4,          // Fixed: was 2, now unique
-  SEAGULL: 5,               // Fixed: was 4
-  LIGHT_RAYS: 6,            // Fixed: was 3
-  JELLYFISH: 7,             // Fixed: was 6
-  PARALLAX_MID: 8,          // Fixed: was 4
-  WATER_SURFACE: 9,         // Fixed: was 5
-  FOAM: 10,                 // Fixed: was 7
-  FISH: 11,                 // Fixed: was 7, now unique
-  PARALLAX_NEAR: 12,        // Fixed: was 6
-  CORAL_FOREGROUND: 13,     // Fixed: was 8
-  PREDATOR: 14,             // Fixed: was 9
+  BEACH: 2, // Fixed: was 1, now unique
+  SUN: 3, // Fixed: was 2, now unique
+  PARALLAX_FAR: 4, // Fixed: was 2, now unique
+  SEAGULL: 5, // Fixed: was 4
+  LIGHT_RAYS: 6, // Fixed: was 3
+  JELLYFISH: 7, // Fixed: was 6
+  PARALLAX_MID: 8, // Fixed: was 4
+  WATER_SURFACE: 9, // Fixed: was 5
+  FOAM: 10, // Fixed: was 7
+  FISH: 11, // Fixed: was 7, now unique
+  PARALLAX_NEAR: 12, // Fixed: was 6
+  CORAL_FOREGROUND: 13, // Fixed: was 8
+  PREDATOR: 14, // Fixed: was 9
   BUBBLES: 15,
   BOAT: 18,
-  CHEST: 18,                // Same as boat is OK (both behind diver)
+  CHEST: 18, // Same as boat is OK (both behind diver)
   DIVER: 20,
   SPEED_LINES: 25,
-  PARTICLE: 25,             // Same as speed lines is OK
+  PARTICLE: 25, // Same as speed lines is OK
   COIN: 26,
   ATTACK_FLASH: 99,
   MESSAGE: 100,
@@ -126,9 +126,33 @@ export const SCALES = {
 // ===== PARALLAX SETTINGS =====
 export const PARALLAX = {
   LAYERS: [
-    { speed: -30, sprite: 'seaweed', frames: 96, count: 10, scale: [2, 3], opacity: [0.3, 0.5], z: Z_LAYERS.PARALLAX_FAR },
-    { speed: -80, sprite: 'corals', frames: 28, count: 12, scale: [1.5, 2.5], opacity: [0.5, 0.7], z: Z_LAYERS.PARALLAX_MID },
-    { speed: -150, sprite: 'seaweed', frames: 96, count: 15, scale: [2.5, 3.5], opacity: [0.7, 0.9], z: Z_LAYERS.PARALLAX_NEAR },
+    {
+      speed: -30,
+      sprite: "seaweed",
+      frames: 96,
+      count: 10,
+      scale: [2, 3],
+      opacity: [0.3, 0.5],
+      z: Z_LAYERS.PARALLAX_FAR,
+    },
+    {
+      speed: -80,
+      sprite: "corals",
+      frames: 28,
+      count: 12,
+      scale: [1.5, 2.5],
+      opacity: [0.5, 0.7],
+      z: Z_LAYERS.PARALLAX_MID,
+    },
+    {
+      speed: -150,
+      sprite: "seaweed",
+      frames: 96,
+      count: 15,
+      scale: [2.5, 3.5],
+      opacity: [0.7, 0.9],
+      z: Z_LAYERS.PARALLAX_NEAR,
+    },
   ],
   IDLE_SPEED_MULTIPLIER: 0.1,
 } as const;
@@ -259,12 +283,12 @@ export const BOUNDARIES = {
 // ===== DECORATIVE ELEMENTS POSITIONS =====
 export const DECORATIONS = {
   ROCKS: [
-    { x: 0.50, y: 0.68, scale: 2.5 },
+    { x: 0.5, y: 0.68, scale: 2.5 },
     { x: 0.62, y: 0.75, scale: 2.0 },
     { x: 0.75, y: 0.78, scale: 2.3 },
     { x: 0.88, y: 0.82, scale: 1.8 },
     { x: 0.56, y: 0.72, scale: 2.2 },
-    { x: 0.70, y: 0.79, scale: 1.9 },
+    { x: 0.7, y: 0.79, scale: 1.9 },
   ],
   PEBBLES: [
     { x: 0.53, y: 0.66 },
@@ -272,21 +296,21 @@ export const DECORATIONS = {
     { x: 0.66, y: 0.74 },
     { x: 0.73, y: 0.77 },
     { x: 0.82, y: 0.81 },
-    { x: 0.90, y: 0.83 },
+    { x: 0.9, y: 0.83 },
     { x: 0.95, y: 0.86 },
   ],
   PALM_TREES: [
-    { x: 0.88, y: 0.70, scale: 4 },      // Main palm (far right)
-    { x: 0.70, y: 0.68, scale: 3.5 },    // Medium palm
-    { x: 0.55, y: 0.65, scale: 3.2 },    // Smaller palm
-    { x: 0.82, y: 0.73, scale: 3.8 },    // Another palm
-    { x: 0.95, y: 0.75, scale: 3.0 },    // Small palm far right
+    { x: 0.88, y: 0.7, scale: 4 }, // Main palm (far right)
+    { x: 0.7, y: 0.68, scale: 3.5 }, // Medium palm
+    { x: 0.55, y: 0.65, scale: 3.2 }, // Smaller palm
+    { x: 0.82, y: 0.73, scale: 3.8 }, // Another palm
+    { x: 0.95, y: 0.75, scale: 3.0 }, // Small palm far right
   ],
   SHELLS: [
     { x: 0.52, y: 0.65 },
-    { x: 0.64, y: 0.70 },
+    { x: 0.64, y: 0.7 },
     { x: 0.72, y: 0.76 },
-    { x: 0.80, y: 0.80 },
+    { x: 0.8, y: 0.8 },
     { x: 0.92, y: 0.85 },
   ],
   CLOUDS: [
@@ -307,7 +331,7 @@ export const DECORATIONS = {
   STARFISH: [
     { x: 0.58, y: 0.71, scale: 1.8 },
     { x: 0.76, y: 0.77, scale: 1.5 },
-    { x: 0.90, y: 0.84, scale: 2.0 },
+    { x: 0.9, y: 0.84, scale: 2.0 },
   ],
 } as const;
 
@@ -343,7 +367,7 @@ export const FISH = {
   SPAWN_Y_RANGE: 400,
   SPAWN_OFFSET: 50, // pixels off-screen
   DESPAWN_OFFSET: 50,
-  TYPES: ['fish1', 'fish2', 'fish3'] as const,
+  TYPES: ["fish1", "fish2", "fish3"] as const,
   SCALE_SMALL: 2, // fish1
   SCALE_LARGE: 1.5, // fish2/3
   OPACITY_BASE: 0.8,
@@ -399,12 +423,12 @@ export const BOAT = {
   RAIL_OFFSET_X: 55,
   RAIL_OFFSET_Y: -10,
   MAST_WIDTH: 4,
-  MAST_HEIGHT: 80,          // Taller mast
+  MAST_HEIGHT: 80, // Taller mast
   MAST_OFFSET_X: -20,
-  MAST_OFFSET_Y: 0,          // Fixed: mast bottom at deck level (0)
+  MAST_OFFSET_Y: 0, // Fixed: mast bottom at deck level (0)
   FLAG_WIDTH: 30,
   FLAG_HEIGHT: 20,
-  FLAG_OFFSET_Y: -82,        // Adjusted to match taller mast
+  FLAG_OFFSET_Y: -82, // Adjusted to match taller mast
   ANCHOR_ROPE_RADIUS: 5,
   ANCHOR_ROPE_X: 30,
   ANCHOR_ROPE_Y: -5,

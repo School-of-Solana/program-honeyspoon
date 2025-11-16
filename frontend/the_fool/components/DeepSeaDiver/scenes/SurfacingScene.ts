@@ -14,10 +14,13 @@ import type { SceneConfig, SurfacingSceneData } from "./sceneTypes";
  */
 export function createSurfacingScene(config: SceneConfig) {
   const { k, refs, hexToRgb } = config;
-  const { depthRef } = refs;
+  const { depthRef, isInOceanRef } = refs;
 
   k.scene("surfacing", (data: SurfacingSceneData = {}) => {
-    console.log('[CANVAS] 🌊 Surfacing scene created! Treasure:', data.treasure);
+    console.log(
+      "[CANVAS] 🌊 Surfacing scene created! Treasure:",
+      data.treasure
+    );
 
     let surfacingProgress = 0;
     const surfacingDuration = 3.0; // 3 seconds to surface
@@ -147,13 +150,16 @@ export function createSurfacingScene(config: SceneConfig) {
 
       // Blend background colors
       bg.color = k.rgb(
-        underwaterColor.r * (1 - surfacingProgress) + surfaceColor.r * surfacingProgress,
-        underwaterColor.g * (1 - surfacingProgress) + surfaceColor.g * surfacingProgress,
-        underwaterColor.b * (1 - surfacingProgress) + surfaceColor.b * surfacingProgress
+        underwaterColor.r * (1 - surfacingProgress) +
+          surfaceColor.r * surfacingProgress,
+        underwaterColor.g * (1 - surfacingProgress) +
+          surfaceColor.g * surfacingProgress,
+        underwaterColor.b * (1 - surfacingProgress) +
+          surfaceColor.b * surfacingProgress
       );
 
       // Move speed lines
-      speedLines.forEach(line => {
+      speedLines.forEach((line) => {
         line.pos.y += 300 * k.dt();
         line.opacity = 0.6 * (1 - surfacingProgress);
 
@@ -165,7 +171,8 @@ export function createSurfacingScene(config: SceneConfig) {
 
       // Complete surfacing
       if (surfacingProgress >= 1) {
-        console.log('[CANVAS] ✅ Surfacing complete! Returning to beach...');
+        console.log("[CANVAS] ✅ Surfacing complete! Returning to beach...");
+        isInOceanRef.current = false; // Reset ocean flag so we can dive again
         k.go("beach");
       }
     });

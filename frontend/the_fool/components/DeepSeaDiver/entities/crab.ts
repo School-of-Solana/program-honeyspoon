@@ -31,7 +31,7 @@ export function createCrab(
   ]);
 
   // Store movement properties
-  let moveDirection = direction;
+  const moveDirection = direction;
   const moveSpeed = speed;
   const minX = -50; // Off-screen left
   const maxX = k.width() + 50; // Off-screen right

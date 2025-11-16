@@ -23,7 +23,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${pressStart2P.variable} antialiased`}
-        style={{ fontFamily: 'var(--font-nes), monospace' }}
+        style={{ fontFamily: "var(--font-nes), monospace" }}
       >
         {children}
       </body>

@@ -1,20 +1,20 @@
 /**
  * Sound Manager - Centralized audio playback system
- * 
+ *
  * Handles loading, caching, and playing game sounds
  * with volume control and muting support
  */
 
 // Sound file paths (relative to /public)
 const SOUND_PATHS = {
-  COIN: '/sounds/coin.wav',
-  EXPLOSION: '/sounds/explosion.wav',
-  BUBBLES: '/sounds/bubbles.wav',
-  SURFACE: '/sounds/surface.wav',
-  DIVE: '/sounds/dive.wav',
-  WATER_LOOP: '/sounds/water-loop.wav',
-  BEACH_WAVES: '/sounds/beach-waves.ogg',
-  BUTTON_CLICK: '/sounds/button-click.wav',
+  COIN: "/sounds/coin.wav",
+  EXPLOSION: "/sounds/explosion.wav",
+  BUBBLES: "/sounds/bubbles.wav",
+  SURFACE: "/sounds/surface.wav",
+  DIVE: "/sounds/dive.wav",
+  WATER_LOOP: "/sounds/water-loop.wav",
+  BEACH_WAVES: "/sounds/beach-waves.ogg",
+  BUTTON_CLICK: "/sounds/button-click.wav",
 } as const;
 
 // Sound type
@@ -36,7 +36,7 @@ class SoundManager {
   private sounds: Map<SoundType, HTMLAudioElement> = new Map();
   private muted: boolean = false;
   private masterVolume: number = 1.0;
-  
+
   constructor() {
     // Preload sounds
     this.preloadAll();
@@ -46,22 +46,22 @@ class SoundManager {
    * Preload all sound files
    */
   private preloadAll(): void {
-    console.log('[SOUND] 🎵 Preloading sounds...');
+    console.log("[SOUND] 🎵 Preloading sounds...");
     Object.entries(SOUND_PATHS).forEach(([key, path]) => {
       try {
         const audio = new Audio(path);
-        audio.preload = 'auto';
+        audio.preload = "auto";
         audio.volume = DEFAULT_VOLUMES[key as SoundType] * this.masterVolume;
-        
+
         // Handle load events
-        audio.addEventListener('canplaythrough', () => {
+        audio.addEventListener("canplaythrough", () => {
           console.log(`[SOUND] ✅ Loaded: ${key} (${path})`);
         });
-        
-        audio.addEventListener('error', (e) => {
+
+        audio.addEventListener("error", (e) => {
           console.error(`[SOUND] ❌ Failed to load: ${key} (${path})`, e);
         });
-        
+
         this.sounds.set(key as SoundType, audio);
         console.log(`[SOUND] 📦 Registered: ${key}`);
       } catch (error) {
@@ -73,9 +73,15 @@ class SoundManager {
   /**
    * Play a sound effect
    */
-  play(soundType: SoundType, options?: { loop?: boolean; volume?: number }): void {
-    console.log(`[SOUND] 🎵 play() called for: ${soundType}`, { muted: this.muted, options });
-    
+  play(
+    soundType: SoundType,
+    options?: { loop?: boolean; volume?: number }
+  ): void {
+    console.log(`[SOUND] 🎵 play() called for: ${soundType}`, {
+      muted: this.muted,
+      options,
+    });
+
     if (this.muted) {
       console.log(`[SOUND] 🔇 Muted - not playing ${soundType}`);
       return;
@@ -84,7 +90,7 @@ class SoundManager {
     const sound = this.sounds.get(soundType);
     if (!sound) {
       console.warn(`[SOUND] ⚠️ Sound not found in map: ${soundType}`);
-      console.log('[SOUND] Available sounds:', Array.from(this.sounds.keys()));
+      console.log("[SOUND] Available sounds:", Array.from(this.sounds.keys()));
       return;
     }
 
@@ -93,29 +99,37 @@ class SoundManager {
     try {
       // Clone for overlapping sounds (multiple plays)
       const playSound = sound.cloneNode() as HTMLAudioElement;
-      
+
       // Apply options
       playSound.loop = options?.loop ?? false;
-      playSound.volume = (options?.volume ?? DEFAULT_VOLUMES[soundType]) * this.masterVolume;
+      playSound.volume =
+        (options?.volume ?? DEFAULT_VOLUMES[soundType]) * this.masterVolume;
 
-      console.log(`[SOUND] 📊 Volume: ${playSound.volume}, Loop: ${playSound.loop}`);
+      console.log(
+        `[SOUND] 📊 Volume: ${playSound.volume}, Loop: ${playSound.loop}`
+      );
 
       // Play
       const playPromise = playSound.play();
-      
+
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
-            console.log(`[SOUND] ✅ Playing: ${soundType} (duration: ${playSound.duration}s)`);
+            console.log(
+              `[SOUND] ✅ Playing: ${soundType} (duration: ${playSound.duration}s)`
+            );
           })
           .catch((error) => {
-            console.error(`[SOUND] ❌ Playback failed for ${soundType}:`, error);
+            console.error(
+              `[SOUND] ❌ Playback failed for ${soundType}:`,
+              error
+            );
           });
       }
 
       // Auto-cleanup for non-looping sounds
       if (!playSound.loop) {
-        playSound.addEventListener('ended', () => {
+        playSound.addEventListener("ended", () => {
           console.log(`[SOUND] ⏹️ Finished playing: ${soundType}`);
           playSound.remove();
         });
@@ -140,7 +154,7 @@ class SoundManager {
    * Stop all sounds
    */
   stopAll(): void {
-    this.sounds.forEach(sound => {
+    this.sounds.forEach((sound) => {
       sound.pause();
       sound.currentTime = 0;
     });
@@ -196,7 +210,7 @@ let soundManagerInstance: SoundManager | null = null;
  * Get the sound manager instance (singleton)
  */
 export function getSoundManager(): SoundManager {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     // Server-side: return mock
     return {
       play: () => {},
@@ -220,7 +234,10 @@ export function getSoundManager(): SoundManager {
 /**
  * Convenience function to play a sound
  */
-export function playSound(soundType: SoundType, options?: { loop?: boolean; volume?: number }): void {
+export function playSound(
+  soundType: SoundType,
+  options?: { loop?: boolean; volume?: number }
+): void {
   getSoundManager().play(soundType, options);
 }
 

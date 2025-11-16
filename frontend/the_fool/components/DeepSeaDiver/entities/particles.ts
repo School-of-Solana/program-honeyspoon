@@ -12,7 +12,11 @@ import * as CONST from "../sceneConstants";
  * @param y - Starting Y position
  * @returns Coin particle game object
  */
-export function createCoinParticle(k: KAPLAYCtx, x: number, y: number): GameObj {
+export function createCoinParticle(
+  k: KAPLAYCtx,
+  x: number,
+  y: number
+): GameObj {
   const angle = Math.random() * Math.PI * 2;
   const speed = CONST.COIN.SPEED_MIN + Math.random() * CONST.COIN.SPEED_RANDOM;
 
@@ -28,7 +32,8 @@ export function createCoinParticle(k: KAPLAYCtx, x: number, y: number): GameObj 
 
   coin.onUpdate(() => {
     coin.pos.x += Math.cos(angle) * speed * k.dt();
-    coin.pos.y += Math.sin(angle) * speed * k.dt() - CONST.COIN.UPWARD_BIAS * k.dt();
+    coin.pos.y +=
+      Math.sin(angle) * speed * k.dt() - CONST.COIN.UPWARD_BIAS * k.dt();
     coin.opacity -= k.dt() * CONST.COIN.OPACITY_FADE_RATE;
   });
 
@@ -41,10 +46,15 @@ export function createCoinParticle(k: KAPLAYCtx, x: number, y: number): GameObj 
  * @param x - Center X position
  * @param y - Center Y position
  */
-export function createTreasureParticles(k: KAPLAYCtx, x: number, y: number): void {
+export function createTreasureParticles(
+  k: KAPLAYCtx,
+  x: number,
+  y: number
+): void {
   for (let i = 0; i < CONST.SPAWN_RATES.PARTICLE_COUNT; i++) {
     const angle = (Math.PI * 2 * i) / CONST.SPAWN_RATES.PARTICLE_COUNT;
-    const speed = CONST.PARTICLE.SPEED_MIN + Math.random() * CONST.PARTICLE.SPEED_RANDOM;
+    const speed =
+      CONST.PARTICLE.SPEED_MIN + Math.random() * CONST.PARTICLE.SPEED_RANDOM;
 
     const particle = k.add([
       k.circle(CONST.PARTICLE.CIRCLE_RADIUS),

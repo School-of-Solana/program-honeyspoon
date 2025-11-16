@@ -16,7 +16,7 @@ export function createBeachScene(config: SceneConfig) {
   const { isInOceanRef, isDivingRef } = refs;
 
   k.scene("beach", () => {
-    console.log('[CANVAS] 🏖️ Beach scene created!');
+    console.log("[CANVAS] 🏖️ Beach scene created!");
 
     // Sky gradient
     k.add([
@@ -66,7 +66,8 @@ export function createBeachScene(config: SceneConfig) {
     // Wavy LEFT EDGE (water side) - vertical sine wave
     for (let y = beachStartY; y <= k.height(); y += CONST.SCALES.SHELL_SIZE) {
       const progress = (y - beachStartY) / (k.height() - beachStartY);
-      const baseX = beachBaseX + progress * k.width() * CONST.LAYOUT.BEACH_DIAGONAL_WIDTH;
+      const baseX =
+        beachBaseX + progress * k.width() * CONST.LAYOUT.BEACH_DIAGONAL_WIDTH;
       const waveX = baseX + Math.sin(y * waveFrequency) * waveAmplitude;
       beachPoints.push(k.vec2(waveX, y));
     }
@@ -104,7 +105,13 @@ export function createBeachScene(config: SceneConfig) {
 
     // Multiple palm trees across the beach
     CONST.DECORATIONS.PALM_TREES.forEach((palm: any) => {
-      createPalmTree(k, k.width() * palm.x, k.height() * palm.y, palm.scale, CONST.Z_LAYERS.LIGHT_RAYS);
+      createPalmTree(
+        k,
+        k.width() * palm.x,
+        k.height() * palm.y,
+        palm.scale,
+        CONST.Z_LAYERS.LIGHT_RAYS
+      );
     });
 
     // Rocks on beach
@@ -143,7 +150,7 @@ export function createBeachScene(config: SceneConfig) {
     });
 
     // Clouds in sky
-    CONST.DECORATIONS.CLOUDS.forEach(cloud => {
+    CONST.DECORATIONS.CLOUDS.forEach((cloud) => {
       const cloudX = k.width() * cloud.x;
       const cloudY = k.height() * cloud.y;
 
@@ -171,18 +178,36 @@ export function createBeachScene(config: SceneConfig) {
     });
 
     // Spawn seagulls
-    CONST.DECORATIONS.SEAGULLS.forEach(seagull => {
-      createSeagull(k, k.width() * seagull.x, k.height() * seagull.y, seagull.speed);
+    CONST.DECORATIONS.SEAGULLS.forEach((seagull) => {
+      createSeagull(
+        k,
+        k.width() * seagull.x,
+        k.height() * seagull.y,
+        seagull.speed
+      );
     });
 
     // Spawn crabs on beach
-    CONST.DECORATIONS.CRABS.forEach(crab => {
-      createCrab(k, k.width() * crab.x, k.height() * crab.y, crab.direction, crab.speed, CONST.Z_LAYERS.SUN);
+    CONST.DECORATIONS.CRABS.forEach((crab) => {
+      createCrab(
+        k,
+        k.width() * crab.x,
+        k.height() * crab.y,
+        crab.direction,
+        crab.speed,
+        CONST.Z_LAYERS.SUN
+      );
     });
 
     // Spawn starfish on beach
-    CONST.DECORATIONS.STARFISH.forEach(starfish => {
-      createStarfish(k, k.width() * starfish.x, k.height() * starfish.y, starfish.scale, CONST.Z_LAYERS.SUN);
+    CONST.DECORATIONS.STARFISH.forEach((starfish) => {
+      createStarfish(
+        k,
+        k.width() * starfish.x,
+        k.height() * starfish.y,
+        starfish.scale,
+        CONST.Z_LAYERS.SUN
+      );
     });
 
     // Create boat at water surface
@@ -192,11 +217,44 @@ export function createBeachScene(config: SceneConfig) {
 
     // Boat bobbing animation
     boat.onUpdate(() => {
-      boat.pos.y = boatBaseY + Math.sin(k.time() * CONST.MOTION.BOAT_BOB_SPEED) * CONST.MOTION.BOAT_BOB_AMPLITUDE;
+      boat.pos.y =
+        boatBaseY +
+        Math.sin(k.time() * CONST.MOTION.BOAT_BOB_SPEED) *
+          CONST.MOTION.BOAT_BOB_AMPLITUDE;
+    });
+
+    // Add diver on boat
+    const diver = k.add([
+      k.sprite("diver", { anim: "idle" }),
+      k.pos(boatX, boatBaseY - 20), // Position diver slightly above boat center
+      k.anchor("center"),
+      k.scale(2.5),
+      k.z(CONST.Z_LAYERS.BOAT + 1), // Above boat
+      "beach-diver",
+    ]);
+
+    // Diver bobs with boat
+    diver.onUpdate(() => {
+      diver.pos.y =
+        boatBaseY -
+        20 +
+        Math.sin(k.time() * CONST.MOTION.BOAT_BOB_SPEED) *
+          CONST.MOTION.BOAT_BOB_AMPLITUDE;
     });
 
     // Reset refs on beach scene
     refs.depthRef.current = 0;
     refs.survivedRef.current = undefined;
+
+    // Monitor for dive start - transition to diving scene
+    k.onUpdate(() => {
+      if (isDivingRef.current && !isInOceanRef.current) {
+        console.log(
+          "[CANVAS] 🏖️ → 🤿 Dive started! Transitioning to diving scene..."
+        );
+        isInOceanRef.current = true; // Mark that we're now in the ocean
+        k.go("diving");
+      }
+    });
   });
 }

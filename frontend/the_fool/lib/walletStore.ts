@@ -3,7 +3,12 @@
  * In production, this would be replaced with database/blockchain integration
  */
 
-import type { UserWallet, HouseWallet, Transaction, GameSession } from './walletTypes';
+import type {
+  UserWallet,
+  HouseWallet,
+  Transaction,
+  GameSession,
+} from "./walletTypes";
 
 // In-memory storage
 const userWallets = new Map<string, UserWallet>();
@@ -68,9 +73,12 @@ export function addTransaction(transaction: Transaction): void {
 /**
  * Get user transaction history
  */
-export function getUserTransactions(userId: string, limit: number = 10): Transaction[] {
+export function getUserTransactions(
+  userId: string,
+  limit: number = 10
+): Transaction[] {
   return transactions
-    .filter(t => t.userId === userId)
+    .filter((t) => t.userId === userId)
     .sort((a, b) => b.timestamp - a.timestamp)
     .slice(0, limit);
 }
@@ -100,7 +108,9 @@ export function deleteGameSession(sessionId: string): void {
  * Get all active sessions for user
  */
 export function getUserActiveSessions(userId: string): GameSession[] {
-  return Array.from(activeSessions.values()).filter(s => s.userId === userId && s.isActive);
+  return Array.from(activeSessions.values()).filter(
+    (s) => s.userId === userId && s.isActive
+  );
 }
 
 /**
@@ -136,7 +146,10 @@ export function addUserBalance(userId: string, amount: number): UserWallet {
 export function getWalletStats() {
   return {
     totalUsers: userWallets.size,
-    totalUserBalance: Array.from(userWallets.values()).reduce((sum, w) => sum + w.balance, 0),
+    totalUserBalance: Array.from(userWallets.values()).reduce(
+      (sum, w) => sum + w.balance,
+      0
+    ),
     houseBalance: houseWallet.balance,
     houseReserved: houseWallet.reservedFunds,
     activeSessions: activeSessions.size,

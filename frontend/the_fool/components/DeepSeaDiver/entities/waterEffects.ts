@@ -24,10 +24,12 @@ export function createCaustics(
   let time = 0;
   caustic.onUpdate(() => {
     time += k.dt();
-    
+
     // Fade out with depth
     const depthFade = Math.max(0, 1 - depth / 500);
-    caustic.opacity = Math.min(0.15 * lightLevel * depthFade, 0.3) * (0.8 + Math.sin(time * 0.5) * 0.2);
+    caustic.opacity =
+      Math.min(0.15 * lightLevel * depthFade, 0.3) *
+      (0.8 + Math.sin(time * 0.5) * 0.2);
   });
 
   return caustic;
@@ -118,7 +120,7 @@ export function createDustMote(k: KAPLAYCtx, lightLevel: number): GameObj {
   const x = Math.random() * k.width();
   const y = Math.random() * k.height();
   const size = 0.5 + Math.random();
-  
+
   const mote = k.add([
     k.circle(size),
     k.pos(x, y),
@@ -135,7 +137,7 @@ export function createDustMote(k: KAPLAYCtx, lightLevel: number): GameObj {
 
   mote.onUpdate(() => {
     mote.time += k.dt();
-    
+
     // Brownian motion
     mote.pos.x += mote.vx * k.dt() + Math.sin(mote.time * 2) * 0.5;
     mote.pos.y += mote.vy * k.dt() + Math.cos(mote.time * 3) * 0.5;
@@ -197,14 +199,14 @@ export function createGodRays(
   lightLevel: number
 ): GameObj[] {
   const rays: GameObj[] = [];
-  
+
   for (let i = 0; i < count; i++) {
     const x = (k.width() / count) * i + Math.random() * 50;
     const width = 40 + Math.random() * 80;
     const ray = createLightShaft(k, x, width, lightLevel);
     rays.push(ray);
   }
-  
+
   return rays;
 }
 

@@ -250,7 +250,16 @@ export function getSpriteConfig(name: string): SpriteConfig | undefined {
 // Helper function to get all creature sprites (fish, sharks, etc.)
 export function getCreatureSprites(): SpriteConfig[] {
   return SPRITE_CONFIGS.filter((s) =>
-    ["fish1", "fish2", "fish3", "jellyfish", "shark", "sawshark", "seaangler", "swordfish"].includes(s.name)
+    [
+      "fish1",
+      "fish2",
+      "fish3",
+      "jellyfish",
+      "shark",
+      "sawshark",
+      "seaangler",
+      "swordfish",
+    ].includes(s.name)
   );
 }
 

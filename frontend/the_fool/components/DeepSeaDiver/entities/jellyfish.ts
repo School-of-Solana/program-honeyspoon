@@ -12,7 +12,8 @@ import * as CONST from "../sceneConstants";
  * @returns Jellyfish game object
  */
 export function createJellyfish(k: KAPLAYCtx, lightLevel: number): GameObj {
-  const jellyfishY = CONST.JELLYFISH.SPAWN_Y_MIN + Math.random() * CONST.JELLYFISH.SPAWN_Y_RANGE;
+  const jellyfishY =
+    CONST.JELLYFISH.SPAWN_Y_MIN + Math.random() * CONST.JELLYFISH.SPAWN_Y_RANGE;
   const jellyfishX = Math.random() * k.width();
 
   const jellyfish = k.add([
@@ -26,7 +27,10 @@ export function createJellyfish(k: KAPLAYCtx, lightLevel: number): GameObj {
 
   jellyfish.onUpdate(() => {
     jellyfish.pos.y -= CONST.JELLYFISH.VERTICAL_SPEED * k.dt();
-    jellyfish.pos.x += Math.sin(k.time() * CONST.JELLYFISH.HORIZONTAL_WAVE_SPEED + jellyfishY) * CONST.JELLYFISH.HORIZONTAL_WAVE_AMPLITUDE * k.dt();
+    jellyfish.pos.x +=
+      Math.sin(k.time() * CONST.JELLYFISH.HORIZONTAL_WAVE_SPEED + jellyfishY) *
+      CONST.JELLYFISH.HORIZONTAL_WAVE_AMPLITUDE *
+      k.dt();
 
     if (jellyfish.pos.y < -CONST.JELLYFISH.WRAP_OFFSET) {
       jellyfish.pos.y = k.height() + CONST.JELLYFISH.WRAP_OFFSET;

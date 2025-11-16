@@ -14,7 +14,12 @@ import * as CONST from "../sceneConstants";
  * @param speed - Horizontal flying speed
  * @returns Seagull game object
  */
-export function createSeagull(k: KAPLAYCtx, startX: number, startY: number, speed: number): GameObj {
+export function createSeagull(
+  k: KAPLAYCtx,
+  startX: number,
+  startY: number,
+  speed: number
+): GameObj {
   const seagull = k.add([
     k.sprite("seagull", { anim: "fly" }),
     k.pos(startX, startY),
@@ -25,7 +30,10 @@ export function createSeagull(k: KAPLAYCtx, startX: number, startY: number, spee
 
   seagull.onUpdate(() => {
     seagull.pos.x += speed * k.dt();
-    seagull.pos.y += Math.sin(k.time() * CONST.SEAGULL.VERTICAL_WAVE_SPEED + startX) * CONST.SEAGULL.VERTICAL_WAVE_AMPLITUDE * k.dt();
+    seagull.pos.y +=
+      Math.sin(k.time() * CONST.SEAGULL.VERTICAL_WAVE_SPEED + startX) *
+      CONST.SEAGULL.VERTICAL_WAVE_AMPLITUDE *
+      k.dt();
 
     // Flip sprite based on direction
     seagull.flipX = speed < 0;

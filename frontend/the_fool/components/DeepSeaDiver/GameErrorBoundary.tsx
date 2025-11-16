@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, ReactNode } from 'react';
+import { Component, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -27,8 +27,8 @@ export class GameErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('🚨 Game Error Caught:', error, errorInfo);
-    
+    console.error("🚨 Game Error Caught:", error, errorInfo);
+
     // Log to external service if needed
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
@@ -38,7 +38,7 @@ export class GameErrorBoundary extends Component<Props, State> {
   handleRestart = () => {
     // Clear error state
     this.setState({ hasError: false, error: null });
-    
+
     // Force page reload to restart the game completely
     window.location.reload();
   };
@@ -50,9 +50,7 @@ export class GameErrorBoundary extends Component<Props, State> {
           <div className="max-w-md text-center space-y-6">
             <div className="text-6xl mb-4">🌊💥</div>
             <h1 className="text-3xl font-bold">Game Error</h1>
-            <p className="text-gray-300">
-              Something went wrong with the game.
-            </p>
+            <p className="text-gray-300">Something went wrong with the game.</p>
             {this.state.error && (
               <details className="text-left bg-black/30 p-4 rounded-lg text-sm">
                 <summary className="cursor-pointer font-semibold mb-2">

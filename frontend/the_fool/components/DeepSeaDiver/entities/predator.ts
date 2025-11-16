@@ -57,18 +57,31 @@ export function createAmbientPredator(
 
     // Pulsing glow
     light.onUpdate(() => {
-      light.opacity = CONST.OPACITY.GLOW_MIN + Math.sin(k.time() * CONST.MOTION.GLOW_PULSE_SPEED) * CONST.OPACITY.GLOW_RANGE;
-      light.radius = CONST.PREDATOR.GLOW_RADIUS + Math.sin(k.time() * CONST.MOTION.GLOW_PULSE_SPEED) * CONST.MOTION.GLOW_RADIUS_VARIATION;
+      light.opacity =
+        CONST.OPACITY.GLOW_MIN +
+        Math.sin(k.time() * CONST.MOTION.GLOW_PULSE_SPEED) *
+          CONST.OPACITY.GLOW_RANGE;
+      light.radius =
+        CONST.PREDATOR.GLOW_RADIUS +
+        Math.sin(k.time() * CONST.MOTION.GLOW_PULSE_SPEED) *
+          CONST.MOTION.GLOW_RADIUS_VARIATION;
     });
   }
 
   creature.onUpdate(() => {
-    const speed = predator === "swordfish" ? CONST.SPEEDS.PREDATOR_FAST : CONST.SPEEDS.PREDATOR_BASE;
+    const speed =
+      predator === "swordfish"
+        ? CONST.SPEEDS.PREDATOR_FAST
+        : CONST.SPEEDS.PREDATOR_BASE;
     creature.pos.x += direction * speed * k.dt();
-    creature.pos.y += Math.sin(k.time() * CONST.MOTION.PREDATOR_WAVE_SPEED + predatorY) * CONST.MOTION.PREDATOR_WAVE_AMPLITUDE * k.dt();
+    creature.pos.y +=
+      Math.sin(k.time() * CONST.MOTION.PREDATOR_WAVE_SPEED + predatorY) *
+      CONST.MOTION.PREDATOR_WAVE_AMPLITUDE *
+      k.dt();
 
     if (
-      (direction > 0 && creature.pos.x > k.width() + CONST.BOUNDARIES.SPAWN_OFFSET) ||
+      (direction > 0 &&
+        creature.pos.x > k.width() + CONST.BOUNDARIES.SPAWN_OFFSET) ||
       (direction < 0 && creature.pos.x < -CONST.BOUNDARIES.SPAWN_OFFSET)
     ) {
       k.destroy(creature);

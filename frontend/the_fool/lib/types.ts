@@ -4,10 +4,10 @@
 
 // Animation state types
 export enum AnimationType {
-  IDLE = 'idle',
-  DIVING = 'diving',
-  TREASURE = 'treasure',
-  DEATH = 'death'
+  IDLE = "idle",
+  DIVING = "diving",
+  TREASURE = "treasure",
+  DEATH = "death",
 }
 
 export interface GameState {

@@ -1,0 +1,18 @@
+{
+  "extends": ["tslint:recommended"],
+  "rules": {
+    "no-console": false,
+    "quotemark": [true, "double"],
+    "semicolon": [true, "always"],
+    "trailing-comma": [
+      true,
+      {
+        "multiline": "always",
+        "singleline": "never"
+      }
+    ]
+  },
+  "linterOptions": {
+    "exclude": ["node_modules/**", ".next/**", "dist/**", "build/**"]
+  }
+}

@@ -2,22 +2,22 @@
 
 /**
  * Game Actions - Theme Adapter Layer
- * 
+ *
  * This file wraps the generic game engine with diving-themed names
  * for backward compatibility with the frontend.
- * 
+ *
  * Mapping:
  * - startGame → startGameSession
- * - performDive → executeRound  
+ * - performDive → executeRound
  * - surfaceWithTreasure → cashOut
  * - diveNumber → roundNumber
- * 
+ *
  * The generic engine is theme-agnostic and can be reused for other games.
  */
 
 import { generateShipwreck, calculateDiveStats } from "@/lib/gameLogic";
 import type { DiveResult } from "@/lib/types";
-import { 
+import {
   startGameSession,
   executeRound,
   cashOut,
@@ -62,7 +62,7 @@ export async function performDive(
   const diveStats = calculateDiveStats(diveNumber);
 
   // Add diving theme: generate shipwreck
-  const shipwreck = result.survived 
+  const shipwreck = result.survived
     ? generateShipwreck(diveNumber, sessionId)
     : undefined;
 
@@ -112,25 +112,22 @@ export async function getWalletInfo(userId: string) {
 /**
  * Validate a bet amount before starting game
  */
-export async function validateBetAmount(
-  betAmount: number,
-  userId: string
-) {
+export async function validateBetAmount(betAmount: number, userId: string) {
   // For now, just forward to getWalletInfo and check against limits
   const wallet = await getWalletInfo(userId);
-  
+
   if (betAmount < 10) {
     return { valid: false, error: "Minimum bet is $10" };
   }
-  
+
   if (betAmount > wallet.maxBet) {
     return { valid: false, error: `Maximum bet is $${wallet.maxBet}` };
   }
-  
+
   if (betAmount > wallet.balance) {
     return { valid: false, error: "Insufficient balance" };
   }
-  
+
   return { valid: true };
 }
 
@@ -140,18 +137,20 @@ export async function validateBetAmount(
 export async function getTransactionHistory(
   userId: string,
   limit: number = 10
-): Promise<Array<{
-  id: string;
-  type: string;
-  amount: number;
-  timestamp: number;
-  profit?: number;
-  diveNumber?: number;
-}>> {
+): Promise<
+  Array<{
+    id: string;
+    type: string;
+    amount: number;
+    timestamp: number;
+    profit?: number;
+    diveNumber?: number;
+  }>
+> {
   const { getUserTransactions } = await import("@/lib/walletStore");
   const transactions = getUserTransactions(userId, limit);
-  
-  return transactions.map(t => ({
+
+  return transactions.map((t) => ({
     id: t.id,
     type: t.type,
     amount: t.amount,
@@ -177,7 +176,7 @@ export async function addBalance(
 ): Promise<{ success: boolean; newBalance: number }> {
   const { addUserBalance } = await import("@/lib/walletStore");
   const updatedWallet = addUserBalance(userId, amount);
-  
+
   return {
     success: true,
     newBalance: updatedWallet.balance,
