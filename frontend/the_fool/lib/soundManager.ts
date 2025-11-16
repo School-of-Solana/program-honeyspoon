@@ -45,9 +45,15 @@ class SoundManager {
         const audio = new Audio(path);
         audio.preload = 'auto';
         audio.volume = DEFAULT_VOLUMES[key as SoundType] * this.masterVolume;
+        
+        // Handle load errors silently (files not downloaded yet)
+        audio.addEventListener('error', () => {
+          // Silent fail - sound file not found
+        });
+        
         this.sounds.set(key as SoundType, audio);
       } catch (error) {
-        console.warn(`[SOUND] Failed to preload ${key}:`, error);
+        // Silent fail - can't create audio element
       }
     });
   }
@@ -60,7 +66,7 @@ class SoundManager {
 
     const sound = this.sounds.get(soundType);
     if (!sound) {
-      console.warn(`[SOUND] Sound not found: ${soundType}`);
+      // Silent fail - sound files not downloaded yet
       return;
     }
 
@@ -78,10 +84,10 @@ class SoundManager {
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
-            console.log(`[SOUND] Playing: ${soundType}`);
+            // Success - sound playing
           })
-          .catch(error => {
-            console.warn(`[SOUND] Playback error for ${soundType}:`, error);
+          .catch(() => {
+            // Silent fail - file not found or can't play
           });
       }
 

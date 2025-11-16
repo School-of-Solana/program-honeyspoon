@@ -8,6 +8,7 @@ import { AnimationType, type Shipwreck } from "@/lib/types";
 import { SPRITE_CONFIGS } from "@/lib/spriteConfig";
 import { GAME_COLORS } from "@/lib/gameColors";
 import * as CONST from "./sceneConstants";
+import { createBoat } from "./entities/boat";
 
 interface OceanSceneProps {
   depth: number;
@@ -131,85 +132,7 @@ export default function OceanScene({
     // Treasure animation timing
     let treasurePulseTime = 0;
 
-    // Helper function to create a boat using shapes
-    function createBoat(x: number, y: number, zIndex: number = CONST.Z_LAYERS.BOAT) {
-      const boat = k.add([
-        k.pos(x, y),
-        k.anchor("center"),
-        k.rotate(0),
-        k.opacity(1),
-        k.z(zIndex),
-      ]);
-
-      // Boat hull
-      boat.add([
-        k.polygon([
-          k.vec2(-CONST.BOAT.HULL_WIDTH_LEFT, 0),
-          k.vec2(-CONST.BOAT.HULL_WIDTH_RIGHT, CONST.BOAT.HULL_HEIGHT),
-          k.vec2(CONST.BOAT.HULL_WIDTH_RIGHT, CONST.BOAT.HULL_HEIGHT),
-          k.vec2(CONST.BOAT.HULL_WIDTH_LEFT, 0),
-        ]),
-        k.pos(0, 0),
-        k.color(...CONST.COLORS.BOAT_HULL),
-        k.outline(CONST.BOAT.OUTLINE_WIDTH, k.rgb(...CONST.COLORS.OUTLINE_BOAT_HULL)),
-      ]);
-
-      // Deck planks
-      for (let i = CONST.BOAT.DECK_PLANK_START; i < CONST.BOAT.DECK_PLANK_END; i += CONST.BOAT.DECK_PLANK_SPACING) {
-        boat.add([
-          k.rect(CONST.BOAT.DECK_PLANK_WIDTH, CONST.BOAT.DECK_PLANK_HEIGHT),
-          k.pos(i, -2),
-          k.color(...CONST.COLORS.BOAT_DECK),
-          k.anchor("center"),
-        ]);
-      }
-
-      // Boat rail (left)
-      boat.add([
-        k.rect(CONST.BOAT.RAIL_WIDTH, CONST.BOAT.RAIL_HEIGHT),
-        k.pos(-CONST.BOAT.RAIL_OFFSET_X, CONST.BOAT.RAIL_OFFSET_Y),
-        k.color(...CONST.COLORS.BOAT_HULL),
-        k.anchor("center"),
-      ]);
-
-      // Boat rail (right)
-      boat.add([
-        k.rect(CONST.BOAT.RAIL_WIDTH, CONST.BOAT.RAIL_HEIGHT),
-        k.pos(CONST.BOAT.RAIL_OFFSET_X, CONST.BOAT.RAIL_OFFSET_Y),
-        k.color(...CONST.COLORS.BOAT_HULL),
-        k.anchor("center"),
-      ]);
-
-      // Mast
-      boat.add([
-        k.rect(CONST.BOAT.MAST_WIDTH, CONST.BOAT.MAST_HEIGHT),
-        k.pos(CONST.BOAT.MAST_OFFSET_X, CONST.BOAT.MAST_OFFSET_Y),
-        k.color(...CONST.COLORS.BOAT_HULL),
-        k.anchor("bot"),
-      ]);
-
-      // Flag
-      boat.add([
-        k.polygon([
-          k.vec2(0, 0),
-          k.vec2(CONST.BOAT.FLAG_WIDTH, CONST.BOAT.FLAG_HEIGHT / 2),
-          k.vec2(0, CONST.BOAT.FLAG_HEIGHT),
-        ]),
-        k.pos(CONST.BOAT.MAST_OFFSET_X, CONST.BOAT.FLAG_OFFSET_Y),
-        k.color(...CONST.COLORS.BOAT_FLAG),
-        k.outline(CONST.BOAT.OUTLINE_WIDTH_FLAG, k.rgb(...CONST.COLORS.OUTLINE_FLAG)),
-      ]);
-
-      // Anchor rope coil
-      boat.add([
-        k.circle(CONST.BOAT.ANCHOR_ROPE_RADIUS),
-        k.pos(CONST.BOAT.ANCHOR_ROPE_X, CONST.BOAT.ANCHOR_ROPE_Y),
-        k.color(...CONST.COLORS.ANCHOR_ROPE),
-        k.outline(CONST.BOAT.OUTLINE_WIDTH_THIN, k.rgb(...CONST.COLORS.OUTLINE_ANCHOR)),
-      ]);
-
-      return boat;
-    }
+    // Boat creation moved to entities/boat.ts
 
     // ===== BEACH/SURFACE SCENE =====
     k.scene("beach", () => {
@@ -456,7 +379,7 @@ export default function OceanScene({
       // Create boat at water surface (LEFT SIDE - UI is on right)
       const boatBaseY = k.height() * CONST.LAYOUT.WATER_SURFACE_Y;
       const boatX = k.width() * CONST.LAYOUT.BOAT_X;
-      const boat = createBoat(boatX, boatBaseY, CONST.Z_LAYERS.BOAT);
+      const boat = createBoat(k, boatX, boatBaseY, CONST.Z_LAYERS.BOAT);
 
       // Boat bobbing animation
       boat.onUpdate(() => {
@@ -611,7 +534,7 @@ export default function OceanScene({
       // Boat waiting at surface (LEFT SIDE - in water, starts hidden, fades in)
       const boatBaseY = k.height() * 0.6;
       const boatX = k.width() * 0.25; // 25% from left (in water)
-      const boat = createBoat(boatX, boatBaseY, 18);
+      const boat = createBoat(k, boatX, boatBaseY, 18);
       boat.opacity = 0;
 
       // Boat bobbing animation
