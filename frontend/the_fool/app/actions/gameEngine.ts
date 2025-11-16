@@ -87,7 +87,8 @@ export async function startGameSession(
   }
 
   // Calculate max potential payout and reserve house funds
-  const maxPayout = calculateMaxPotentialPayout(betAmount, 10, GAME_CONFIG); // Reserve for 10 rounds
+  // CRITICAL: Must reserve for maxRounds (50) to prevent overpayment on long winning streaks
+  const maxPayout = calculateMaxPotentialPayout(betAmount, GAME_CONFIG.maxRounds, GAME_CONFIG);
 
   // Process bet: deduct from user, add to house, reserve funds
   const updatedUser = processBet(userWallet, betAmount);
@@ -165,6 +166,26 @@ export async function executeRound(
   // Validate session belongs to user
   if (gameSession.userId !== userId) {
     throw new Error("Session does not belong to user");
+  }
+
+  // SECURITY: Validate round number matches server's expectation
+  // This prevents clients from replaying old rounds or skipping ahead
+  if (roundNumber !== gameSession.diveNumber) {
+    throw new Error(
+      `Round number mismatch: client sent ${roundNumber}, server expects ${gameSession.diveNumber}`
+    );
+  }
+
+  // SECURITY: Validate currentValue matches server's session state
+  // This prevents clients from inflating their treasure value
+  const expectedValue = roundNumber === 1 
+    ? gameSession.initialBet 
+    : gameSession.currentTreasure;
+    
+  if (currentValue !== expectedValue) {
+    throw new Error(
+      `Current value mismatch: client sent ${currentValue}, server has ${expectedValue} (round ${roundNumber})`
+    );
   }
 
   // Generate cryptographically secure random number (0-99)
