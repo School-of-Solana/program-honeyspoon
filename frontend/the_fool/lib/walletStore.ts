@@ -75,7 +75,7 @@ export function addTransaction(transaction: Transaction): void {
  */
 export function getUserTransactions(
   userId: string,
-  limit: number = 10,
+  limit: number = 10
 ): Transaction[] {
   return transactions
     .filter((t) => t.userId === userId)
@@ -109,7 +109,7 @@ export function deleteGameSession(sessionId: string): void {
  */
 export function getUserActiveSessions(userId: string): GameSession[] {
   return Array.from(activeSessions.values()).filter(
-    (s) => s.userId === userId && s.isActive,
+    (s) => s.userId === userId && s.status === "ACTIVE"
   );
 }
 
@@ -148,7 +148,7 @@ export function getWalletStats() {
     totalUsers: userWallets.size,
     totalUserBalance: Array.from(userWallets.values()).reduce(
       (sum, w) => sum + w.balance,
-      0,
+      0
     ),
     houseBalance: houseWallet.balance,
     houseReserved: houseWallet.reservedFunds,

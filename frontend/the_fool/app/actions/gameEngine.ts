@@ -63,7 +63,7 @@ if (process.env.NODE_ENV === "development") {
   console.log("[CONFIG] ✅ Server config synced from lib/constants.ts");
   console.log(`[CONFIG] House edge: ${GAME_CONFIG.houseEdge * 100}%`);
   console.log(
-    `[CONFIG] Base win prob: ${GAME_CONFIG.baseWinProbability * 100}%`,
+    `[CONFIG] Base win prob: ${GAME_CONFIG.baseWinProbability * 100}%`
   );
 }
 
@@ -73,7 +73,7 @@ if (process.env.NODE_ENV === "development") {
 export async function startGameSession(
   betAmount: number,
   userId: string,
-  sessionId: string,
+  sessionId: string
 ): Promise<{ success: boolean; error?: string; sessionId?: string }> {
   // Validate bet amount
   const betValidation = validateBetAmount(betAmount, GAME_CONFIG);
@@ -101,7 +101,7 @@ export async function startGameSession(
   const maxPayout = calculateMaxPotentialPayout(
     betAmount,
     GAME_CONFIG.maxRounds,
-    GAME_CONFIG,
+    GAME_CONFIG
   );
 
   // Process bet: deduct from user, add to house, reserve funds
@@ -120,7 +120,8 @@ export async function startGameSession(
     initialBet: betAmount,
     currentTreasure: 0, // Start at 0, first dive will multiply the bet amount
     diveNumber: 1, // Round 1
-    isActive: true,
+    isActive: true, // Deprecated: kept for backward compatibility
+    status: "ACTIVE",
     reservedPayout: maxPayout,
     startTime: Date.now(),
   });
@@ -156,7 +157,7 @@ export async function executeRound(
   currentValue: number,
   sessionId: string,
   userId: string,
-  testSeed?: string,
+  testSeed?: string
 ): Promise<RoundResult> {
   // Validate inputs
   if (roundNumber < 1 || roundNumber > GAME_CONFIG.maxRounds) {
@@ -173,7 +174,7 @@ export async function executeRound(
 
   // Get game session
   const gameSession = getGameSession(sessionId);
-  if (!gameSession || !gameSession.isActive) {
+  if (!gameSession || gameSession.status !== "ACTIVE") {
     throw new Error("Invalid or inactive game session");
   }
 
@@ -186,7 +187,7 @@ export async function executeRound(
   // This prevents clients from replaying old rounds or skipping ahead
   if (roundNumber !== gameSession.diveNumber) {
     throw new Error(
-      `Round mismatch: Expected round ${gameSession.diveNumber}, received ${roundNumber}. Please refresh.`,
+      `Round mismatch: Expected round ${gameSession.diveNumber}, received ${roundNumber}. Please refresh.`
     );
   }
 
@@ -197,7 +198,7 @@ export async function executeRound(
 
   if (currentValue !== expectedValue) {
     throw new Error(
-      `Treasure mismatch: Expected $${expectedValue}, received $${currentValue}. Data corruption detected.`,
+      `Treasure mismatch: Expected $${expectedValue}, received $${currentValue}. Data corruption detected.`
     );
   }
 
@@ -221,7 +222,7 @@ export async function executeRound(
     roundNumber,
     currentValue,
     randomRoll,
-    GAME_CONFIG,
+    GAME_CONFIG
   );
 
   // Update game session based on outcome
@@ -232,14 +233,15 @@ export async function executeRound(
     setGameSession(gameSession);
   } else {
     // Player lost - end game and release house funds
-    gameSession.isActive = false;
+    gameSession.isActive = false; // Deprecated: kept for backward compatibility
+    gameSession.status = "LOST";
     gameSession.endTime = Date.now();
     setGameSession(gameSession);
 
     const houseWallet = getHouseWallet();
     const houseWithRelease = releaseHouseFunds(
       houseWallet,
-      gameSession.reservedPayout,
+      gameSession.reservedPayout
     );
     updateHouseWallet(houseWithRelease);
 
@@ -276,7 +278,7 @@ export async function executeRound(
 export async function cashOut(
   finalValue: number,
   sessionId: string,
-  userId: string,
+  userId: string
 ): Promise<{ success: boolean; finalAmount: number; profit: number }> {
   // Validate
   if (finalValue <= 0) {
@@ -289,7 +291,7 @@ export async function cashOut(
 
   // Get game session
   const gameSession = getGameSession(sessionId);
-  if (!gameSession || !gameSession.isActive) {
+  if (!gameSession || gameSession.status !== "ACTIVE") {
     throw new Error("Invalid or inactive game session");
   }
 
@@ -302,7 +304,7 @@ export async function cashOut(
   // This prevents client tampering (sending inflated finalValue)
   if (finalValue !== gameSession.currentTreasure) {
     throw new Error(
-      `Cash-out mismatch: Session has $${gameSession.currentTreasure}, attempting to cash out $${finalValue}. Please contact support.`,
+      `Cash-out mismatch: Session has $${gameSession.currentTreasure}, attempting to cash out $${finalValue}. Please contact support.`
     );
   }
 
@@ -314,12 +316,12 @@ export async function cashOut(
   const updatedUser = processWin(
     userWallet,
     finalValue,
-    gameSession.initialBet,
+    gameSession.initialBet
   );
   const updatedHouse = processHousePayout(
     houseWallet,
     finalValue,
-    gameSession.reservedPayout,
+    gameSession.reservedPayout
   );
 
   // Update wallets
@@ -346,7 +348,8 @@ export async function cashOut(
   });
 
   // End game session
-  gameSession.isActive = false;
+  gameSession.isActive = false; // Deprecated: kept for backward compatibility
+  gameSession.status = "CASHED_OUT";
   gameSession.endTime = Date.now();
   setGameSession(gameSession);
   deleteGameSession(sessionId);

@@ -50,13 +50,20 @@ export interface Transaction {
   };
 }
 
+/**
+ * Session Status
+ * Explicit states prevent ambiguous session conditions
+ */
+export type SessionStatus = "ACTIVE" | "LOST" | "CASHED_OUT" | "EXPIRED";
+
 export interface GameSession {
   sessionId: string;
   userId: string;
   initialBet: number;
   currentTreasure: number; // Current accumulated value (generic name, works for treasure/points/etc)
   diveNumber: number; // Current round number (legacy name for compatibility)
-  isActive: boolean;
+  isActive: boolean; // Deprecated: use status instead
+  status: SessionStatus; // Explicit session state
   reservedPayout: number; // Max potential payout reserved from house
   startTime: number;
   endTime?: number;

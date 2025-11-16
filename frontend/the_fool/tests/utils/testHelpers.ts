@@ -53,6 +53,7 @@ export function createMockGameSession(
     currentTreasure: 0,
     diveNumber: 1,
     isActive: true,
+    status: "ACTIVE",
     reservedPayout: 1000,
     startTime: Date.now(),
     ...overrides,
