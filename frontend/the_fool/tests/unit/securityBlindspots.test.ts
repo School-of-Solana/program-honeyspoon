@@ -7,18 +7,34 @@
  * Run with: npm test
  */
 
-import { describe, it } from "node:test";
+import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import {
   startGameSession,
   executeRound,
   cashOut,
 } from "../../app/actions/gameEngine";
-import { getGameSession, setGameSession } from "../../lib/walletStore";
+import {
+  getGameSession,
+  setGameSession,
+  resetWalletStore,
+  addUserBalance,
+} from "../../lib/walletStore";
+
+// Helper to ensure user has sufficient balance for tests
+function ensureUserBalance(userId: string, amount: number = 10000) {
+  addUserBalance(userId, amount);
+}
 
 describe("Security Blindspot #1: Round Number Validation", () => {
+  beforeEach(() => {
+    resetWalletStore();
+  });
+
   it("should reject when client replays an old round number", async () => {
     const userId = "user-replay-attack";
+    ensureUserBalance(userId);
+    ensureUserBalance(userId);
     const sessionId = "session-replay-attack";
 
     // Start game
@@ -32,12 +48,13 @@ describe("Security Blindspot #1: Round Number Validation", () => {
     // Now server expects round 2, but client tries to replay round 1
     await assert.rejects(
       () => executeRound(1, round1.totalValue, sessionId, userId, "50"),
-      /round number mismatch.*client sent 1.*server expects 2/i
+      /round number mismatch.*server expects 2.*client sent 1/i
     );
   });
 
   it("should reject when client skips ahead in round numbers", async () => {
     const userId = "user-skip-ahead";
+    ensureUserBalance(userId);
     const sessionId = "session-skip-ahead";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -46,12 +63,13 @@ describe("Security Blindspot #1: Round Number Validation", () => {
     // Server expects round 1, but client tries to jump to round 5
     await assert.rejects(
       () => executeRound(5, 100, sessionId, userId, "50"),
-      /round number mismatch.*client sent 5.*server expects 1/i
+      /round number mismatch.*server expects 1.*client sent 5/i
     );
   });
 
   it("should reject when round number doesn't match after manual session manipulation", async () => {
     const userId = "user-manual-mismatch";
+    ensureUserBalance(userId);
     const sessionId = "session-manual-mismatch";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -65,12 +83,13 @@ describe("Security Blindspot #1: Round Number Validation", () => {
     // Client sends round 1 (what it thinks is correct)
     await assert.rejects(
       () => executeRound(1, 100, sessionId, userId, "50"),
-      /round number mismatch.*client sent 1.*server expects 7/i
+      /round number mismatch.*server expects 7.*client sent 1/i
     );
   });
 
   it("should allow correct sequential round progression", async () => {
     const userId = "user-correct-sequence";
+    ensureUserBalance(userId);
     const sessionId = "session-correct-sequence";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -105,8 +124,13 @@ describe("Security Blindspot #1: Round Number Validation", () => {
 });
 
 describe("Security Blindspot #2: Current Value Validation", () => {
+  beforeEach(() => {
+    resetWalletStore();
+  });
+
   it("should reject when client inflates currentValue on first round", async () => {
     const userId = "user-inflate-first";
+    ensureUserBalance(userId);
     const sessionId = "session-inflate-first";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -118,12 +142,13 @@ describe("Security Blindspot #2: Current Value Validation", () => {
     // Client tries to claim they have $500 instead of $100
     await assert.rejects(
       () => executeRound(1, 500, sessionId, userId, "50"),
-      /current value mismatch.*client sent 500.*server has 100/i
+      /current value mismatch.*server has 100.*client sent 500/i
     );
   });
 
   it("should reject when client inflates currentValue on later rounds", async () => {
     const userId = "user-inflate-later";
+    ensureUserBalance(userId);
     const sessionId = "session-inflate-later";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -143,6 +168,7 @@ describe("Security Blindspot #2: Current Value Validation", () => {
 
   it("should reject when client deflates currentValue", async () => {
     const userId = "user-deflate";
+    ensureUserBalance(userId);
     const sessionId = "session-deflate";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -161,6 +187,7 @@ describe("Security Blindspot #2: Current Value Validation", () => {
 
   it("should allow correct currentValue matching server state", async () => {
     const userId = "user-correct-value";
+    ensureUserBalance(userId);
     const sessionId = "session-correct-value";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -185,6 +212,7 @@ describe("Security Blindspot #2: Current Value Validation", () => {
 
   it("should reject when currentValue is correct but round number is wrong", async () => {
     const userId = "user-correct-value-wrong-round";
+    ensureUserBalance(userId);
     const sessionId = "session-correct-value-wrong-round";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -203,8 +231,13 @@ describe("Security Blindspot #2: Current Value Validation", () => {
 });
 
 describe("Combined Attack Scenarios", () => {
+  beforeEach(() => {
+    resetWalletStore();
+  });
+
   it("should prevent double-spending by replaying winning rounds", async () => {
     const userId = "user-double-spend";
+    ensureUserBalance(userId);
     const sessionId = "session-double-spend";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -224,6 +257,7 @@ describe("Combined Attack Scenarios", () => {
 
   it("should prevent manipulation of game progression", async () => {
     const userId = "user-manipulate";
+    ensureUserBalance(userId);
     const sessionId = "session-manipulate";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -238,6 +272,7 @@ describe("Combined Attack Scenarios", () => {
 
   it("should validate every parameter on every call", async () => {
     const userId = "user-validate-all";
+    ensureUserBalance(userId);
     const sessionId = "session-validate-all";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -273,8 +308,13 @@ describe("Combined Attack Scenarios", () => {
 });
 
 describe("Edge Cases", () => {
+  beforeEach(() => {
+    resetWalletStore();
+  });
+
   it("should handle round 1 correctly (initialBet validation)", async () => {
     const userId = "user-edge-round1";
+    ensureUserBalance(userId);
     const sessionId = "session-edge-round1";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -292,6 +332,7 @@ describe("Edge Cases", () => {
 
   it("should handle session state after failed validation", async () => {
     const userId = "user-after-fail";
+    ensureUserBalance(userId);
     const sessionId = "session-after-fail";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -318,8 +359,13 @@ describe("Edge Cases", () => {
 });
 
 describe("Security Blindspot #4: Cash Out with Zero Server Treasure", () => {
+  beforeEach(() => {
+    resetWalletStore();
+  });
+
   it("should fail if server treasure is 0 but client sends > 0", async () => {
     const userId = "user-zero-server-treasure";
+    ensureUserBalance(userId);
     const sessionId = "session-zero-server-treasure";
 
     const start = await startGameSession(100, userId, sessionId);
@@ -333,12 +379,13 @@ describe("Security Blindspot #4: Cash Out with Zero Server Treasure", () => {
     // Try to cash out with $100 when server has $0
     await assert.rejects(
       () => cashOut(100, sessionId, userId),
-      /doesn't match session treasure.*0/i
+      /cash-out mismatch.*session has \$0/i
     );
   });
 
   it("should reject negative server treasure (impossible state)", async () => {
     const userId = "user-negative-treasure";
+    ensureUserBalance(userId);
     const sessionId = "session-negative-treasure";
 
     const start = await startGameSession(100, userId, sessionId);

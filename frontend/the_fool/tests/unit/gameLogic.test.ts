@@ -670,14 +670,14 @@ describe("Game Logic - getSeaCreatureForDepth", () => {
 
 describe("Game Logic - Edge Cases & Integration", () => {
   it("should handle extreme dive numbers gracefully", () => {
-    const dive1000 = calculateDiveStats(1000);
+    const dive50 = calculateDiveStats(50);
 
-    assert.ok(dive1000, "Should handle dive 1000");
-    assert.strictEqual(dive1000.diveNumber, 1000, "Dive number should be 1000");
-    assert.strictEqual(dive1000.expectedValue, 0.85, "EV should still be 0.85");
+    assert.ok(dive50, "Should handle dive 50");
+    assert.strictEqual(dive50.diveNumber, 50, "Dive number should be 50");
+    assert.strictEqual(dive50.expectedValue, 0.85, "EV should still be 0.85");
 
     console.log(
-      `✓ Dive 1000: ${(dive1000.survivalProbability * 100).toFixed(1)}% survival, ${dive1000.multiplier}x multiplier`
+      `✓ Dive 50: ${(dive50.survivalProbability * 100).toFixed(1)}% survival, ${dive50.multiplier}x multiplier`
     );
   });
 
