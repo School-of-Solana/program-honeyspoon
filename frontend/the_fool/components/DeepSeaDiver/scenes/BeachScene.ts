@@ -3,15 +3,18 @@
  * The starting scene with beach, sky, boat, and decorations
  */
 
-import type { KAPLAYCtx } from "kaplay";
 import * as CONST from "../sceneConstants";
 import { createBoat } from "../entities/boat";
 import { createPalmTree } from "../entities/palmtree";
 import { createSeagull } from "../entities/seagull";
 import { createCrab } from "../entities/crab";
 import { createStarfish } from "../entities/starfish";
+import type { SceneConfig } from "./sceneTypes";
 
-export function setupBeachScene(k: KAPLAYCtx, depthRef: { current: number }, survivedRef: { current: boolean | undefined }) {
+export function createBeachScene(config: SceneConfig) {
+  const { k, refs } = config;
+  const { isInOceanRef, isDivingRef } = refs;
+
   k.scene("beach", () => {
     console.log('[CANVAS] 🏖️ Beach scene created!');
 
@@ -193,7 +196,7 @@ export function setupBeachScene(k: KAPLAYCtx, depthRef: { current: number }, sur
     });
 
     // Reset refs on beach scene
-    depthRef.current = 0;
-    survivedRef.current = undefined;
+    refs.depthRef.current = 0;
+    refs.survivedRef.current = undefined;
   });
 }
