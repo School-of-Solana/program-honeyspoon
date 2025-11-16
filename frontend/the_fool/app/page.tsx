@@ -201,7 +201,7 @@ export default function Home() {
     try {
       // STEP 1: Start diving animation
       setIsDiving(true);
-      setIsInOcean(true); // Mark that we're now in the ocean
+      // NOTE: Don't set isInOcean here - let BeachScene set it when transitioning
       setAnimationMessage("DIVING...");
       playSound("DIVE"); // Play diving swoosh sound
       setTimeout(() => playSound("BUBBLES"), 200); // Bubbles shortly after
