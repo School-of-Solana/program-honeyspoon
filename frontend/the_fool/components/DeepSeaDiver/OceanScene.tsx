@@ -131,7 +131,7 @@ export default function OceanScene({
     let treasurePulseTime = 0;
 
     // Helper function to create a boat using shapes
-    function createBoat(x: number, y: number, zIndex: number = 10) {
+    function createBoat(x: number, y: number, zIndex: number = CONST.Z_LAYERS.BOAT) {
       const boat = k.add([
         k.pos(x, y),
         k.anchor("center"),
@@ -140,71 +140,71 @@ export default function OceanScene({
         k.z(zIndex),
       ]);
 
-      // Boat hull (brown wooden boat)
-      const hull = boat.add([
+      // Boat hull
+      boat.add([
         k.polygon([
-          k.vec2(-60, 0),   // Left top
-          k.vec2(-70, 20),  // Left bottom (wider)
-          k.vec2(70, 20),   // Right bottom
-          k.vec2(60, 0),    // Right top
+          k.vec2(-CONST.BOAT.HULL_WIDTH_LEFT, 0),
+          k.vec2(-CONST.BOAT.HULL_WIDTH_RIGHT, CONST.BOAT.HULL_HEIGHT),
+          k.vec2(CONST.BOAT.HULL_WIDTH_RIGHT, CONST.BOAT.HULL_HEIGHT),
+          k.vec2(CONST.BOAT.HULL_WIDTH_LEFT, 0),
         ]),
         k.pos(0, 0),
-        k.color(101, 67, 33), // Dark brown
-        k.outline(3, k.rgb(70, 40, 20)),
+        k.color(...CONST.COLORS.BOAT_HULL),
+        k.outline(CONST.BOAT.OUTLINE_WIDTH, k.rgb(70, 40, 20)),
       ]);
 
-      // Deck planks (lighter wood)
-      for (let i = -50; i < 60; i += 15) {
+      // Deck planks
+      for (let i = CONST.BOAT.DECK_PLANK_START; i < CONST.BOAT.DECK_PLANK_END; i += CONST.BOAT.DECK_PLANK_SPACING) {
         boat.add([
-          k.rect(12, 5),
+          k.rect(CONST.BOAT.DECK_PLANK_WIDTH, CONST.BOAT.DECK_PLANK_HEIGHT),
           k.pos(i, -2),
-          k.color(139, 90, 43), // Lighter brown
+          k.color(...CONST.COLORS.BOAT_DECK),
           k.anchor("center"),
         ]);
       }
 
-      // Boat rail on left
+      // Boat rail (left)
       boat.add([
-        k.rect(3, 25),
-        k.pos(-55, -10),
-        k.color(101, 67, 33),
+        k.rect(CONST.BOAT.RAIL_WIDTH, CONST.BOAT.RAIL_HEIGHT),
+        k.pos(-CONST.BOAT.RAIL_OFFSET_X, CONST.BOAT.RAIL_OFFSET_Y),
+        k.color(...CONST.COLORS.BOAT_HULL),
         k.anchor("center"),
       ]);
 
-      // Boat rail on right
+      // Boat rail (right)
       boat.add([
-        k.rect(3, 25),
-        k.pos(55, -10),
-        k.color(101, 67, 33),
+        k.rect(CONST.BOAT.RAIL_WIDTH, CONST.BOAT.RAIL_HEIGHT),
+        k.pos(CONST.BOAT.RAIL_OFFSET_X, CONST.BOAT.RAIL_OFFSET_Y),
+        k.color(...CONST.COLORS.BOAT_HULL),
         k.anchor("center"),
       ]);
 
-      // Mast (thin pole) - fixed anchor point
+      // Mast
       boat.add([
-        k.rect(4, 50),
-        k.pos(-20, -25), // Position at bottom of mast
-        k.color(101, 67, 33),
-        k.anchor("bot"), // Anchor at bottom of mast
+        k.rect(CONST.BOAT.MAST_WIDTH, CONST.BOAT.MAST_HEIGHT),
+        k.pos(CONST.BOAT.MAST_OFFSET_X, CONST.BOAT.MAST_OFFSET_Y),
+        k.color(...CONST.COLORS.BOAT_HULL),
+        k.anchor("bot"),
       ]);
 
-      // Small flag/sail (triangular) - positioned at top of mast
+      // Flag
       boat.add([
         k.polygon([
           k.vec2(0, 0),
-          k.vec2(30, 10),
-          k.vec2(0, 20),
+          k.vec2(CONST.BOAT.FLAG_WIDTH, CONST.BOAT.FLAG_HEIGHT / 2),
+          k.vec2(0, CONST.BOAT.FLAG_HEIGHT),
         ]),
-        k.pos(-20, -75), // At top of mast (-25 -50 = -75)
-        k.color(200, 50, 50), // Red flag
-        k.outline(1, k.rgb(150, 30, 30)),
+        k.pos(CONST.BOAT.MAST_OFFSET_X, CONST.BOAT.FLAG_OFFSET_Y),
+        k.color(...CONST.COLORS.BOAT_FLAG),
+        k.outline(CONST.BOAT.OUTLINE_WIDTH_FLAG, k.rgb(150, 30, 30)),
       ]);
 
-      // Anchor rope coil (decorative circle)
+      // Anchor rope coil
       boat.add([
-        k.circle(5),
-        k.pos(30, -5),
-        k.color(150, 120, 80),
-        k.outline(2, k.rgb(100, 80, 50)),
+        k.circle(CONST.BOAT.ANCHOR_ROPE_RADIUS),
+        k.pos(CONST.BOAT.ANCHOR_ROPE_X, CONST.BOAT.ANCHOR_ROPE_Y),
+        k.color(...CONST.COLORS.ANCHOR_ROPE),
+        k.outline(CONST.BOAT.OUTLINE_WIDTH_THIN, k.rgb(100, 80, 50)),
       ]);
 
       return boat;
@@ -923,8 +923,8 @@ export default function OceanScene({
 
       // Light rays
       const lightRays: any[] = [];
-      if (lightLevel > 0.3) {
-        for (let i = 0; i < 5; i++) {
+      if (lightLevel > CONST.OPACITY.LIGHT_RAY_MIN) {
+        for (let i = 0; i < CONST.SPAWN_RATES.LIGHT_RAY_COUNT; i++) {
           const lightRay = k.add([
             k.polygon([
               k.vec2(0, 0),
@@ -933,9 +933,9 @@ export default function OceanScene({
               k.vec2(20, k.height()),
             ]),
             k.pos(i * 180 + 50, 0),
-            k.color(255, 255, 200),
-            k.opacity(0.08 * lightLevel),
-            k.z(3),
+            k.color(...CONST.COLORS.LIGHT_RAY),
+            k.opacity(CONST.OPACITY.LIGHT_RAY_BASE * lightLevel),
+            k.z(CONST.Z_LAYERS.LIGHT_RAYS),
           ]);
           lightRays.push({ obj: lightRay, offset: i });
         }
@@ -959,14 +959,17 @@ export default function OceanScene({
 
       // Speed lines
       const speedLines: any[] = [];
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < CONST.SPAWN_RATES.SPEED_LINE_COUNT; i++) {
         const line = k.add([
-          k.rect(2 + Math.random() * 3, 20 + Math.random() * 40),
+          k.rect(
+            CONST.SPEED_LINES.WIDTH_MIN + Math.random() * CONST.SPEED_LINES.WIDTH_RANDOM,
+            CONST.SPEED_LINES.HEIGHT_MIN + Math.random() * CONST.SPEED_LINES.HEIGHT_RANDOM
+          ),
           k.pos(Math.random() * k.width(), Math.random() * k.height()),
           k.anchor("center"),
-          k.color(150, 200, 255),
+          k.color(...CONST.COLORS.SPEED_LINE),
           k.opacity(0),
-          k.z(25),
+          k.z(CONST.Z_LAYERS.SPEED_LINES),
         ]);
         speedLines.push(line);
       }
@@ -1150,10 +1153,10 @@ export default function OceanScene({
         // Fade in
         let fadeIn = 0;
         const fadeInInterval = setInterval(() => {
-          fadeIn += 0.1;
+          fadeIn += CONST.ANIMATION_TIMINGS.CHEST_FADE_IN;
           chest.opacity = Math.min(fadeIn, 1);
           if (fadeIn >= 1) clearInterval(fadeInInterval);
-        }, 50);
+        }, CONST.ANIMATION_TIMINGS.FADE_INTERVAL);
 
         // Opening sequence
         setTimeout(() => {
@@ -1163,61 +1166,61 @@ export default function OceanScene({
             chest.play("open");
 
             // Spawn coin particles
-            for (let i = 0; i < 15; i++) {
-              setTimeout(() => createCoinParticle(x, y + 60), i * 30);
+            for (let i = 0; i < CONST.SPAWN_RATES.COIN_COUNT; i++) {
+              setTimeout(() => createCoinParticle(x, y + 60), i * CONST.ANIMATION_TIMINGS.COIN_SPAWN_INTERVAL);
             }
-          }, 400);
-        }, 500);
+          }, CONST.ANIMATION_TIMINGS.CHEST_ANIMATION_DELAY);
+        }, CONST.ANIMATION_TIMINGS.CHEST_OPEN_DELAY);
 
         // Fade out after animation
         setTimeout(() => {
           let fadeOut = 1;
           const fadeOutInterval = setInterval(() => {
-            fadeOut -= 0.1;
+            fadeOut -= CONST.ANIMATION_TIMINGS.CHEST_FADE_IN;
             chest.opacity = Math.max(fadeOut, 0);
             if (fadeOut <= 0) {
               clearInterval(fadeOutInterval);
               k.destroy(chest);
             }
-          }, 50);
-        }, 2000);
+          }, CONST.ANIMATION_TIMINGS.FADE_INTERVAL);
+        }, CONST.ANIMATION_TIMINGS.CHEST_FADE_OUT_START);
       }
 
       function createCoinParticle(x: number, y: number) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = 80 + Math.random() * 80;
+        const speed = CONST.COIN.SPEED_MIN + Math.random() * CONST.COIN.SPEED_RANDOM;
 
         const coin = k.add([
-          k.sprite("coin", { anim: "spin" }), // Use spin animation!
+          k.sprite("coin", { anim: "spin" }),
           k.pos(x, y),
           k.anchor("center"),
-          k.scale(2 + Math.random()), // Vary size
+          k.scale(CONST.COIN.SCALE_MIN + Math.random() * CONST.COIN.SCALE_RANDOM),
           k.opacity(1),
-          k.z(26),
-          k.lifespan(1.5),
+          k.z(CONST.Z_LAYERS.COIN),
+          k.lifespan(CONST.COIN.LIFESPAN),
         ]);
 
         coin.onUpdate(() => {
           coin.pos.x += Math.cos(angle) * speed * k.dt();
-          coin.pos.y += Math.sin(angle) * speed * k.dt() - 50 * k.dt(); // Upward bias
-          coin.opacity -= k.dt() * 0.7;
+          coin.pos.y += Math.sin(angle) * speed * k.dt() - CONST.COIN.UPWARD_BIAS * k.dt();
+          coin.opacity -= k.dt() * CONST.COIN.OPACITY_FADE_RATE;
         });
       }
 
-      // Particle effects (legacy gold circles)
+      // Particle effects (gold circles)
       function createTreasureParticles(x: number, y: number) {
-        for (let i = 0; i < 30; i++) {
-          const angle = (Math.PI * 2 * i) / 30;
-          const speed = 100 + Math.random() * 100;
+        for (let i = 0; i < CONST.SPAWN_RATES.PARTICLE_COUNT; i++) {
+          const angle = (Math.PI * 2 * i) / CONST.SPAWN_RATES.PARTICLE_COUNT;
+          const speed = CONST.PARTICLE.SPEED_MIN + Math.random() * CONST.PARTICLE.SPEED_RANDOM;
 
           const particle = k.add([
-            k.circle(3),
+            k.circle(CONST.PARTICLE.CIRCLE_RADIUS),
             k.pos(x, y),
             k.anchor("center"),
-            k.color(255, 215, 0),
+            k.color(...CONST.COLORS.PARTICLE_GOLD),
             k.opacity(1),
-            k.z(25),
-            k.lifespan(1),
+            k.z(CONST.Z_LAYERS.PARTICLE),
+            k.lifespan(CONST.PARTICLE.LIFESPAN),
           ]);
 
           particle.onUpdate(() => {
@@ -1226,8 +1229,6 @@ export default function OceanScene({
             particle.opacity -= k.dt();
           });
         }
-
-        // Sparkles removed (emoji looked bad) - coin particles are better
       }
 
       // Death animation - WITH VARIETY!
