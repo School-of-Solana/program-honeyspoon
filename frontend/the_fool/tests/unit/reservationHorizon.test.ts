@@ -67,11 +67,11 @@ describe("Blindspot #3: House Reservation Horizon", () => {
     }
     console.log('');
     
-    // The reservation should either hit the cap or be very close
-    assert.ok(
-      tenRoundPayout >= maxWin * 0.9, 
-      `10-round reservation (${tenRoundPayout}) should be at least 90% of max win (${maxWin})`
-    );
+    // Document that 10 rounds is NOT sufficient (this is expected to show the gap)
+    // The actual game now reserves for maxRounds, not 10
+    console.log('📝 This test documents why we MUST reserve for maxRounds');
+    console.log('   The gap shows the financial risk of only reserving for 10 rounds');
+    console.log('');
   });
 
   it("should never pay out more than reserved funds on long winning streak", async () => {
@@ -112,9 +112,10 @@ describe("Blindspot #3: House Reservation Horizon", () => {
         console.log(`  Round ${round}: $${currentValue.toLocaleString()}`);
       }
       
-      // Check if we hit the max win cap
+        // Check if we hit the max win cap (capped by cashOut, not by multiplier)
       if (currentValue >= GAME_CONFIG.maxPotentialWin) {
         console.log(`  🎯 Hit max win cap at round ${round}: $${currentValue.toLocaleString()}`);
+        // Note: The cap is enforced at cashOut time
         break;
       }
       
@@ -181,12 +182,15 @@ describe("Blindspot #3: House Reservation Horizon", () => {
     console.log('='.repeat(60));
   });
 
-  it("should verify 10-round horizon is mathematically sufficient", () => {
+  it("should verify game now reserves for maxRounds (not just 10)", async () => {
+    const userId = "user-verify-reserve";
+    const sessionId = "session-verify-reserve";
     const bet = 100;
+    
     const reserveFor10 = calculateMaxPotentialPayout(bet, 10, GAME_CONFIG);
     const reserveFor50 = calculateMaxPotentialPayout(bet, 50, GAME_CONFIG);
 
-    console.log('\n🔢 Mathematical Analysis:');
+    console.log('\n🔢 Reservation Fix Verification:');
     console.log('='.repeat(60));
     console.log(`  Bet: $${bet}`);
     console.log(`  10 rounds reserve: $${reserveFor10.toLocaleString()}`);
@@ -194,25 +198,29 @@ describe("Blindspot #3: House Reservation Horizon", () => {
     console.log(`  Max win cap: $${GAME_CONFIG.maxPotentialWin.toLocaleString()}`);
     console.log('');
 
-    if (reserveFor10 === reserveFor50) {
-      console.log('✅ SAFE: Both hit the max win cap');
-      console.log('   → 10-round horizon is sufficient');
-      console.log('   → Multipliers flatten out before round 10');
-    } else if (reserveFor10 === GAME_CONFIG.maxPotentialWin) {
-      console.log('✅ SAFE: 10-round reservation hits cap');
-      console.log('   → 50-round scenario is also capped');
-      console.log('   → No additional risk beyond 10 rounds');
+    // Start a game and check what it actually reserved
+    const start = await startGameSession(bet, userId, sessionId);
+    assert.equal(start.success, true);
+    
+    const session = getGameSession(sessionId)!;
+    const actualReserved = session.reservedPayout;
+    
+    console.log(`  Game actually reserved: $${actualReserved.toLocaleString()}`);
+    console.log('');
+
+    if (actualReserved === reserveFor50) {
+      console.log('✅ FIXED: Game now reserves for maxRounds (50)');
+      console.log('   → Safe against long winning streaks');
+    } else if (actualReserved === reserveFor10) {
+      console.log('❌ NOT FIXED: Game still reserves for only 10 rounds');
+      console.log('   → Vulnerable to overpayment');
     } else {
-      console.log('⚠️  WARNING: 10 rounds may not be sufficient');
-      console.log(`   Gap: $${(reserveFor50 - reserveFor10).toLocaleString()}`);
-      console.log('   → Consider increasing reservation horizon');
+      console.log(`⚠️  Unexpected reservation: $${actualReserved.toLocaleString()}`);
     }
     console.log('='.repeat(60));
 
-    // Both should equal maxPotentialWin (they're both capped)
-    assert.equal(reserveFor10, GAME_CONFIG.maxPotentialWin, 
-      'If this fails, we need to reserve for more than 10 rounds');
-    assert.equal(reserveFor50, GAME_CONFIG.maxPotentialWin,
-      '50-round payout should also be capped');
+    // The game should now reserve for maxRounds (50)
+    assert.equal(actualReserved, reserveFor50, 
+      'Game should reserve for maxRounds, not just 10');
   });
 });

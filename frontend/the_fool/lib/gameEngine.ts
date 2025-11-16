@@ -66,6 +66,25 @@ export interface RoundResult {
 }
 
 /**
+ * Validate game configuration
+ * @param config - Game configuration to validate
+ * @throws Error if configuration is invalid
+ */
+function validateGameConfig(config: GameConfig): void {
+  if (config.minWinProbability > config.baseWinProbability) {
+    throw new Error(
+      `Invalid game config: minWinProbability (${config.minWinProbability}) > baseWinProbability (${config.baseWinProbability})`
+    );
+  }
+  if (config.maxRounds <= 0) {
+    throw new Error(`Invalid game config: maxRounds must be > 0`);
+  }
+  if (config.decayConstant < 0) {
+    throw new Error(`Invalid game config: decayConstant cannot be negative`);
+  }
+}
+
+/**
  * Calculate statistics for a specific round
  *
  * Math:
@@ -79,6 +98,9 @@ export function calculateRoundStats(
   roundNumber: number,
   config: GameConfig = DEFAULT_CONFIG
 ): RoundStats {
+  // Validate config
+  validateGameConfig(config);
+  
   // Validate round number
   if (roundNumber < 1) {
     throw new Error("Round number must be >= 1");
