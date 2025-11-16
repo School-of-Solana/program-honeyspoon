@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import OceanScene from "@/components/DeepSeaDiver/OceanScene";
 import DebugPanel from "@/components/DebugWalletPanel";
 import { GameErrorBoundary } from "@/components/DeepSeaDiver/GameErrorBoundary";
@@ -159,6 +159,9 @@ export default function Home() {
     totalReceived: 0, // Not tracked yet
   };
 
+  // Track if session has been initialized (to prevent re-initialization on balance updates)
+  const sessionInitializedRef = useRef(false);
+
   // Initialize session on mount (only once when userId is set AND balance is loaded)
   useEffect(() => {
     const initializeSession = async () => {
@@ -172,6 +175,12 @@ export default function Home() {
         return;
       }
 
+      // CRITICAL FIX: Only initialize once! Don't re-initialize on balance updates
+      if (sessionInitializedRef.current) {
+        console.log("[GAME] ⏭️ Session already initialized, skipping...");
+        return;
+      }
+
       const sessionId = await generateSessionId();
 
       setGameState((prev) => ({
@@ -180,6 +189,8 @@ export default function Home() {
         userId,
         walletBalance: userBalance, // Use balance from Zustand store
       }));
+
+      sessionInitializedRef.current = true; // Mark as initialized
 
       console.log("[GAME] 🎮 Session initialized", {
         sessionId,
@@ -190,8 +201,8 @@ export default function Home() {
     };
 
     initializeSession();
-    // IMPORTANT: Now also depends on lastUpdated to wait for initial fetch
-    // This ensures we don't initialize with stale balance (0)
+    // IMPORTANT: Depends on lastUpdated to wait for initial fetch
+    // But uses ref to prevent re-initialization on subsequent updates
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, lastUpdated]);
 
@@ -840,7 +851,8 @@ export default function Home() {
               <p
                 style={{ fontSize: "8px", textAlign: "center", color: "#aaa" }}
               >
-                15% House Edge - Infinite Depths
+                {(GAME_CONFIG.HOUSE_EDGE * 100).toFixed(0)}% House Edge -
+                Infinite Depths
               </p>
             </div>
           </div>

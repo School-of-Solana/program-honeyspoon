@@ -16,10 +16,10 @@ import { createHash } from "crypto";
  * Game configuration matching contract
  */
 export interface GameCurveConfig {
-  baseWinProbability: number; // e.g. 0.95 = 95%
-  decayConstant: number; // e.g. 0.15
-  minWinProbability: number; // e.g. 0.01 = 1%
-  houseEdge: number; // e.g. 0.15 = 15%
+  baseWinProbability: number; // e.g. 0.70 = 70%
+  decayConstant: number; // e.g. 0.08
+  minWinProbability: number; // e.g. 0.05 = 5%
+  houseEdge: number; // e.g. 0.05 = 5%
 }
 
 /**

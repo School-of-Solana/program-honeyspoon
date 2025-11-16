@@ -16,13 +16,13 @@
  */
 
 export interface GameConfig {
-  // Fixed house edge (e.g., 0.15 = 15% edge)
+  // Fixed house edge (e.g., 0.05 = 5% edge)
   houseEdge: number;
 
   // Probability curve parameters
-  baseWinProbability: number; // Starting probability (e.g., 0.95 = 95%)
+  baseWinProbability: number; // Starting probability (e.g., 0.70 = 70%)
   decayConstant: number; // How fast probability decreases
-  minWinProbability: number; // Floor (e.g., 0.01 = 1%)
+  minWinProbability: number; // Floor (e.g., 0.05 = 5%)
 
   // Limits
   minBet: number;
@@ -33,11 +33,13 @@ export interface GameConfig {
   maxRounds: number;
 }
 
+// DEFAULT_CONFIG is overridden by lib/constants.ts values in production
+// These are fallback values for tests that don't import constants
 export const DEFAULT_CONFIG: GameConfig = {
-  houseEdge: 0.15, // 15% house edge
-  baseWinProbability: 0.95, // Start at 95% survival
-  decayConstant: 0.15, // Exponential decay rate
-  minWinProbability: 0.01, // Min 1% survival
+  houseEdge: 0.05, // 5% house edge (SYNCED with lib/constants.ts)
+  baseWinProbability: 0.7, // Start at 70% survival (SYNCED with lib/constants.ts)
+  decayConstant: 0.08, // Exponential decay rate (SYNCED with lib/constants.ts)
+  minWinProbability: 0.05, // Min 5% survival (SYNCED with lib/constants.ts)
   minBet: 10,
   maxBet: 500,
   maxPotentialWin: 100000,
