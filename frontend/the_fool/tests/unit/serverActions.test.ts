@@ -413,7 +413,7 @@ describe("Server Actions - Multi-Turn Games", () => {
     // Dive until we hit a failure or reach 20 dives
     for (let dive = 1; dive <= 20; dive++) {
       // Use alternating high rolls to have some successes
-      const seed = dive % 2 === 0 ? "85" : "90";
+      const seed = dive % 2 === 0 ? "20" : "15";
       const result = await performDive(
         dive,
         currentTreasure,

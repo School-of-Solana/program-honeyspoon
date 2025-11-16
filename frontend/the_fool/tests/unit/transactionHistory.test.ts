@@ -511,7 +511,7 @@ describe("Transaction History Mapping", () => {
       await startGame(10, userId, sessionId);
 
       // Perform dive that wins
-      const diveResult = await performDive(1, 10, sessionId, userId, "90");
+      const diveResult = await performDive(1, 10, sessionId, userId, "15");
 
       if (diveResult.survived) {
         // Cash out
@@ -588,7 +588,7 @@ describe("Transaction History Mapping", () => {
       // Survive 3 rounds
       let treasure = 10;
       for (let round = 1; round <= 3; round++) {
-        const result = await performDive(round, treasure, sessionId, userId, "90");
+        const result = await performDive(round, treasure, sessionId, userId, "15");
         treasure = result.totalTreasure;
       }
 

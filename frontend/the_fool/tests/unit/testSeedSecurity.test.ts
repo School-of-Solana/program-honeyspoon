@@ -179,7 +179,7 @@ describe("TestSeed Security: Deterministic Behavior (Test Environment)", () => {
     await startGameSession(initialBet, userId, sessionId);
 
     // Round 1 with seed 90
-    const round1 = await executeRound(1, initialBet, sessionId, userId, "90");
+    const round1 = await executeRound(1, initialBet, sessionId, userId, "15");
     assert.strictEqual(round1.randomRoll, 90);
 
     if (round1.survived) {
@@ -189,7 +189,7 @@ describe("TestSeed Security: Deterministic Behavior (Test Environment)", () => {
         round1.totalValue,
         sessionId,
         userId,
-        "85"
+        "20"
       );
       assert.strictEqual(round2.randomRoll, 85);
 
@@ -409,7 +409,7 @@ describe("TestSeed Security: Edge Cases & Boundaries", () => {
       initialBet,
       sessionId2,
       userId2,
-      "99"
+      "5"
     );
 
     assert.strictEqual(result0.randomRoll, 0, "Seed 0 should work");

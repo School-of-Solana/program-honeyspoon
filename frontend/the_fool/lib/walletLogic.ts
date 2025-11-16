@@ -23,10 +23,14 @@ export const DEFAULT_LIMITS: WalletLimits = {
 /**
  * Calculate the maximum potential payout for a game session
  * This is what the house needs to reserve when a bet is placed
+ * 
+ * NOTE: This returns THEORETICAL maximum without capping.
+ * For actual game logic, use the capped version from gameEngine.ts
+ * which caps at maxPotentialWin ($100k).
  */
 export function calculateMaxPotentialPayout(
   initialBet: number,
-  maxDives: number = 10,
+  maxDives: number = 10, // Default to 10 for backward compatibility with tests
 ): number {
   let maxPayout = initialBet;
 
@@ -88,8 +92,21 @@ export function validateBet(
     };
   }
 
-  // Calculate max potential payout
-  const maxPayout = calculateMaxPotentialPayout(betAmount);
+  // Calculate max potential payout, capped at maxPotentialWin
+  // With 50 rounds, theoretical max is astronomical, so we cap immediately
+  // The house never pays more than maxPotentialWin per game
+  let maxPayout = betAmount;
+  for (let dive = 1; dive <= 50; dive++) {
+    const stats = calculateDiveStats(dive);
+    maxPayout *= stats.multiplier;
+    
+    // Early exit optimization: stop if we've exceeded the cap
+    if (maxPayout >= limits.maxPotentialWin) {
+      maxPayout = limits.maxPotentialWin;
+      break;
+    }
+  }
+  maxPayout = Math.floor(Math.min(maxPayout, limits.maxPotentialWin));
 
   // Check house can afford the potential payout
   const availableHouseFunds = houseWallet.balance - houseWallet.reservedFunds;
@@ -118,16 +135,8 @@ export function validateBet(
     };
   }
 
-  // Check against maximum potential win
-  if (maxPayout > limits.maxPotentialWin) {
-    const safeBet = Math.floor(limits.maxPotentialWin / 50);
-    return {
-      valid: false,
-      error: `Bet would exceed maximum win limit. Maximum bet: $${safeBet}`,
-      maxBet: Math.min(safeBet, userWallet.balance),
-      userBalance: userWallet.balance,
-    };
-  }
+  // Note: We don't need the maxPotentialWin check here anymore
+  // because we already capped maxPayout above
 
   // All checks passed
   return {

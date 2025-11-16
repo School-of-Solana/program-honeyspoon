@@ -241,9 +241,9 @@ describe("Game Logic - Probability Distribution", () => {
 
   it("should have threshold match probability", () => {
     const stats = calculateDiveStats(5);
-    // Threshold = Math.round((1 - winProb) * 100)
-    // So: threshold should be roughly (100 - survival%)
-    const expected = Math.round((1 - stats.survivalProbability) * 100);
+    // Threshold = Math.floor(winProb * 100)
+    // Player survives if roll < threshold
+    const expected = Math.floor(stats.survivalProbability * 100);
 
     assert.ok(
       Math.abs(stats.threshold - expected) <= 1,

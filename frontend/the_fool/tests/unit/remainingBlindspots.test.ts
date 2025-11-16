@@ -151,21 +151,21 @@ describe("Blindspot #6: Randomness Boundary Behavior", () => {
     console.log("");
 
     // Document the boundary behavior
-    // The rule is: roll >= threshold to survive
-    assert.equal(justBelow.survived, false, "Roll below threshold should lose");
+    // The rule is: roll < threshold to survive
+    assert.equal(
+      justBelow.survived,
+      true,
+      "Roll below threshold should survive"
+    );
     assert.equal(
       exactBoundary.survived,
-      true,
-      "Roll at exact threshold should survive (>=)"
+      false,
+      "Roll at exact threshold should die (<, not <=)"
     );
-    assert.equal(
-      justAbove.survived,
-      true,
-      "Roll above threshold should survive"
-    );
+    assert.equal(justAbove.survived, false, "Roll above threshold should die");
 
     console.log("✅ Boundary behavior is consistent");
-    console.log("   Rule: survive if roll >= threshold");
+    console.log("   Rule: survive if roll < threshold");
     console.log("=".repeat(60));
   });
 

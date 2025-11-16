@@ -139,7 +139,7 @@ describe("Round + Treasure Validation: Later Round Scenarios", () => {
 
     // Win round 1 (try different seeds until we survive)
     let round1;
-    for (const seed of ["99", "95", "90", "85", "80", "75", "70"]) {
+    for (const seed of ["5", "10", "15", "20", "25", "30", "35"]) {
       round1 = await executeRound(1, initialBet, sessionId, userId, seed);
       if (round1.survived) break;
 
@@ -204,16 +204,16 @@ describe("Round + Treasure Validation: Later Round Scenarios", () => {
     // Win round 1 (retry until survival)
     let round1;
     for (const seed of [
-      "99",
+      "5",
       "98",
       "97",
       "96",
-      "95",
-      "90",
-      "85",
-      "80",
-      "75",
-      "70",
+      "10",
+      "15",
+      "20",
+      "25",
+      "30",
+      "35",
     ]) {
       round1 = await executeRound(1, initialBet, sessionId, userId, seed);
       if (round1.survived) break;
@@ -252,7 +252,7 @@ describe("Round + Treasure Validation: Later Round Scenarios", () => {
     const initialBet = 100;
     await startGameSession(initialBet, userId, sessionId);
 
-    const round1 = await executeRound(1, initialBet, sessionId, userId, "99");
+    const round1 = await executeRound(1, initialBet, sessionId, userId, "5");
     assert.strictEqual(round1.survived, true);
 
     const correctTreasure = round1.totalValue;
@@ -263,7 +263,7 @@ describe("Round + Treasure Validation: Later Round Scenarios", () => {
       correctTreasure,
       sessionId,
       userId,
-      "95"
+      "10"
     );
 
     // Assert: Should succeed
@@ -294,18 +294,18 @@ describe("Round + Treasure Validation: Round Number Priority", () => {
     // Win rounds 1 and 2 (retry with different seeds until both succeed)
     let round1, round2;
     const seeds = [
-      "99",
+      "5",
       "98",
       "97",
       "96",
-      "95",
-      "90",
-      "85",
-      "80",
-      "75",
-      "70",
-      "65",
-      "60",
+      "10",
+      "15",
+      "20",
+      "25",
+      "30",
+      "35",
+      "40",
+      "45",
     ];
 
     for (const seed1 of seeds) {
@@ -426,7 +426,7 @@ describe("Round + Treasure Validation: Round Number Priority", () => {
 
     // Win round 1 (retry until we survive)
     let round1;
-    for (const seed of ["99", "95", "90", "85", "80", "75"]) {
+    for (const seed of ["5", "10", "15", "20", "25", "30"]) {
       round1 = await executeRound(1, initialBet, sessionId, userId, seed);
       if (round1.survived) break;
 
@@ -487,7 +487,7 @@ describe("Round + Treasure Validation: Both Wrong Scenarios", () => {
 
     // Win round 1 (retry until we survive)
     let round1;
-    for (const seed of ["99", "95", "90", "85", "80"]) {
+    for (const seed of ["5", "10", "15", "20", "25"]) {
       round1 = await executeRound(1, initialBet, sessionId, userId, seed);
       if (round1.survived) break;
 
@@ -540,7 +540,7 @@ describe("Round + Treasure Validation: Both Wrong Scenarios", () => {
 
     // Win round 1 (retry until we survive)
     let round1;
-    for (const seed of ["99", "95", "90", "85", "80"]) {
+    for (const seed of ["5", "10", "15", "20", "25"]) {
       round1 = await executeRound(1, initialBet, sessionId, userId, seed);
       if (round1.survived) break;
 

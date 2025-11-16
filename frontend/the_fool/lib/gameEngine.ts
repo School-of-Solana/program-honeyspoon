@@ -73,7 +73,7 @@ export interface RoundResult {
 function validateGameConfig(config: GameConfig): void {
   if (config.minWinProbability > config.baseWinProbability) {
     throw new Error(
-      `Invalid game config: minWinProbability (${config.minWinProbability}) > baseWinProbability (${config.baseWinProbability})`,
+      `Invalid game config: minWinProbability (${config.minWinProbability}) > baseWinProbability (${config.baseWinProbability})`
     );
   }
   if (config.maxRounds <= 0) {
@@ -96,7 +96,7 @@ function validateGameConfig(config: GameConfig): void {
  */
 export function calculateRoundStats(
   roundNumber: number,
-  config: GameConfig = DEFAULT_CONFIG,
+  config: GameConfig = DEFAULT_CONFIG
 ): RoundStats {
   // Validate config
   validateGameConfig(config);
@@ -114,16 +114,22 @@ export function calculateRoundStats(
   const winProb = Math.max(
     config.minWinProbability,
     config.baseWinProbability *
-      Math.exp(-config.decayConstant * (roundNumber - 1)),
+      Math.exp(-config.decayConstant * (roundNumber - 1))
   );
 
   // Calculate multiplier to maintain fixed EV
+  // When you survive: newValue = currentValue * multiplier
+  // Expected value = winProb * (currentValue * multiplier) + (1-winProb) * 0
+  // For house edge: EV = currentValue * (1 - houseEdge)
+  // So: winProb * multiplier = (1 - houseEdge)
+  // Therefore: multiplier = (1 - houseEdge) / winProb
   const targetEV = 1 - config.houseEdge;
   const multiplier = targetEV / winProb;
 
-  // Threshold for random roll (0-100)
-  // Player needs to roll >= threshold to survive
-  const threshold = Math.round((1 - winProb) * 100);
+  // Threshold for random roll (0-99)
+  // Player survives if roll < threshold (lower threshold = harder to survive)
+  // With 95% win rate: threshold = 95, rolls 0-94 survive (95 values = 95%)
+  const threshold = Math.floor(winProb * 100);
 
   return {
     roundNumber,
@@ -141,7 +147,7 @@ export function calculateRoundStats(
 export function calculateMaxPotentialPayout(
   initialBet: number,
   maxRounds: number = DEFAULT_CONFIG.maxRounds,
-  config: GameConfig = DEFAULT_CONFIG,
+  config: GameConfig = DEFAULT_CONFIG
 ): number {
   let maxPayout = initialBet;
 
@@ -167,7 +173,7 @@ export function simulateRound(
   roundNumber: number,
   currentValue: number,
   randomRoll: number,
-  config: GameConfig = DEFAULT_CONFIG,
+  config: GameConfig = DEFAULT_CONFIG
 ): RoundResult {
   // Validate inputs
   if (randomRoll < 0 || randomRoll > 99) {
@@ -181,8 +187,9 @@ export function simulateRound(
   // Get round stats
   const stats = calculateRoundStats(roundNumber, config);
 
-  // Determine survival: player survives if roll >= threshold
-  const survived = randomRoll >= stats.threshold;
+  // Determine survival: player survives if roll < threshold
+  // Example: 95% win rate means threshold=95, rolls 0-94 survive (95 values)
+  const survived = randomRoll < stats.threshold;
 
   // Calculate new value
   let newValue = 0;
@@ -216,7 +223,7 @@ export function simulateRound(
  */
 export function validateBetAmount(
   amount: number,
-  config: GameConfig = DEFAULT_CONFIG,
+  config: GameConfig = DEFAULT_CONFIG
 ): { valid: boolean; error?: string } {
   // Check for invalid numeric values
   if (!Number.isFinite(amount) || Number.isNaN(amount)) {
@@ -249,7 +256,7 @@ export function validateBetAmount(
  */
 export function calculateCumulativeEV(
   rounds: number,
-  config: GameConfig = DEFAULT_CONFIG,
+  config: GameConfig = DEFAULT_CONFIG
 ): number {
   return Math.pow(1 - config.houseEdge, rounds);
 }

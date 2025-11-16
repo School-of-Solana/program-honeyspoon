@@ -399,7 +399,7 @@ describe("Concurrent Action Prevention", () => {
 
     // Try to dive twice at the same time
     const dive1 = performDive(1, 50, sessionId, userId, "50");
-    const dive2 = performDive(1, 50, sessionId, userId, "60");
+    const dive2 = performDive(1, 50, sessionId, userId, "45");
 
     const results = await Promise.allSettled([dive1, dive2]);
 

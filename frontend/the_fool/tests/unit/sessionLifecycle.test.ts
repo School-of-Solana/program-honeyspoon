@@ -46,7 +46,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
       await startGameSession(100, userId, sessionId);
       
       // Execute one winning round to get some treasure
-      const round1 = await executeRound(1, 100, sessionId, userId, "90"); // High roll = win
+      const round1 = await executeRound(1, 100, sessionId, userId, "15"); // High roll = win
       assert.strictEqual(round1.survived, true, "Round 1 should succeed");
       
       const treasureAmount = round1.totalValue;
@@ -121,7 +121,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
     it("should prevent race condition double cashout", async () => {
       // Arrange: Setup winning game
       await startGameSession(100, userId, sessionId);
-      const round1 = await executeRound(1, 100, sessionId, userId, "90");
+      const round1 = await executeRound(1, 100, sessionId, userId, "15");
       const treasureAmount = round1.totalValue;
 
       // Act: Simulate race condition - two simultaneous cashouts
@@ -163,7 +163,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
     it("should reject executeRound after successful cashout", async () => {
       // Arrange: Complete a game with cashout
       await startGameSession(100, userId, sessionId);
-      const round1 = await executeRound(1, 100, sessionId, userId, "90");
+      const round1 = await executeRound(1, 100, sessionId, userId, "15");
       
       assert.ok(round1.survived, "Round 1 should survive with roll 90");
       assert.ok(round1.totalValue > 0, `totalValue should be > 0, got: ${round1.totalValue}`);
@@ -231,7 +231,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
     it("should reject multiple executeRound attempts after cashout", async () => {
       // Arrange
       await startGameSession(100, userId, sessionId);
-      const round1 = await executeRound(1, 100, sessionId, userId, "90");
+      const round1 = await executeRound(1, 100, sessionId, userId, "15");
       await cashOut(round1.totalValue, sessionId, userId);
 
       // Act: Try multiple rounds
@@ -402,7 +402,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
     it("should reject executeRound with wrong round number", async () => {
       // Arrange: Start game, complete round 1
       await startGameSession(100, userId, sessionId);
-      const round1 = await executeRound(1, 100, sessionId, userId, "90");
+      const round1 = await executeRound(1, 100, sessionId, userId, "15");
 
       // Act: Try to skip to round 3 (should be round 2)
       let wrongRoundError: Error | null = null;
@@ -427,8 +427,8 @@ describe("Session Lifecycle - Illegal Sequences", () => {
     it("should reject executeRound with round number going backwards", async () => {
       // Arrange: Complete two rounds
       await startGameSession(100, userId, sessionId);
-      const round1 = await executeRound(1, 100, sessionId, userId, "90");
-      await executeRound(2, round1.totalValue, sessionId, userId, "90");
+      const round1 = await executeRound(1, 100, sessionId, userId, "15");
+      await executeRound(2, round1.totalValue, sessionId, userId, "15");
 
       // Act: Try to go back to round 1
       let backwardsRoundError: Error | null = null;
@@ -496,7 +496,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
     it("should maintain transaction log integrity across illegal operations", async () => {
       // Arrange: Complete valid game
       await startGameSession(100, userId, sessionId);
-      const round1 = await executeRound(1, 100, sessionId, userId, "90");
+      const round1 = await executeRound(1, 100, sessionId, userId, "15");
       await cashOut(round1.totalValue, sessionId, userId);
 
       const validTransactionCount = getUserTransactions(userId).length;

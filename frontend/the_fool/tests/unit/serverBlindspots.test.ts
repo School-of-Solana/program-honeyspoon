@@ -447,7 +447,7 @@ describe("Concurrent Operations", () => {
 
     // Try to execute same round twice concurrently
     const dive1 = performDive(1, 50, sessionId, userId, "50");
-    const dive2 = performDive(1, 50, sessionId, userId, "60");
+    const dive2 = performDive(1, 50, sessionId, userId, "45");
 
     const results = await Promise.allSettled([dive1, dive2]);
 

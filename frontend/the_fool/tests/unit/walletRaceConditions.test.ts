@@ -157,8 +157,8 @@ describe("Concurrent Game Operations", () => {
     // Try to execute round 1 three times simultaneously
     const dives = await Promise.allSettled([
       performDive(1, 50, sessionId, userId, "50"),
-      performDive(1, 50, sessionId, userId, "60"),
-      performDive(1, 50, sessionId, userId, "70"),
+      performDive(1, 50, sessionId, userId, "45"),
+      performDive(1, 50, sessionId, userId, "35"),
     ]);
 
     const successCount = dives.filter((r) => r.status === "fulfilled").length;

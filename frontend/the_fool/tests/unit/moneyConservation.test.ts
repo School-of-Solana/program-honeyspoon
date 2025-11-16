@@ -237,7 +237,7 @@ describe("Money Conservation - Multiple Games", () => {
 
     await performDive(1, 10, session1, user1, "30");
     await performDive(1, 10, session2, user2, "50");
-    await performDive(1, 10, session3, user3, "70");
+    await performDive(1, 10, session3, user3, "35");
 
     const wallet1After = await getWalletInfo(user1);
     const wallet2After = await getWalletInfo(user2);

@@ -105,7 +105,7 @@ describe("A. Session Status Transitions", () => {
     let won = false;
     let winAmount = 0;
 
-    for (const seed of ["99", "98", "97", "96", "95", "90", "85"]) {
+    for (const seed of ["5", "98", "97", "96", "10", "15", "20"]) {
       const result = await executeRound(1, initialBet, sessionId, userId, seed);
       if (result.survived) {
         won = true;
@@ -227,7 +227,7 @@ describe("A. Session Status Transitions", () => {
 
     // Win round 1
     let round1;
-    for (const seed of ["99", "95", "90", "85"]) {
+    for (const seed of ["5", "10", "15", "20"]) {
       round1 = await executeRound(1, initialBet, sessionId, userId, seed);
       if (round1.survived) break;
 
@@ -332,7 +332,7 @@ describe("B. Wallet Invariants", () => {
 
     // Win a round
     let won = false;
-    for (const seed of ["99", "95", "90", "85", "80"]) {
+    for (const seed of ["5", "10", "15", "20", "25"]) {
       const result = await executeRound(1, initialBet, sessionId, userId, seed);
       if (result.survived) {
         won = true;
@@ -392,7 +392,7 @@ describe("B. Wallet Invariants", () => {
 
     // Win then cash out
     let winAmount = 0;
-    for (const seed of ["99", "95", "90", "85"]) {
+    for (const seed of ["5", "10", "15", "20"]) {
       const result = await executeRound(1, initialBet, sessionId, userId, seed);
       if (result.survived) {
         winAmount = result.totalValue;

@@ -25,7 +25,11 @@ describe("Game Logic - calculateDiveStats", () => {
       stats.survivalProbability > 0 && stats.survivalProbability <= 1,
       "Survival prob should be 0-1"
     );
-    assert.ok(stats.multiplier > 1, "Multiplier should be > 1");
+    assert.ok(stats.multiplier > 0, "Multiplier should be > 0");
+    assert.ok(
+      stats.multiplier < 1,
+      "Multiplier should be < 1 (house edge means you lose value)"
+    );
     assert.strictEqual(stats.expectedValue, 0.85, "EV should always be 0.85");
     assert.strictEqual(stats.depth, 50, "Depth should be 50m");
     assert.strictEqual(stats.oxygenRemaining, 96, "Oxygen should be 96%");
@@ -132,8 +136,9 @@ describe("Game Logic - calculateDiveStats", () => {
   it("should calculate correct threshold for random rolls", () => {
     const stats = calculateDiveStats(1);
 
-    // Threshold should be (1 - survivalProb) * 100
-    const expectedThreshold = Math.round((1 - stats.survivalProbability) * 100);
+    // Threshold should be floor(survivalProb * 100)
+    // Player survives if roll < threshold
+    const expectedThreshold = Math.floor(stats.survivalProbability * 100);
     assert.strictEqual(
       stats.threshold,
       expectedThreshold,
@@ -141,7 +146,7 @@ describe("Game Logic - calculateDiveStats", () => {
     );
 
     console.log(
-      `✓ Threshold: ${stats.threshold} (roll must be >= ${stats.threshold} to survive)`
+      `✓ Threshold: ${stats.threshold} (roll must be < ${stats.threshold} to survive)`
     );
   });
 
@@ -174,16 +179,16 @@ describe("Game Logic - calculateDiveStats", () => {
   });
 
   it("should respect minimum survival probability", () => {
-    // Test very deep dives
+    // Test very deep dives (max is 50)
+    const dive40 = calculateDiveStats(40);
     const dive50 = calculateDiveStats(50);
-    const dive100 = calculateDiveStats(100);
 
     assert.ok(
-      dive50.survivalProbability >= GAME_CONFIG.MIN_WIN_PROB,
+      dive40.survivalProbability >= GAME_CONFIG.MIN_WIN_PROB,
       "Should respect min win prob"
     );
     assert.ok(
-      dive100.survivalProbability >= GAME_CONFIG.MIN_WIN_PROB,
+      dive50.survivalProbability >= GAME_CONFIG.MIN_WIN_PROB,
       "Should respect min win prob"
     );
 
@@ -222,11 +227,11 @@ describe("Game Logic - getDepthZone", () => {
   });
 
   it("should return ABYSS zone for deep depths", () => {
-    const zone = getDepthZone(1500);
+    const zone = getDepthZone(5000);
 
     assert.strictEqual(zone.name, "ABYSS", "Should be ABYSS zone");
 
-    console.log(`✓ 1500m = ${zone.name} zone`);
+    console.log(`✓ 5000m = ${zone.name} zone`);
   });
 
   it("should return HADAL zone for extreme depths", () => {

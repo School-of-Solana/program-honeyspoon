@@ -368,12 +368,8 @@ describe("Simulate Round - Boundary Rolls", () => {
     const stats = calculateRoundStats(5, DEFAULT_CONFIG);
     const result = simulateRound(5, 50, stats.threshold, DEFAULT_CONFIG);
 
-    // Player survives if roll >= threshold
-    assert.strictEqual(
-      result.survived,
-      true,
-      "Roll at threshold should survive"
-    );
+    // Player survives if roll < threshold (at threshold = death)
+    assert.strictEqual(result.survived, false, "Roll at threshold should die");
   });
 
   it("should handle roll just below threshold", () => {
@@ -382,7 +378,7 @@ describe("Simulate Round - Boundary Rolls", () => {
 
     assert.strictEqual(
       result.survived,
-      false,
+      true,
       "Roll below threshold should fail"
     );
   });

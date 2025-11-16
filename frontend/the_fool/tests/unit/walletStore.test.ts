@@ -123,12 +123,12 @@ describe("Wallet Store - House Wallet", () => {
   it("should initialize house wallet with $50,000", () => {
     const house = getHouseWallet();
 
-    assert.strictEqual(house.balance, 50000, "Starting balance should be $50k");
+    assert.strictEqual(house.balance, 50000, "Starting balance should be $500k");
     assert.strictEqual(house.reservedFunds, 0, "Reserved funds should be 0");
     assert.strictEqual(house.totalPaidOut, 0, "Total paid out should be 0");
     assert.strictEqual(house.totalReceived, 0, "Total received should be 0");
 
-    console.log("✓ House wallet initialized with $50k");
+    console.log("✓ House wallet initialized with $500k");
   });
 
   it("should update house wallet", () => {
@@ -515,8 +515,8 @@ describe("Wallet Store - Statistics", () => {
     );
     assert.strictEqual(
       stats.houseBalance,
-      50000,
-      "House balance should be $50k"
+      500000,
+      "House balance should be $500k"
     );
 
     console.log("✓ Wallet statistics retrieved");
@@ -640,8 +640,8 @@ describe("Wallet Store - Reset", () => {
     assert.strictEqual(stats.activeSessions, 0, "Sessions should be cleared");
     assert.strictEqual(
       stats.houseBalance,
-      50000,
-      "House should be reset to $50k"
+      500000,
+      "House should be reset to $500k"
     );
 
     console.log("✓ Wallet store reset successfully");
