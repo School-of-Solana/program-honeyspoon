@@ -12,10 +12,10 @@ import {
   getWalletInfo,
   getHouseStatus,
 } from "./actions/gameActions";
-import type { GameState, Shipwreck, DiveStats } from "@/lib/types";
+import type { GameState, DiveStats } from "@/lib/types";
 import { GAME_CONFIG } from "@/lib/constants";
 import { GAME_COLORS } from "@/lib/gameColors";
-import { playSound, stopSound, getSoundManager } from "@/lib/soundManager";
+import { playSound, getSoundManager } from "@/lib/soundManager";
 import { useGameStore } from "@/lib/gameStore";
 
 export default function Home() {
@@ -60,6 +60,7 @@ export default function Home() {
   const triggerSurfacing = useGameStore((state) => state.triggerSurfacing);
   const setDepth = useGameStore((state) => state.setDepth);
   const setTreasure = useGameStore((state) => state.setTreasure);
+  const returnToBeach = useGameStore((state) => state.returnToBeach);
 
   // Read animation message from store for display
   const animationMessage = useGameStore((state) => state.animationMessage);
@@ -191,6 +192,10 @@ export default function Home() {
 
       // Wait for card to fade, then start game and show HUD
       setTimeout(() => {
+        // ✅ FIX: Ensure we're starting from a clean slate
+        // Reset all canvas/animation flags before starting new game
+        returnToBeach();
+
         setGameState({
           isPlaying: true,
           diveNumber: 1,
@@ -207,7 +212,7 @@ export default function Home() {
         setLastShipwreck(undefined);
         setSurvived(undefined);
         setIsProcessing(false);
-        console.log("[GAME] 🎮 HUD visible, game active", {
+        console.log("[GAME] 🎮 HUD visible, game active - flags reset", {
           diveNumber: 1,
           treasure: betAmount,
           depth: 0,
@@ -361,6 +366,9 @@ export default function Home() {
           walletBalance: walletInfo.balance,
           sessionId: newSessionId, // ✅ NEW SESSION ID
         }));
+
+        // ✅ FIX: Explicitly reset all canvas flags for next game
+        returnToBeach();
         setLastShipwreck(undefined);
         setSurvived(undefined);
 
@@ -471,6 +479,8 @@ export default function Home() {
         }));
 
         // Reset store state
+        // ✅ FIX: Explicitly reset all canvas flags for next game
+        returnToBeach();
         setLastShipwreck(undefined);
         setSurvived(undefined);
         setDepth(0);

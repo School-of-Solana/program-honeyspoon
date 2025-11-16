@@ -47,9 +47,7 @@ test.describe("Scene Transition Bug Fixes", () => {
         console.log(
           `   Animation started: ${firstDiveAnimationStarted ? "✓" : "✗"}`
         );
-        console.log(
-          `   Animation completed: ${firstDiveComplete ? "✓" : "✗"}`
-        );
+        console.log(`   Animation completed: ${firstDiveComplete ? "✓" : "✗"}`);
 
         // Second dive (this should also have animations!)
         if (await diveButton.isVisible()) {
@@ -77,9 +75,7 @@ test.describe("Scene Transition Bug Fixes", () => {
 
           // Test assertions
           expect(secondDiveAnimationStarted).toBeTruthy();
-          console.log(
-            "\n✅ Bug Fix #1 VERIFIED: Second dive has animations!"
-          );
+          console.log("\n✅ Bug Fix #1 VERIFIED: Second dive has animations!");
 
           // Print relevant logs
           console.log("\n📋 Animation Logs:");
@@ -144,9 +140,7 @@ test.describe("Scene Transition Bug Fixes", () => {
           console.log(
             `   Surfacing complete: ${surfacingComplete ? "✓" : "✗"}`
           );
-          console.log(
-            `   Returned to beach: ${returnedToBeach ? "✓" : "✗"}`
-          );
+          console.log(`   Returned to beach: ${returnedToBeach ? "✓" : "✗"}`);
 
           // Test assertions
           expect(surfacingTriggered || surfacingComplete).toBeTruthy();
@@ -210,7 +204,9 @@ test.describe("Scene Transition Bug Fixes", () => {
           // Print debug logs
           console.log("   Debug logs:");
           newLogs
-            .filter((log) => log.includes("[CANVAS]") || log.includes("[STORE]"))
+            .filter(
+              (log) => log.includes("[CANVAS]") || log.includes("[STORE]")
+            )
             .forEach((log) => console.log(`     ${log}`));
         }
       }

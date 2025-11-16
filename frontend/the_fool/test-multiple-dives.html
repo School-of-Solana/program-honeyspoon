@@ -1,68 +1,99 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>Multiple Dives Test</title>
     <style>
-        body { 
-            font-family: monospace; 
-            padding: 20px;
-            background: #1a1a1a;
-            color: #fff;
-        }
-        .step { 
-            margin: 20px 0; 
-            padding: 15px; 
-            border: 2px solid #444;
-            border-radius: 8px;
-        }
-        .pass { background: #1a3a1a; border-color: #0f0; }
-        .fail { background: #3a1a1a; border-color: #f00; }
-        .info { background: #1a1a3a; border-color: #00f; }
-        h1 { color: #0f0; }
-        h2 { color: #ff0; }
-        h3 { color: #0ff; }
-        pre { 
-            background: #000; 
-            padding: 10px; 
-            border-radius: 4px;
-            overflow-x: auto;
-        }
-        .log-success { color: #0f0; }
-        .log-error { color: #f00; }
-        .log-info { color: #0ff; }
+      body {
+        font-family: monospace;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .step {
+        margin: 20px 0;
+        padding: 15px;
+        border: 2px solid #444;
+        border-radius: 8px;
+      }
+      .pass {
+        background: #1a3a1a;
+        border-color: #0f0;
+      }
+      .fail {
+        background: #3a1a1a;
+        border-color: #f00;
+      }
+      .info {
+        background: #1a1a3a;
+        border-color: #00f;
+      }
+      h1 {
+        color: #0f0;
+      }
+      h2 {
+        color: #ff0;
+      }
+      h3 {
+        color: #0ff;
+      }
+      pre {
+        background: #000;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      .log-success {
+        color: #0f0;
+      }
+      .log-error {
+        color: #f00;
+      }
+      .log-info {
+        color: #0ff;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>🎮 Multiple Dives & Surfacing Test</h1>
     <p>This test verifies the scene transition bugs are fixed.</p>
-    
+
     <div class="step info">
-        <h3>Setup</h3>
-        <ol>
-            <li>Open <a href="http://localhost:3000" target="_blank" style="color: #0ff;">http://localhost:3000</a> in a new tab</li>
-            <li>Open browser console (F12)</li>
-            <li>Keep this window and the game window side by side</li>
-        </ol>
+      <h3>Setup</h3>
+      <ol>
+        <li>
+          Open
+          <a href="http://localhost:3000" target="_blank" style="color: #0ff"
+            >http://localhost:3000</a
+          >
+          in a new tab
+        </li>
+        <li>Open browser console (F12)</li>
+        <li>Keep this window and the game window side by side</li>
+      </ol>
     </div>
-    
+
     <div class="step">
-        <h3>Test 1: Start Game</h3>
-        <p><strong>Action:</strong> Click "START GAME ($50)"</p>
-        <p><strong>Expected console logs:</strong></p>
-        <pre>
+      <h3>Test 1: Start Game</h3>
+      <p><strong>Action:</strong> Click "START GAME ($50)"</p>
+      <p><strong>Expected console logs:</strong></p>
+      <pre>
 [GAME] 🎮 Starting new game
 [GAME] ✅ Game started successfully
 [GAME] 💰 Wallet updated
 [GAME] 🎮 HUD visible, game active
-        </pre>
-        <p><strong>Expected visual:</strong> HUD appears with "DIVE DEEPER" and "SURFACE" buttons</p>
+        </pre
+      >
+      <p>
+        <strong>Expected visual:</strong> HUD appears with "DIVE DEEPER" and
+        "SURFACE" buttons
+      </p>
     </div>
-    
+
     <div class="step">
-        <h3>Test 2: First Dive</h3>
-        <p><strong>Action:</strong> Click "DIVE DEEPER"</p>
-        <p><strong>Expected console logs:</strong></p>
-        <pre class="log-success">
+      <h3>Test 2: First Dive</h3>
+      <p><strong>Action:</strong> Click "DIVE DEEPER"</p>
+      <p><strong>Expected console logs:</strong></p>
+      <pre class="log-success">
 [GAME] 🤿 Dive initiated
 [STORE] 🤿 Starting dive animation          ← Store sets isDiving=true
 [CANVAS] 🏖️ → 🤿 Dive started!            ← BeachScene detects and transitions
@@ -72,51 +103,63 @@
 [STORE] ✅ Dive animation complete          ← isDiving cleared
 [CANVAS] 💰 Treasure collected!            ← Success animation
 [CANVAS] ✅ Treasure animation complete     ← Ready for next action
-        </pre>
-        <p><strong>Expected visual:</strong></p>
-        <ul>
-            <li>Scene transitions from beach to underwater</li>
-            <li><strong class="log-success">Parallax layers scroll (seaweed, coral, rocks)</strong></li>
-            <li>Bubbles rise</li>
-            <li>Fish/jellyfish swim</li>
-            <li>Diver animates downward</li>
-        </ul>
+        </pre
+      >
+      <p><strong>Expected visual:</strong></p>
+      <ul>
+        <li>Scene transitions from beach to underwater</li>
+        <li>
+          <strong class="log-success"
+            >Parallax layers scroll (seaweed, coral, rocks)</strong
+          >
+        </li>
+        <li>Bubbles rise</li>
+        <li>Fish/jellyfish swim</li>
+        <li>Diver animates downward</li>
+      </ul>
     </div>
-    
+
     <div class="step">
-        <h3>Test 3: Second Dive (THE BUG FIX TEST!)</h3>
-        <p><strong>Action:</strong> Click "DIVE DEEPER" again</p>
-        <p><strong>Expected console logs:</strong></p>
-        <pre class="log-success">
+      <h3>Test 3: Second Dive (THE BUG FIX TEST!)</h3>
+      <p><strong>Action:</strong> Click "DIVE DEEPER" again</p>
+      <p><strong>Expected console logs:</strong></p>
+      <pre class="log-success">
 [GAME] 🤿 Dive initiated
 [STORE] 🤿 Starting dive animation          ← MUST appear (isDiving=true again)
 [CANVAS] 🤿 Starting dive animation (2.5s) ← MUST appear (animation triggers)
 [CANVAS] ✅ Diving animation complete
 [CANVAS] 💰 Treasure collected!
 [CANVAS] ✅ Treasure animation complete
-        </pre>
-        <p><strong class="log-success">CRITICAL:</strong> The parallax layers MUST scroll again!</p>
-        <p><strong>Visual check:</strong></p>
-        <ul>
-            <li class="log-success">✅ Seaweed scrolls downward</li>
-            <li class="log-success">✅ Coral/rocks scroll</li>
-            <li class="log-success">✅ Speed lines appear</li>
-            <li class="log-success">✅ Diver animates diving motion</li>
-        </ul>
-        <p><strong class="log-error">❌ If parallax doesn't move:</strong> Bug NOT fixed!</p>
+        </pre
+      >
+      <p>
+        <strong class="log-success">CRITICAL:</strong> The parallax layers MUST
+        scroll again!
+      </p>
+      <p><strong>Visual check:</strong></p>
+      <ul>
+        <li class="log-success">✅ Seaweed scrolls downward</li>
+        <li class="log-success">✅ Coral/rocks scroll</li>
+        <li class="log-success">✅ Speed lines appear</li>
+        <li class="log-success">✅ Diver animates diving motion</li>
+      </ul>
+      <p>
+        <strong class="log-error">❌ If parallax doesn't move:</strong> Bug NOT
+        fixed!
+      </p>
     </div>
-    
+
     <div class="step">
-        <h3>Test 4: Third Dive (Verify Fix is Consistent)</h3>
-        <p><strong>Action:</strong> Click "DIVE DEEPER" a third time</p>
-        <p><strong>Expected:</strong> Same as Test 3 - animations should work!</p>
+      <h3>Test 4: Third Dive (Verify Fix is Consistent)</h3>
+      <p><strong>Action:</strong> Click "DIVE DEEPER" a third time</p>
+      <p><strong>Expected:</strong> Same as Test 3 - animations should work!</p>
     </div>
-    
+
     <div class="step">
-        <h3>Test 5: Surfacing (THE SECOND BUG FIX!)</h3>
-        <p><strong>Action:</strong> Click "SURFACE"</p>
-        <p><strong>Expected console logs:</strong></p>
-        <pre class="log-success">
+      <h3>Test 5: Surfacing (THE SECOND BUG FIX!)</h3>
+      <p><strong>Action:</strong> Click "SURFACE"</p>
+      <p><strong>Expected console logs:</strong></p>
+      <pre class="log-success">
 [GAME] 🏄 Surfacing
 [STORE] 🏄 Triggering surfacing             ← shouldSurface=true
 [CANVAS] 🌊 Player cashed out!              ← MUST appear (transition triggered)
@@ -124,51 +167,85 @@
 [CANVAS] ✅ Surfacing complete!             ← Animation completes
 [STORE] 🏖️ Returning to beach              ← Flags reset
 [CANVAS] 🏖️ Beach scene created!           ← MUST return to beach
-        </pre>
-        <p><strong>Expected visual:</strong></p>
-        <ul>
-            <li>Diver rises to surface</li>
-            <li>Colors transition from dark blue → light blue → sky</li>
-            <li>Boat appears at surface</li>
-            <li>Scene returns to beach</li>
-            <li class="log-success">✅ Betting card appears (can start new game)</li>
-        </ul>
-        <p><strong class="log-error">❌ If stuck in diving scene:</strong> Bug NOT fixed!</p>
+        </pre
+      >
+      <p><strong>Expected visual:</strong></p>
+      <ul>
+        <li>Diver rises to surface</li>
+        <li>Colors transition from dark blue → light blue → sky</li>
+        <li>Boat appears at surface</li>
+        <li>Scene returns to beach</li>
+        <li class="log-success">
+          ✅ Betting card appears (can start new game)
+        </li>
+      </ul>
+      <p>
+        <strong class="log-error">❌ If stuck in diving scene:</strong> Bug NOT
+        fixed!
+      </p>
     </div>
-    
+
     <div class="step info">
-        <h3>Summary of Fixes</h3>
-        <h4>Bug #1: Second dive has no animation</h4>
-        <p><strong>Problem:</strong> <code>endDiveAnimation()</code> was called in page.tsx, clearing <code>isDiving</code> too early</p>
-        <p><strong>Solution:</strong> Removed the call from page.tsx, let DivingScene call it after animation completes</p>
-        
-        <h4>Bug #2: Surfacing doesn't return to beach</h4>
-        <p><strong>Problem:</strong> Treasure animation never completed, keeping <code>isAnimating=true</code></p>
-        <p><strong>Solution:</strong> Added treasure animation completion logic after 1.5 seconds</p>
-        
-        <h4>Files Modified:</h4>
-        <ul>
-            <li><code>app/page.tsx</code> - Removed <code>endDiveAnimation()</code> call</li>
-            <li><code>components/DeepSeaDiver/scenes/DivingScene.ts</code> - Added:
-                <ul>
-                    <li>Call <code>endDiveAnimation()</code> after dive animation completes</li>
-                    <li>Added treasure animation completion logic</li>
-                    <li>Set <code>isAnimating=true</code> before transitions to prevent race conditions</li>
-                </ul>
+      <h3>Summary of Fixes</h3>
+      <h4>Bug #1: Second dive has no animation</h4>
+      <p>
+        <strong>Problem:</strong> <code>endDiveAnimation()</code> was called in
+        page.tsx, clearing <code>isDiving</code> too early
+      </p>
+      <p>
+        <strong>Solution:</strong> Removed the call from page.tsx, let
+        DivingScene call it after animation completes
+      </p>
+
+      <h4>Bug #2: Surfacing doesn't return to beach</h4>
+      <p>
+        <strong>Problem:</strong> Treasure animation never completed, keeping
+        <code>isAnimating=true</code>
+      </p>
+      <p>
+        <strong>Solution:</strong> Added treasure animation completion logic
+        after 1.5 seconds
+      </p>
+
+      <h4>Files Modified:</h4>
+      <ul>
+        <li>
+          <code>app/page.tsx</code> - Removed
+          <code>endDiveAnimation()</code> call
+        </li>
+        <li>
+          <code>components/DeepSeaDiver/scenes/DivingScene.ts</code> - Added:
+          <ul>
+            <li>
+              Call <code>endDiveAnimation()</code> after dive animation
+              completes
             </li>
-        </ul>
+            <li>Added treasure animation completion logic</li>
+            <li>
+              Set <code>isAnimating=true</code> before transitions to prevent
+              race conditions
+            </li>
+          </ul>
+        </li>
+      </ul>
     </div>
-    
+
     <div class="step">
-        <h2>Test Results</h2>
-        <p>Check each test above and mark:</p>
-        <ul>
-            <li><span class="log-success">✅ PASS</span> - If behavior matches expected</li>
-            <li><span class="log-error">❌ FAIL</span> - If behavior differs</li>
-        </ul>
-        
-        <h3>Final Verdict:</h3>
-        <p>All tests should pass. If any fail, note the specific console logs that are missing.</p>
+      <h2>Test Results</h2>
+      <p>Check each test above and mark:</p>
+      <ul>
+        <li>
+          <span class="log-success">✅ PASS</span> - If behavior matches
+          expected
+        </li>
+        <li><span class="log-error">❌ FAIL</span> - If behavior differs</li>
+      </ul>
+
+      <h3>Final Verdict:</h3>
+      <p>
+        All tests should pass. If any fail, note the specific console logs that
+        are missing.
+      </p>
     </div>
-</body>
+  </body>
 </html>

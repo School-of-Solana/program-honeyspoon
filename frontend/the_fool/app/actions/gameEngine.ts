@@ -62,7 +62,9 @@ const GAME_CONFIG: GameConfig = {
 if (process.env.NODE_ENV === "development") {
   console.log("[CONFIG] ✅ Server config synced from lib/constants.ts");
   console.log(`[CONFIG] House edge: ${GAME_CONFIG.houseEdge * 100}%`);
-  console.log(`[CONFIG] Base win prob: ${GAME_CONFIG.baseWinProbability * 100}%`);
+  console.log(
+    `[CONFIG] Base win prob: ${GAME_CONFIG.baseWinProbability * 100}%`
+  );
 }
 
 /**

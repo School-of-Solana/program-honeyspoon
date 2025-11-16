@@ -56,6 +56,7 @@ export function createBeachScene(config: SceneConfig) {
 
     // Beach/sand - DIAGONAL with WAVY LEFT EDGE
     const waterSurfaceY = k.height() * CONST.LAYOUT.WATER_SURFACE_Y;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const beachPoints: any[] = [];
     const waveAmplitude = CONST.SCALES.WAVE_AMPLITUDE;
     const waveFrequency = CONST.SCALES.WAVE_FREQUENCY;
@@ -106,6 +107,7 @@ export function createBeachScene(config: SceneConfig) {
     // === BEACH DECORATIONS ===
 
     // Multiple palm trees across the beach
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     CONST.DECORATIONS.PALM_TREES.forEach((palm: any) => {
       createPalmTree(
         k,
@@ -129,6 +131,7 @@ export function createBeachScene(config: SceneConfig) {
     });
 
     // Add pebbles
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     CONST.DECORATIONS.PEBBLES.forEach((pebble: any, index: number) => {
       k.add([
         k.sprite("pebbles", { frame: index % 6 }),

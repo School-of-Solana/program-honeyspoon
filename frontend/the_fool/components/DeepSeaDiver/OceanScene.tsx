@@ -25,6 +25,18 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
   // Subscribe to only the Kaplay debug setting from store
   const kaplayDebug = useGameStore((state) => state.kaplayDebug);
 
+  // Helper function - defined before useEffect to avoid hoisting issues
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : { r: 74, g: 144, b: 226 };
+  };
+
   useEffect(() => {
     console.log("[CANVAS] 🎬 OceanScene useEffect triggered");
     console.log("[CANVAS] ✅ Using Zustand store - no more refs!");
@@ -45,7 +57,7 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
       console.log("[CANVAS] 🧹 Cleaning up previous instance");
       try {
         kRef.current.quit();
-      } catch (e) {
+      } catch {
         // Ignore errors during cleanup
       }
       kRef.current = null;
@@ -139,7 +151,7 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
       if (kRef.current) {
         try {
           kRef.current.quit();
-        } catch (e) {
+        } catch {
           // Ignore errors during cleanup
         }
         kRef.current = null;
@@ -155,24 +167,14 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
     // Kaplay's debug mode can be toggled via debug.inspect
     if (kaplayDebug) {
       console.log("[CANVAS] 🔧 Kaplay debug mode enabled");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (kRef.current as any).debug.inspect = true;
     } else {
       console.log("[CANVAS] 🔧 Kaplay debug mode disabled");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (kRef.current as any).debug.inspect = false;
     }
   }, [kaplayDebug]);
-
-  // Helper function
-  function hexToRgb(hex: string) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : { r: 74, g: 144, b: 226 };
-  }
 
   return <canvas ref={canvasRef} className="w-full h-full" />;
 }
