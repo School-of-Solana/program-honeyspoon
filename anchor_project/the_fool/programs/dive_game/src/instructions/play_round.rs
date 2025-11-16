@@ -28,10 +28,10 @@ pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
         GameError::InvalidSessionStatus
     );
 
-    // Validate dive number is within limits
+    // Validate dive number is within limits (strict < to prevent off-by-one)
     require!(
-        session.dive_number <= config.max_dives,
-        GameError::InvalidSessionStatus
+        session.dive_number < config.max_dives,
+        GameError::MaxDivesReached
     );
 
     // Generate random roll from stored seed + current dive number

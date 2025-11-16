@@ -194,11 +194,7 @@ mod tests {
         let config = test_config();
         let treasure = treasure_for_dive(&config, bet, dive);
         // Allow small rounding differences (within 1%)
-        let diff = if treasure > expected {
-            treasure - expected
-        } else {
-            expected - treasure
-        };
+        let diff = treasure.abs_diff(expected);
         let tolerance = expected / 100;
 
         assert!(
@@ -260,7 +256,6 @@ mod tests {
 
         // Should saturate properly
         assert!(max > 0);
-        assert!(max <= u64::MAX);
     }
 
     #[rstest]
@@ -296,7 +291,6 @@ mod tests {
 
         // Should not panic and should be reasonable
         assert!(max > 0);
-        assert!(max <= u64::MAX);
     }
 
     // ============================================================================
@@ -420,7 +414,7 @@ mod tests {
         for dive in 0..=300 {
             let p = survival_probability_bps(&config, dive);
             assert!(
-                p >= 100_000 && p <= 1_000_000,
+                (100_000..=1_000_000).contains(&p),
                 "Dive {dive} produced out-of-bounds prob {p}"
             );
         }

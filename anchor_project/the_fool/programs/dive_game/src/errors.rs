@@ -25,4 +25,10 @@ pub enum GameError {
 
     #[msg("Cannot cash out with treasure less than or equal to bet")]
     InsufficientTreasure,
+
+    #[msg("Invalid game configuration")]
+    InvalidConfig,
+
+    #[msg("Maximum number of dives reached")]
+    MaxDivesReached,
 }

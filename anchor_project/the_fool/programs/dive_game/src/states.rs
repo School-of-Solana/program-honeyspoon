@@ -21,6 +21,30 @@ pub struct HouseVault {
     pub bump: u8,
 }
 
+impl HouseVault {
+    /// Reserve funds for a new session
+    pub fn reserve(&mut self, amount: u64) -> Result<()> {
+        self.total_reserved = self
+            .total_reserved
+            .checked_add(amount)
+            .ok_or(error!(crate::errors::GameError::Overflow))?;
+        Ok(())
+    }
+
+    /// Release reserved funds when a session ends
+    pub fn release(&mut self, amount: u64) -> Result<()> {
+        require!(
+            self.total_reserved >= amount,
+            crate::errors::GameError::Overflow
+        );
+        self.total_reserved = self
+            .total_reserved
+            .checked_sub(amount)
+            .ok_or(error!(crate::errors::GameError::Overflow))?;
+        Ok(())
+    }
+}
+
 /// Game configuration - single source of truth for all game parameters
 /// This account stores the parameters that govern game mechanics.
 /// Both on-chain instructions and off-chain clients read from this account.

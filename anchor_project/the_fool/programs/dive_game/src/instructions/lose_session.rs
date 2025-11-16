@@ -15,15 +15,8 @@ pub fn lose_session(ctx: Context<LoseSession>) -> Result<()> {
         GameError::InvalidSessionStatus
     );
 
-    // Release reserved funds with safety check
-    require!(
-        house_vault.total_reserved >= session.max_payout,
-        GameError::Overflow
-    );
-    house_vault.total_reserved = house_vault
-        .total_reserved
-        .checked_sub(session.max_payout)
-        .ok_or(GameError::Overflow)?;
+    // Release reserved funds using helper method
+    house_vault.release(session.max_payout)?;
 
     // Update session status
     session.status = SessionStatus::Lost;

@@ -39,6 +39,30 @@ pub fn init_config(ctx: Context<InitializeConfig>, params: GameConfigParams) -> 
     config.max_bet = params.max_bet.unwrap_or(defaults.8);
     config.bump = ctx.bumps.config;
 
+    // Validate configuration parameters
+    require!(
+        config.treasure_multiplier_den > 0,
+        crate::errors::GameError::InvalidConfig
+    );
+    require!(
+        config.base_survival_ppm <= 1_000_000,
+        crate::errors::GameError::InvalidConfig
+    );
+    require!(
+        config.min_survival_ppm <= config.base_survival_ppm,
+        crate::errors::GameError::InvalidConfig
+    );
+    require!(
+        config.max_dives > 0,
+        crate::errors::GameError::InvalidConfig
+    );
+    if config.max_bet > 0 {
+        require!(
+            config.min_bet <= config.max_bet,
+            crate::errors::GameError::InvalidConfig
+        );
+    }
+
     msg!("Game config initialized:");
     msg!(
         "  Base survival: {}ppm ({}%)",
@@ -80,4 +104,211 @@ pub struct InitializeConfig<'info> {
     pub config: Account<'info, GameConfig>,
 
     pub system_program: Program<'info, System>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Helper to create default config
+    fn default_params() -> GameConfigParams {
+        GameConfigParams {
+            base_survival_ppm: Some(990_000),
+            decay_per_dive_ppm: Some(5_000),
+            min_survival_ppm: Some(100_000),
+            treasure_multiplier_num: Some(11),
+            treasure_multiplier_den: Some(10),
+            max_payout_multiplier: Some(100),
+            max_dives: Some(200),
+            min_bet: Some(1),
+            max_bet: Some(0),
+        }
+    }
+
+    #[test]
+    fn test_config_validation_zero_denominator() {
+        let mut params = default_params();
+        params.treasure_multiplier_den = Some(0);
+
+        // Create mock config
+        let config = GameConfig {
+            admin: Pubkey::default(),
+            base_survival_ppm: 990_000,
+            decay_per_dive_ppm: 5_000,
+            min_survival_ppm: 100_000,
+            treasure_multiplier_num: 11,
+            treasure_multiplier_den: 0, // Invalid
+            max_payout_multiplier: 100,
+            max_dives: 200,
+            min_bet: 1,
+            max_bet: 0,
+            bump: 0,
+        };
+
+        // This validation should fail
+        let result = (|| {
+            require!(
+                config.treasure_multiplier_den > 0,
+                crate::errors::GameError::InvalidConfig
+            );
+            Ok::<(), Error>(())
+        })();
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_config_validation_inverted_probabilities() {
+        let config = GameConfig {
+            admin: Pubkey::default(),
+            base_survival_ppm: 100_000, // Less than min
+            decay_per_dive_ppm: 5_000,
+            min_survival_ppm: 990_000, // Greater than base - INVALID
+            treasure_multiplier_num: 11,
+            treasure_multiplier_den: 10,
+            max_payout_multiplier: 100,
+            max_dives: 200,
+            min_bet: 1,
+            max_bet: 0,
+            bump: 0,
+        };
+
+        let result = (|| {
+            require!(
+                config.min_survival_ppm <= config.base_survival_ppm,
+                crate::errors::GameError::InvalidConfig
+            );
+            Ok::<(), Error>(())
+        })();
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_config_validation_probability_exceeds_100_percent() {
+        let config = GameConfig {
+            admin: Pubkey::default(),
+            base_survival_ppm: 1_500_000, // > 100% - INVALID
+            decay_per_dive_ppm: 5_000,
+            min_survival_ppm: 100_000,
+            treasure_multiplier_num: 11,
+            treasure_multiplier_den: 10,
+            max_payout_multiplier: 100,
+            max_dives: 200,
+            min_bet: 1,
+            max_bet: 0,
+            bump: 0,
+        };
+
+        let result = (|| {
+            require!(
+                config.base_survival_ppm <= 1_000_000,
+                crate::errors::GameError::InvalidConfig
+            );
+            Ok::<(), Error>(())
+        })();
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_config_validation_min_bet_greater_than_max_bet() {
+        let config = GameConfig {
+            admin: Pubkey::default(),
+            base_survival_ppm: 990_000,
+            decay_per_dive_ppm: 5_000,
+            min_survival_ppm: 100_000,
+            treasure_multiplier_num: 11,
+            treasure_multiplier_den: 10,
+            max_payout_multiplier: 100,
+            max_dives: 200,
+            min_bet: 1000, // Greater than max
+            max_bet: 100,  // Less than min - INVALID
+            bump: 0,
+        };
+
+        let result = (|| {
+            if config.max_bet > 0 {
+                require!(
+                    config.min_bet <= config.max_bet,
+                    crate::errors::GameError::InvalidConfig
+                );
+            }
+            Ok::<(), Error>(())
+        })();
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_config_validation_zero_max_dives() {
+        let config = GameConfig {
+            admin: Pubkey::default(),
+            base_survival_ppm: 990_000,
+            decay_per_dive_ppm: 5_000,
+            min_survival_ppm: 100_000,
+            treasure_multiplier_num: 11,
+            treasure_multiplier_den: 10,
+            max_payout_multiplier: 100,
+            max_dives: 0, // INVALID
+            min_bet: 1,
+            max_bet: 0,
+            bump: 0,
+        };
+
+        let result = (|| {
+            require!(
+                config.max_dives > 0,
+                crate::errors::GameError::InvalidConfig
+            );
+            Ok::<(), Error>(())
+        })();
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_config_validation_valid_config_passes() {
+        let config = GameConfig {
+            admin: Pubkey::default(),
+            base_survival_ppm: 990_000,
+            decay_per_dive_ppm: 5_000,
+            min_survival_ppm: 100_000,
+            treasure_multiplier_num: 11,
+            treasure_multiplier_den: 10,
+            max_payout_multiplier: 100,
+            max_dives: 200,
+            min_bet: 1,
+            max_bet: 0,
+            bump: 0,
+        };
+
+        let result = (|| {
+            require!(
+                config.treasure_multiplier_den > 0,
+                crate::errors::GameError::InvalidConfig
+            );
+            require!(
+                config.base_survival_ppm <= 1_000_000,
+                crate::errors::GameError::InvalidConfig
+            );
+            require!(
+                config.min_survival_ppm <= config.base_survival_ppm,
+                crate::errors::GameError::InvalidConfig
+            );
+            require!(
+                config.max_dives > 0,
+                crate::errors::GameError::InvalidConfig
+            );
+            if config.max_bet > 0 {
+                require!(
+                    config.min_bet <= config.max_bet,
+                    crate::errors::GameError::InvalidConfig
+                );
+            }
+            Ok::<(), Error>(())
+        })();
+
+        assert!(result.is_ok());
+    }
 }

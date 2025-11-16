@@ -54,11 +54,8 @@ pub fn start_session(
         .ok_or(GameError::Overflow)?;
     require!(available >= max_payout, GameError::InsufficientVaultBalance);
 
-    // Reserve max_payout in house vault
-    house_vault.total_reserved = house_vault
-        .total_reserved
-        .checked_add(max_payout)
-        .ok_or(GameError::Overflow)?;
+    // Reserve max_payout in house vault using helper method
+    house_vault.reserve(max_payout)?;
 
     // Generate RNG seed using Clock (works in all environments including test validator)
     // Combine slot + unix timestamp + session PDA for randomness

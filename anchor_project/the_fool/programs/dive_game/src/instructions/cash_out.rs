@@ -39,15 +39,8 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
         .to_account_info()
         .try_borrow_mut_lamports()? += session.current_treasure;
 
-    // Release reserved funds with safety check
-    require!(
-        house_vault.total_reserved >= session.max_payout,
-        GameError::Overflow
-    );
-    house_vault.total_reserved = house_vault
-        .total_reserved
-        .checked_sub(session.max_payout)
-        .ok_or(GameError::Overflow)?;
+    // Release reserved funds using helper method
+    house_vault.release(session.max_payout)?;
 
     // Update session status
     session.status = SessionStatus::CashedOut;
