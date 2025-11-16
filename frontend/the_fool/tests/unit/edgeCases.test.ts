@@ -300,6 +300,7 @@ describe("Edge Cases - Concurrent Operations", () => {
         currentTreasure: 50,
         diveNumber: 1,
         isActive: true,
+      status: "ACTIVE" as const,
         reservedPayout: 5000,
         startTime: Date.now(),
       });
@@ -407,6 +408,7 @@ describe("Edge Cases - State Corruption", () => {
       currentTreasure: 100,
       diveNumber: 1,
       isActive: true,
+      status: "ACTIVE" as const,
       reservedPayout: 5000,
       startTime: Date.now(),
     });
@@ -700,6 +702,7 @@ describe("Edge Cases - Performance & Scale", () => {
         currentTreasure: 50,
         diveNumber: 1,
         isActive: true,
+      status: "ACTIVE" as const,
         reservedPayout: 5000,
         startTime: Date.now(),
       });

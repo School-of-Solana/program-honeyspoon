@@ -475,17 +475,17 @@ describe("Wallet Logic - Risk Exposure", () => {
       "Should show $10k reserved"
     );
 
-    // Available = balance - reserved - (20% reserve)
-    // = 50000 - 10000 - 10000 = 30000
+    // Available = balance - reserved - (10% reserve)
+    // = 50000 - 10000 - 5000 = 35000
     assert.strictEqual(
       exposure.availableFunds,
-      30000,
-      "Should have $30k available"
+      35000,
+      "Should have $35k available"
     );
     assert.strictEqual(
       exposure.reserveRequired,
-      10000,
-      "Should require $10k reserve (20%)"
+      5000,
+      "Should require $5k reserve (10%)"
     );
 
     console.log(

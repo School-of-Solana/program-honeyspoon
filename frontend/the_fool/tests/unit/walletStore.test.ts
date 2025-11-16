@@ -335,6 +335,7 @@ describe("Wallet Store - Game Sessions", () => {
       currentTreasure: 100,
       diveNumber: 1,
       isActive: true,
+      status: "ACTIVE" as const,
       reservedPayout: 5000,
       startTime: Date.now(),
     };
@@ -361,6 +362,7 @@ describe("Wallet Store - Game Sessions", () => {
       currentTreasure: 100,
       diveNumber: 1,
       isActive: true,
+      status: "ACTIVE" as const,
       reservedPayout: 5000,
       startTime: Date.now(),
     };
@@ -394,6 +396,7 @@ describe("Wallet Store - Game Sessions", () => {
       currentTreasure: 100,
       diveNumber: 1,
       isActive: true,
+      status: "ACTIVE" as const,
       reservedPayout: 5000,
       startTime: Date.now(),
     };
@@ -423,6 +426,7 @@ describe("Wallet Store - Game Sessions", () => {
       currentTreasure: 100,
       diveNumber: 1,
       isActive: true,
+      status: "ACTIVE" as const,
       reservedPayout: 5000,
       startTime: Date.now(),
     };
@@ -445,6 +449,7 @@ describe("Wallet Store - Game Sessions", () => {
       currentTreasure: 200,
       diveNumber: 1,
       isActive: true,
+      status: "ACTIVE" as const,
       reservedPayout: 10000,
       startTime: Date.now(),
     };
@@ -478,6 +483,7 @@ describe("Wallet Store - Game Sessions", () => {
         currentTreasure: 100,
         diveNumber: 1,
         isActive: true,
+      status: "ACTIVE" as const,
         reservedPayout: 5000,
         startTime: Date.now(),
       });
@@ -524,6 +530,7 @@ describe("Wallet Store - Statistics", () => {
       currentTreasure: 100,
       diveNumber: 1,
       isActive: true,
+      status: "ACTIVE" as const,
       reservedPayout: 5000,
       startTime: Date.now(),
     });
@@ -614,6 +621,7 @@ describe("Wallet Store - Reset", () => {
       currentTreasure: 100,
       diveNumber: 1,
       isActive: true,
+      status: "ACTIVE" as const,
       reservedPayout: 5000,
       startTime: Date.now(),
     });

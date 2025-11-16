@@ -211,7 +211,8 @@ describe("House Wallet Race Conditions", () => {
       sessions.push(sessionId);
 
       await startGame(50, userId, sessionId);
-      await performDive(1, 50, sessionId, userId, "99");
+      // Use seed "50" to ensure survival (70% win rate, so need roll >= 30)
+      await performDive(1, 50, sessionId, userId, "50");
     }
 
     const houseBefore = await getHouseStatus();
@@ -324,7 +325,7 @@ describe("Session State Corruption", () => {
       await surfaceWithTreasure(100, sessionId, userId);
       assert.fail("Should reject mismatched treasure amount");
     } catch (error) {
-      assert.ok((error as Error).message.includes("doesn't match"));
+      assert.ok((error as Error).message.includes("Cash-out mismatch"));
     }
 
     // Correct treasure should work
