@@ -1,17 +1,17 @@
 /**
  * SolanaGameChain - Real Solana blockchain implementation
- * 
+ *
  * This implementation will call the actual Anchor program on-chain.
- * 
+ *
  * STATUS: SKELETON ONLY - Requires contract deployment and IDL
- * 
+ *
  * When ready to implement:
  * 1. Deploy contract to devnet/mainnet
  * 2. Generate IDL: `anchor build && anchor idl parse`
  * 3. Install dependencies: `npm install @solana/web3.js @coral-xyz/anchor`
  * 4. Import IDL types
  * 5. Implement each method using program.methods.*
- * 
+ *
  * Reference: SOLANA_REFACTOR_PLAN_REVISED.md (Phase 6)
  */
 
@@ -24,7 +24,7 @@ import {
 
 /**
  * TODO: Uncomment when dependencies are installed
- * 
+ *
  * import {
  *   Connection,
  *   PublicKey,
@@ -49,8 +49,8 @@ export class SolanaGameChain implements GameChainPort {
   ) {
     throw new Error(
       "SolanaGameChain not implemented yet. " +
-      "Contract must be deployed and IDL generated first. " +
-      "See SOLANA_REFACTOR_PLAN_REVISED.md for implementation details."
+        "Contract must be deployed and IDL generated first. " +
+        "See SOLANA_REFACTOR_PLAN_REVISED.md for implementation details."
     );
   }
 
@@ -109,14 +109,28 @@ export class SolanaGameChain implements GameChainPort {
     throw new Error("Not implemented");
   }
 
-  async getSession(_sessionPda: SessionHandle): Promise<GameSessionState | null> {
+  async getSession(
+    _sessionPda: SessionHandle
+  ): Promise<GameSessionState | null> {
     throw new Error("Not implemented");
+  }
+
+  async getUserBalance(_userPubkey: string): Promise<bigint> {
+    throw new Error(
+      "Not implemented - will use connection.getBalance() when ready"
+    );
+  }
+
+  async getVaultBalance(_vaultPda: string): Promise<bigint> {
+    throw new Error(
+      "Not implemented - will use connection.getBalance() when ready"
+    );
   }
 }
 
 /**
  * IMPLEMENTATION CHECKLIST (for future):
- * 
+ *
  * [ ] Install @solana/web3.js and @coral-xyz/anchor
  * [ ] Deploy contract to devnet
  * [ ] Generate IDL and copy to lib/solana/idl/dive_game.ts
@@ -137,7 +151,7 @@ export class SolanaGameChain implements GameChainPort {
  * [ ] Add PDA derivation helpers (real PublicKey.findProgramAddressSync)
  * [ ] Test against devnet
  * [ ] Update getGameChain() in lib/ports/index.ts to use SolanaGameChain
- * 
+ *
  * CONTRACT REQUIREMENTS (your side):
  * [ ] Add Switchboard VRF integration to start_session
  * [ ] Implement derive_roll(seed, dive) with keccak256

@@ -31,22 +31,14 @@ import {
   addTransaction,
   deleteGameSession,
   getGameSession,
-  getHouseWallet,
-  getUserWallet,
   setGameSession,
-  updateHouseWallet,
-  updateUserWallet,
 } from "@/lib/walletStore";
 import {
-  processBet,
-  processHousePayout,
-  processHouseReceiveBet,
-  processLoss,
-  processWin,
-  releaseHouseFunds,
-  reserveHouseFunds,
-  validateBet,
-} from "@/lib/walletLogic";
+  getUserStats,
+  recordBet,
+  recordWin,
+  recordLoss,
+} from "@/lib/userStats";
 import crypto from "crypto";
 
 // Get chain instance (LocalGameChain or SolanaGameChain)
@@ -151,14 +143,29 @@ export async function startGameSession(
     // Ensure house vault exists
     const vaultPda = await ensureHouseVault();
 
-    // Get wallets for legacy transaction tracking
-    const userWallet = getUserWallet(userId);
-    const houseWallet = getHouseWallet();
+    // Get user balance from chain
+    const userBalanceLamports = await chain.getUserBalance(userId);
+    const userBalance = lamportsToDollars(userBalanceLamports);
 
-    // Validate bet against wallet limits
-    const validation = validateBet(betAmount, userWallet, houseWallet);
-    if (!validation.valid) {
-      return { success: false, error: validation.error };
+    // Get house vault state from chain
+    const houseVault = await chain.getHouseVault(vaultPda);
+    if (!houseVault) {
+      return { success: false, error: "House vault not initialized" };
+    }
+    const houseBalanceLamports = await chain.getVaultBalance(vaultPda);
+    const houseBalance = lamportsToDollars(houseBalanceLamports);
+    const houseReserved = lamportsToDollars(houseVault.totalReserved);
+    const houseAvailable = houseBalance - houseReserved;
+
+    // Validate bet amount
+    if (betAmount < GAME_CONFIG.minBet) {
+      return { success: false, error: `Minimum bet is $${GAME_CONFIG.minBet}` };
+    }
+    if (betAmount > GAME_CONFIG.maxBet) {
+      return { success: false, error: `Maximum bet is $${GAME_CONFIG.maxBet}` };
+    }
+    if (betAmount > userBalance) {
+      return { success: false, error: "Insufficient balance" };
     }
 
     // Calculate max potential payout
@@ -168,11 +175,19 @@ export async function startGameSession(
       GAME_CONFIG
     );
 
+    // Validate house can cover max payout
+    if (maxPayout > houseAvailable) {
+      return {
+        success: false,
+        error: "House cannot cover maximum potential payout. Please bet less.",
+      };
+    }
+
     // Convert to lamports
     const betLamports = dollarsToLamports(betAmount);
     const maxPayoutLamports = dollarsToLamports(maxPayout);
 
-    // Start session on-chain
+    // Start session on-chain (this handles the actual money transfer)
     const { sessionPda, state } = await chain.startSession({
       userPubkey: userId,
       betAmountLamports: betLamports,
@@ -180,14 +195,10 @@ export async function startGameSession(
       houseVaultPda: vaultPda,
     });
 
-    // Update local wallets for legacy tracking (will be removed in Phase 7)
-    const updatedUser = processBet(userWallet, betAmount);
-    const houseWithBet = processHouseReceiveBet(houseWallet, betAmount);
-    const houseWithReserve = reserveHouseFunds(houseWithBet, maxPayout);
-    updateUserWallet(updatedUser);
-    updateHouseWallet(houseWithReserve);
+    // Record statistics (NOT wallet balance - that's on chain)
+    recordBet(userId, betAmount);
 
-    // Create local game session for legacy compatibility
+    // Create local game session for tracking
     setGameSession({
       sessionId: sessionPda, // Use PDA as session ID
       userId,
@@ -200,14 +211,18 @@ export async function startGameSession(
       startTime: Date.now(),
     });
 
+    // Get updated balance for transaction record
+    const newUserBalanceLamports = await chain.getUserBalance(userId);
+    const newUserBalance = lamportsToDollars(newUserBalanceLamports);
+
     // Record transaction
     addTransaction({
       id: crypto.randomBytes(8).toString("hex"),
       userId,
       type: "bet",
       amount: betAmount,
-      balanceBefore: userWallet.balance,
-      balanceAfter: updatedUser.balance,
+      balanceBefore: userBalance,
+      balanceAfter: newUserBalance,
       gameSessionId: sessionPda,
       timestamp: Date.now(),
     });
@@ -366,32 +381,28 @@ export async function executeRound(
         `[CHAIN] ✅ Round ${roundNumber} survived: $${gameSession.currentTreasure}`
       );
     } else {
-      // Player lost (chain already updated status to Lost)
+      // Player lost (chain already updated status to Lost and released funds)
       gameSession.isActive = false;
       gameSession.status = "LOST";
       gameSession.endTime = Date.now();
       setGameSession(gameSession);
 
-      // Release house funds (legacy tracking)
-      const houseWallet = getHouseWallet();
-      const houseWithRelease = releaseHouseFunds(
-        houseWallet,
-        gameSession.reservedPayout
+      // Record loss in statistics
+      recordLoss(userId, gameSession.initialBet);
+
+      // Get balances for transaction record
+      const userBalanceBefore = lamportsToDollars(
+        await chain.getUserBalance(userId)
       );
-      updateHouseWallet(houseWithRelease);
 
-      // Record loss
-      const userWallet = getUserWallet(userId);
-      const updatedUser = processLoss(userWallet, gameSession.initialBet);
-      updateUserWallet(updatedUser);
-
+      // Transaction record (balance unchanged because player lost the bet at start)
       addTransaction({
         id: crypto.randomBytes(8).toString("hex"),
         userId,
         type: "loss",
         amount: gameSession.initialBet,
-        balanceBefore: userWallet.balance,
-        balanceAfter: updatedUser.balance,
+        balanceBefore: userBalanceBefore,
+        balanceAfter: userBalanceBefore, // No change - money was taken at bet time
         gameSessionId: sessionId,
         timestamp: Date.now(),
         metadata: {
@@ -486,23 +497,13 @@ export async function cashOut(
     const actualFinalAmount = lamportsToDollars(finalTreasureLamports);
     const profit = actualFinalAmount - gameSession.initialBet;
 
-    // Update local wallets (legacy tracking)
-    const userWallet = getUserWallet(userId);
-    const houseWallet = getHouseWallet();
+    // Record win in statistics
+    recordWin(userId, profit);
 
-    const updatedUser = processWin(
-      userWallet,
-      actualFinalAmount,
-      gameSession.initialBet
+    // Get balances for transaction record
+    const userBalanceBefore = lamportsToDollars(
+      await chain.getUserBalance(userId)
     );
-    const updatedHouse = processHousePayout(
-      houseWallet,
-      actualFinalAmount,
-      gameSession.reservedPayout
-    );
-
-    updateUserWallet(updatedUser);
-    updateHouseWallet(updatedHouse);
 
     // Record transaction
     addTransaction({
@@ -510,8 +511,8 @@ export async function cashOut(
       userId,
       type: "cashout",
       amount: actualFinalAmount,
-      balanceBefore: userWallet.balance,
-      balanceAfter: updatedUser.balance,
+      balanceBefore: userBalanceBefore - actualFinalAmount, // Before cashout
+      balanceAfter: userBalanceBefore, // After cashout
       gameSessionId: sessionId,
       timestamp: Date.now(),
       metadata: {
@@ -580,39 +581,41 @@ export async function getWalletInfo(userId: string): Promise<{
   chainHouseBalance?: number; // From chain state
   chainHouseReserved?: number; // From chain state
 }> {
-  const userWallet = getUserWallet(userId);
-  const houseWallet = getHouseWallet();
+  // Get user balance from chain
+  const userBalanceLamports = await chain.getUserBalance(userId);
+  const balance = lamportsToDollars(userBalanceLamports);
 
-  // Try to get chain state if available
-  let chainHouseBalance: number | undefined;
-  let chainHouseReserved: number | undefined;
+  // Get user statistics (NOT from chain - tracked separately)
+  const stats = getUserStats(userId);
+
+  // Get house vault state from chain
+  let houseBalance = 0;
+  let houseReserved = 0;
 
   try {
     if (houseVaultPDA) {
       const vaultState = await chain.getHouseVault(houseVaultPDA);
       if (vaultState) {
-        chainHouseBalance = lamportsToDollars(
-          await getChainVaultBalance(houseVaultPDA)
-        );
-        chainHouseReserved = lamportsToDollars(vaultState.totalReserved);
+        const vaultBalanceLamports = await chain.getVaultBalance(houseVaultPDA);
+        houseBalance = lamportsToDollars(vaultBalanceLamports);
+        houseReserved = lamportsToDollars(vaultState.totalReserved);
       }
     }
   } catch (error) {
-    // Chain state unavailable - not critical
     console.warn("[CHAIN] Could not fetch vault state:", error);
   }
 
   return {
-    balance: userWallet.balance,
-    totalWagered: userWallet.totalWagered,
-    totalWon: userWallet.totalWon,
-    totalLost: userWallet.totalLost,
-    gamesPlayed: userWallet.gamesPlayed,
-    maxBet: Math.min(GAME_CONFIG.maxBet, userWallet.balance),
-    houseBalance: houseWallet.balance,
-    houseReserved: houseWallet.reservedFunds,
-    chainHouseBalance,
-    chainHouseReserved,
+    balance,
+    totalWagered: stats.totalWagered,
+    totalWon: stats.totalWon,
+    totalLost: stats.totalLost,
+    gamesPlayed: stats.gamesPlayed,
+    maxBet: Math.min(GAME_CONFIG.maxBet, balance),
+    houseBalance,
+    houseReserved,
+    chainHouseBalance: houseBalance, // Same as houseBalance now
+    chainHouseReserved: houseReserved, // Same as houseReserved now
   };
 }
 
@@ -643,16 +646,31 @@ export async function getHouseStatus(): Promise<{
   totalReceived: number;
   canAcceptBets: boolean;
 }> {
-  const { getHouseRiskExposure } = await import("@/lib/walletLogic");
-  const houseWallet = getHouseWallet();
-  const riskInfo = getHouseRiskExposure(houseWallet);
+  // Get house vault state from chain
+  let balance = 0;
+  let reservedFunds = 0;
+  let availableFunds = 0;
+
+  try {
+    if (houseVaultPDA) {
+      const vaultState = await chain.getHouseVault(houseVaultPDA);
+      if (vaultState) {
+        const vaultBalanceLamports = await chain.getVaultBalance(houseVaultPDA);
+        balance = lamportsToDollars(vaultBalanceLamports);
+        reservedFunds = lamportsToDollars(vaultState.totalReserved);
+        availableFunds = balance - reservedFunds;
+      }
+    }
+  } catch (error) {
+    console.warn("[CHAIN] Could not fetch house vault state:", error);
+  }
 
   return {
-    balance: houseWallet.balance,
-    reservedFunds: houseWallet.reservedFunds,
-    availableFunds: riskInfo.availableFunds,
-    totalPaidOut: houseWallet.totalPaidOut,
-    totalReceived: houseWallet.totalReceived,
-    canAcceptBets: riskInfo.canAcceptNewBets,
+    balance,
+    reservedFunds,
+    availableFunds,
+    totalPaidOut: 0, // Not tracked separately anymore
+    totalReceived: 0, // Not tracked separately anymore
+    canAcceptBets: availableFunds > GAME_CONFIG.minBet * 10, // Simple heuristic
   };
 }

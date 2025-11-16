@@ -46,6 +46,17 @@ interface WalletStorage {
 }
 
 /**
+ * Server-side in-memory cache (persists across server requests)
+ * This solves the SSR problem where each server action gets a fresh LocalGameChain instance
+ */
+const serverSideCache = {
+  wallets: {} as WalletStorage,
+  vaults: new Map<string, HouseVaultState>(),
+  sessions: new Map<string, GameSessionState>(),
+  counter: 0,
+};
+
+/**
  * Local localStorage-backed implementation that simulates the Anchor contract
  */
 export class LocalGameChain implements GameChainPort {
@@ -72,11 +83,19 @@ export class LocalGameChain implements GameChainPort {
   // ===== localStorage persistence methods =====
 
   /**
-   * Load state from localStorage
+   * Load state from localStorage (client) or serverSideCache (server)
    */
   private loadState(): void {
-    if (typeof window === "undefined") return; // SSR safety
+    if (typeof window === "undefined") {
+      // Server-side: use in-memory cache
+      this.sessionCounter = serverSideCache.counter;
+      this.houseVaults = new Map(serverSideCache.vaults);
+      this.sessions = new Map(serverSideCache.sessions);
+      console.log("[CHAIN] ✅ Loaded state from serverSideCache");
+      return;
+    }
 
+    // Client-side: use localStorage
     try {
       // Load session counter
       const counterStr = localStorage.getItem(STORAGE_KEYS.COUNTER);
@@ -116,11 +135,18 @@ export class LocalGameChain implements GameChainPort {
   }
 
   /**
-   * Save state to localStorage
+   * Save state to localStorage (client) or serverSideCache (server)
    */
   private saveState(): void {
-    if (typeof window === "undefined") return; // SSR safety
+    if (typeof window === "undefined") {
+      // Server-side: save to in-memory cache
+      serverSideCache.counter = this.sessionCounter;
+      serverSideCache.vaults = new Map(this.houseVaults);
+      serverSideCache.sessions = new Map(this.sessions);
+      return;
+    }
 
+    // Client-side: save to localStorage
     try {
       // Save session counter
       localStorage.setItem(STORAGE_KEYS.COUNTER, String(this.sessionCounter));
@@ -149,11 +175,15 @@ export class LocalGameChain implements GameChainPort {
   }
 
   /**
-   * Load wallets from localStorage
+   * Load wallets from localStorage (client) or serverSideCache (server)
    */
   private loadWallets(): WalletStorage {
-    if (typeof window === "undefined") return {};
+    if (typeof window === "undefined") {
+      // Server-side: use in-memory cache
+      return serverSideCache.wallets;
+    }
 
+    // Client-side: use localStorage
     try {
       const walletsStr = localStorage.getItem(STORAGE_KEYS.WALLETS);
       return walletsStr ? JSON.parse(walletsStr) : {};
@@ -163,11 +193,16 @@ export class LocalGameChain implements GameChainPort {
   }
 
   /**
-   * Save wallets to localStorage
+   * Save wallets to localStorage (client) or serverSideCache (server)
    */
   private saveWallets(wallets: WalletStorage): void {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      // Server-side: save to in-memory cache
+      serverSideCache.wallets = wallets;
+      return;
+    }
 
+    // Client-side: save to localStorage
     try {
       localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
     } catch (error) {
@@ -176,10 +211,11 @@ export class LocalGameChain implements GameChainPort {
   }
 
   /**
-   * Helper: Get user balance from localStorage
+   * Get user balance from localStorage/serverSideCache (implements GameChainPort)
    */
-  private getUserBalance(user: string): bigint {
+  async getUserBalance(user: string): Promise<bigint> {
     const wallets = this.loadWallets();
+    const isServer = typeof window === "undefined";
 
     if (!wallets[user]) {
       // New users start with 1000 SOL in lamports
@@ -187,11 +223,14 @@ export class LocalGameChain implements GameChainPort {
       wallets[user] = initialBalance.toString();
       this.saveWallets(wallets);
       console.log(
-        `[CHAIN] 💰 Created new wallet for ${user.substring(0, 12)}...: 1000 SOL`
+        `[CHAIN] 💰 Created new wallet for ${user.substring(0, 12)}...: 1000 SOL (${isServer ? "server" : "client"})`
       );
       return initialBalance;
     }
 
+    console.log(
+      `[CHAIN] 💵 Loaded existing wallet for ${user.substring(0, 12)}...: ${(Number(wallets[user]) / 1e9).toFixed(2)} SOL (${isServer ? "server" : "client"})`
+    );
     return BigInt(wallets[user]);
   }
 
@@ -205,18 +244,17 @@ export class LocalGameChain implements GameChainPort {
   }
 
   /**
-   * Helper: Get vault balance from localStorage
-   * WORKAROUND: Server-side can't access localStorage, so we fall back to initialHouseBalance
+   * Get vault balance from localStorage/serverSideCache (implements GameChainPort)
    */
-  private getVaultBalance(vaultPda: string): bigint {
+  async getVaultBalance(vaultPda: string): Promise<bigint> {
     const wallets = this.loadWallets();
     const balance = wallets[vaultPda] ? BigInt(wallets[vaultPda]) : BigInt(0);
 
     // If balance is 0 and this is the house vault, use the initial balance as fallback
-    // This happens when running server-side where localStorage isn't available
+    // This happens when vault hasn't been initialized yet
     if (balance === BigInt(0) && vaultPda.includes("HOUSE_VAULT")) {
       console.log(
-        "[CHAIN] ⚠️ Using fallback balance for house vault (localStorage not accessible on server)"
+        "[CHAIN] ⚠️ Using fallback balance for house vault (not initialized yet)"
       );
       return this.initialHouseBalance;
     }
@@ -306,7 +344,7 @@ export class LocalGameChain implements GameChainPort {
     }
 
     // Check user has sufficient balance
-    const userBalance = this.getUserBalance(params.userPubkey);
+    const userBalance = await this.getUserBalance(params.userPubkey);
     if (userBalance < params.betAmountLamports) {
       throw GameError.insufficientUserFunds(
         params.betAmountLamports,
@@ -315,7 +353,7 @@ export class LocalGameChain implements GameChainPort {
     }
 
     // Check vault can cover the reservation
-    const vaultBalance = this.getVaultBalance(params.houseVaultPda);
+    const vaultBalance = await this.getVaultBalance(params.houseVaultPda);
     const newReserved = vault.totalReserved + params.maxPayoutLamports;
 
     // Mimic contract validation: vault must have enough to cover all reservations
@@ -551,7 +589,7 @@ export class LocalGameChain implements GameChainPort {
     }
 
     // Check vault has sufficient balance
-    const vaultBalance = this.getVaultBalance(session.houseVault);
+    const vaultBalance = await this.getVaultBalance(session.houseVault);
     if (vaultBalance < session.currentTreasure) {
       throw GameError.insufficientVaultBalance();
     }
@@ -561,7 +599,7 @@ export class LocalGameChain implements GameChainPort {
       session.houseVault,
       vaultBalance - session.currentTreasure
     );
-    const userBalance = this.getUserBalance(params.userPubkey);
+    const userBalance = await this.getUserBalance(params.userPubkey);
     this.setUserBalance(
       params.userPubkey,
       userBalance + session.currentTreasure
@@ -632,15 +670,15 @@ export class LocalGameChain implements GameChainPort {
   /**
    * Get user balance (for testing/debug)
    */
-  getTestUserBalance(user: string): bigint {
-    return this.getUserBalance(user);
+  async getTestUserBalance(user: string): Promise<bigint> {
+    return await this.getUserBalance(user);
   }
 
   /**
    * Top up user balance (for debug UI)
    */
-  topUpUserBalance(user: string, amount: bigint): bigint {
-    const current = this.getUserBalance(user);
+  async topUpUserBalance(user: string, amount: bigint): Promise<bigint> {
+    const current = await this.getUserBalance(user);
     const newBalance = current + amount;
     this.setUserBalance(user, newBalance);
     console.log(
@@ -652,8 +690,8 @@ export class LocalGameChain implements GameChainPort {
   /**
    * Top up vault balance (for debug UI)
    */
-  topUpVaultBalance(vaultPda: string, amount: bigint): bigint {
-    const current = this.getVaultBalance(vaultPda);
+  async topUpVaultBalance(vaultPda: string, amount: bigint): Promise<bigint> {
+    const current = await this.getVaultBalance(vaultPda);
     const newBalance = current + amount;
     this.setVaultBalance(vaultPda, newBalance);
     console.log(

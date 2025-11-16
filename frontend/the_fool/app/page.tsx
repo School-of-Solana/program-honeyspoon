@@ -32,9 +32,7 @@ export default function Home() {
   const userIdFromStore = useChainWalletStore((state) => state.userId);
   const setUserId = useChainWalletStore((state) => state.setUserId);
   const userBalance = useChainWalletStore((state) => state.userBalance);
-  const loadWalletsFromLocalStorage = useChainWalletStore(
-    (state) => state.loadWalletsFromLocalStorage
-  );
+  const refreshBalance = useChainWalletStore((state) => state.refreshBalance);
   const houseVaultBalance = useChainWalletStore(
     (state) => state.houseVaultBalance
   );
@@ -48,9 +46,6 @@ export default function Home() {
   // Initialize userId on mount if not already set
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    // Load wallets first
-    loadWalletsFromLocalStorage();
 
     // Check if we already have a userId in the store
     if (userIdFromStore) {
@@ -103,7 +98,7 @@ export default function Home() {
     );
     setUserId(newUserId);
     localStorage.setItem("game_user_id", newUserId);
-  }, [userIdFromStore, setUserId, loadWalletsFromLocalStorage]);
+  }, [userIdFromStore, setUserId]);
 
   const [gameState, setGameState] = useState<GameState>({
     isPlaying: false,

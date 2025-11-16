@@ -1,9 +1,9 @@
 /**
  * GameChainPort - Interface for game session blockchain operations
- * 
+ *
  * This interface abstracts the blockchain layer, allowing both in-memory
  * and Solana implementations to be swapped without breaking changes.
- * 
+ *
  * IMPORTANT: This interface matches the actual Anchor contract instructions exactly.
  * Contract: dive-game-chain with 6 instructions
  */
@@ -22,7 +22,7 @@ export enum SessionStatus {
 
 /**
  * GameSession account state - matches contract's GameSession struct
- * 
+ *
  * NEW (VRF-based RNG):
  * - rngSeed: 32-byte seed from VRF oracle (Switchboard)
  * - rngCursor: which slice of seed has been consumed (optional)
@@ -59,7 +59,7 @@ export interface GameChainPort {
   /**
    * Initialize house vault (admin only, one-time)
    * Maps to: init_house_vault instruction
-   * 
+   *
    * @throws {GameError} if vault already exists
    */
   initHouseVault(params: {
@@ -72,11 +72,11 @@ export interface GameChainPort {
   /**
    * Toggle house lock (admin only)
    * Maps to: toggle_house_lock instruction
-   * 
+   *
    * On-chain behavior:
    * - Flips vault.locked boolean
    * - Requires houseAuthority signature
-   * 
+   *
    * @throws {GameError} if wrong authority or vault doesn't exist
    */
   toggleHouseLock(params: {
@@ -87,14 +87,14 @@ export interface GameChainPort {
   /**
    * Start a new game session
    * Maps to: start_session instruction
-   * 
+   *
    * On-chain behavior:
    * - Transfers bet_amount lamports from user → house_vault
    * - Creates GameSession PDA
    * - Increments house_vault.total_reserved by max_payout
    * - Sets initial treasure = bet_amount
    * - Sets dive_number = 1
-   * 
+   *
    * @throws {GameError} HOUSE_LOCKED if vault is locked
    * @throws {GameError} INSUFFICIENT_USER_FUNDS if user balance < bet
    * @throws {GameError} INSUFFICIENT_VAULT_BALANCE if vault can't cover reserve
@@ -112,13 +112,13 @@ export interface GameChainPort {
   /**
    * Play a round (contract computes outcome with on-chain RNG)
    * Maps to: play_round instruction
-   * 
+   *
    * CRITICAL SECURITY CHANGE:
    * - Contract now does RNG internally (VRF-based or slot-hash)
    * - NO client input for outcome (prevents cheating)
    * - Contract determines: survive/lose + new treasure
    * - Deterministic payout: treasure_for_round(bet, dive)
-   * 
+   *
    * On-chain behavior:
    * 1. Validates session.status == Active
    * 2. Derives random roll from VRF seed + dive_number
@@ -127,7 +127,7 @@ export interface GameChainPort {
    *    - Survive: increment dive, compute new treasure deterministically
    * 5. Else:
    *    - Lose: status = Lost, release reserved funds
-   * 
+   *
    * @returns Updated session state (may be Active or Lost)
    * @throws {GameError} INVALID_SESSION_STATUS if not active
    * @throws {GameError} WRONG_USER if caller doesn't own session
@@ -144,10 +144,10 @@ export interface GameChainPort {
 
   /**
    * DEPRECATED: No longer needed!
-   * 
+   *
    * The lose_session instruction is now handled automatically
    * by playRound() when the on-chain RNG determines a loss.
-   * 
+   *
    * This method remains for backward compatibility with LocalGameChain
    * but will not exist in the final contract.
    */
@@ -159,7 +159,7 @@ export interface GameChainPort {
   /**
    * Cash out winnings
    * Maps to: cash_out instruction
-   * 
+   *
    * On-chain behavior:
    * - Validates house not locked
    * - Validates session.status == Active
@@ -167,24 +167,21 @@ export interface GameChainPort {
    * - Transfers current_treasure from house_vault → user
    * - Decrements house_vault.total_reserved by max_payout
    * - Sets status = CashedOut
-   * 
+   *
    * @throws {GameError} HOUSE_LOCKED if vault is locked
    * @throws {GameError} INVALID_SESSION_STATUS if not active
    * @throws {GameError} TREASURE_INVALID if no profit
    * @throws {GameError} WRONG_USER if caller doesn't own session
    * @throws {GameError} INSUFFICIENT_VAULT_BALANCE if vault can't pay
    */
-  cashOut(params: {
-    sessionPda: SessionHandle;
-    userPubkey: string;
-  }): Promise<{
+  cashOut(params: { sessionPda: SessionHandle; userPubkey: string }): Promise<{
     finalTreasureLamports: bigint;
     state: GameSessionState;
   }>;
 
   /**
    * Get house vault state
-   * 
+   *
    * @returns {HouseVaultState} current vault state
    * @returns {null} if vault doesn't exist
    */
@@ -192,9 +189,27 @@ export interface GameChainPort {
 
   /**
    * Get session state
-   * 
+   *
    * @returns {GameSessionState} current session state
    * @returns {null} if session doesn't exist
    */
   getSession(sessionPda: SessionHandle): Promise<GameSessionState | null>;
+
+  /**
+   * Get user wallet balance
+   * Read-only query for user's wallet balance
+   *
+   * @param userPubkey - User wallet address
+   * @returns Balance in lamports
+   */
+  getUserBalance(userPubkey: string): Promise<bigint>;
+
+  /**
+   * Get vault balance
+   * Read-only query for vault's balance
+   *
+   * @param vaultPda - Vault PDA address
+   * @returns Balance in lamports
+   */
+  getVaultBalance(vaultPda: string): Promise<bigint>;
 }

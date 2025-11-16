@@ -1,413 +1,190 @@
 "use client";
 
 /**
- * Unified Debug Panel - Development Tool
+ * Debug Wallet Panel - Read-Only Wallet Information Display
  *
- * Uses Zustand store for all wallet state management
- * No direct localStorage access - everything goes through the store
+ * Shows current wallet balances from server (blockchain state).
+ * SECURITY: No admin functions exposed (no top-up, no clear, etc.)
+ *
+ * For admin functions, use direct blockchain operations or create
+ * separate admin panel with proper authentication.
  */
 
-import { useState, useEffect } from "react";
-import { useGameStore } from "@/lib/gameStore";
+import { useState } from "react";
 import { useChainWalletStore } from "@/lib/chainWalletStore";
+import { GAME_COLORS } from "@/lib/gameColors";
 
-type DebugTab = "wallets" | "house" | "canvas" | "gameState";
-
-export default function DebugPanel() {
-  const [topUpAmount, setTopUpAmount] = useState(1000); // Default $1000
+export default function DebugWalletPanel() {
+  // Toggle state
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<DebugTab>("wallets");
 
-  // Zustand stores
-  const {
-    wallets,
-    userId,
-    userBalance,
-    houseVaultBalance,
-    houseVaultReserved,
-    loadWalletsFromLocalStorage,
-    initHouseVault,
-    topUpHouseVault,
-    createUserWallet,
-    topUpUserWallet,
-    clearAll,
-  } = useChainWalletStore();
+  // Read-only state from Zustand (fetches from server)
+  const userId = useChainWalletStore((state) => state.userId);
+  const userBalance = useChainWalletStore((state) => state.userBalance);
+  const houseBalance = useChainWalletStore((state) => state.houseVaultBalance);
+  const houseReserved = useChainWalletStore(
+    (state) => state.houseVaultReserved
+  );
+  const isLoading = useChainWalletStore((state) => state.isLoading);
+  const lastUpdated = useChainWalletStore((state) => state.lastUpdated);
+  const refreshBalance = useChainWalletStore((state) => state.refreshBalance);
 
-  const kaplayDebug = useGameStore((state) => state.kaplayDebug);
-  const toggleKaplayDebug = useGameStore((state) => state.toggleKaplayDebug);
-  const isDiving = useGameStore((state) => state.isDiving);
-  const isInOcean = useGameStore((state) => state.isInOcean);
-  const shouldSurface = useGameStore((state) => state.shouldSurface);
-  const survived = useGameStore((state) => state.survived);
-  const depth = useGameStore((state) => state.depth);
-  const treasureValue = useGameStore((state) => state.treasureValue);
-  const animationMessage = useGameStore((state) => state.animationMessage);
-  const isPlaying = useGameStore((state) => state.isPlaying);
-  const diveNumber = useGameStore((state) => state.diveNumber);
-  const currentTreasure = useGameStore((state) => state.currentTreasure);
-  const walletBalance_game = useGameStore((state) => state.walletBalance);
-
-  // Load wallets on mount
-  useEffect(() => {
-    loadWalletsFromLocalStorage();
-  }, [loadWalletsFromLocalStorage]);
-
-  // Top up wallet handler
-  const handleTopUp = (address: string) => {
-    if (address.includes("HOUSE_VAULT")) {
-      topUpHouseVault(topUpAmount);
-    } else {
-      topUpUserWallet(address, topUpAmount);
-    }
-  };
-
-  // Clear all with confirmation
-  const handleClearAll = async () => {
-    if (confirm("Clear all wallets and reset state? This cannot be undone.")) {
-      const { resetGameChain } = await import("@/lib/ports");
-      resetGameChain();
-      clearAll();
-      alert("All wallets cleared! The page will reload.");
-      setTimeout(() => window.location.reload(), 1000);
-    }
-  };
-
-  // Helper functions
-  const getWalletLabel = (address: string): string => {
-    if (address.includes("HOUSE_VAULT")) return "🏦 House Vault";
-    if (address.includes("user_")) return "👤 User";
-    return "💼 Wallet";
-  };
-
-  const formatAddress = (address: string): string => {
-    if (address.length <= 30) return address;
-    return `${address.substring(0, 20)}...${address.substring(address.length - 8)}`;
-  };
-
-  const houseAvailableFunds = houseVaultBalance - houseVaultReserved;
-
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-mono text-sm z-50 shadow-lg transition-colors"
-      >
-        🔧 DEBUG PANEL
-      </button>
-    );
-  }
+  const houseAvailable = houseBalance - houseReserved;
 
   return (
-    <div className="fixed bottom-4 right-4 w-96 max-h-[80vh] bg-gray-900 border-2 border-purple-500 rounded-lg shadow-2xl z-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-purple-600 p-3 flex justify-between items-center rounded-t-lg">
-        <h3 className="font-mono text-sm font-bold text-white">DEBUG PANEL</h3>
+    <div
+      className="fixed bottom-4 right-4 z-50"
+      style={{
+        maxWidth: "400px",
+      }}
+    >
+      {/* Toggle Button (always visible) */}
+      {!isOpen && (
         <button
-          onClick={() => setIsOpen(false)}
-          className="text-white hover:text-gray-200 font-bold text-lg leading-none"
+          onClick={() => setIsOpen(true)}
+          className="nes-btn is-primary"
+          style={{
+            fontSize: "10px",
+            padding: "12px 16px",
+            marginLeft: "auto",
+            display: "block",
+          }}
         >
-          ×
+          💰 WALLET
         </button>
-      </div>
+      )}
 
-      {/* Tabs */}
-      <div className="flex border-b border-gray-700">
-        {(["wallets", "house", "canvas", "gameState"] as const).map((tab) => (
+      {/* Panel (shown when open) */}
+      {isOpen && (
+        <div
+          className="nes-container is-dark with-title"
+          style={{
+            backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
+            fontSize: "8px",
+          }}
+        >
+          <p className="title" style={{ fontSize: "10px" }}>
+            💰 WALLET INFO (READ-ONLY)
+          </p>
+
+          {/* Close Button */}
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 px-3 font-mono text-xs transition-colors ${
-              activeTab === tab
-                ? "bg-purple-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-            }`}
+            onClick={() => setIsOpen(false)}
+            className="nes-btn is-error"
+            style={{
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+              fontSize: "8px",
+              padding: "4px 8px",
+            }}
           >
-            {tab.toUpperCase()}
+            ✕
           </button>
-        ))}
-      </div>
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {/* WALLETS TAB */}
-        {activeTab === "wallets" && (
-          <div className="space-y-3">
-            {wallets.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-400 text-sm font-mono mb-4">
-                  No wallets yet
-                </p>
-                <p className="text-gray-500 text-xs font-mono">
-                  Start a game to create wallets
-                </p>
-              </div>
-            ) : (
-              wallets.map((wallet) => (
+          {/* Loading Indicator */}
+          {isLoading && (
+            <div style={{ textAlign: "center", marginBottom: "8px" }}>
+              <span>Loading...</span>
+            </div>
+          )}
+
+          {/* Last Updated */}
+          {lastUpdated && !isLoading && (
+            <div style={{ marginBottom: "12px", opacity: 0.6 }}>
+              <small>
+                Last updated: {new Date(lastUpdated).toLocaleTimeString()}
+              </small>
+            </div>
+          )}
+
+          {/* User Wallet */}
+          <div
+            className="nes-container is-rounded"
+            style={{ marginBottom: "12px" }}
+          >
+            <div style={{ marginBottom: "8px" }}>
+              <strong>👤 USER WALLET</strong>
+            </div>
+            {userId ? (
+              <>
                 <div
-                  key={wallet.address}
-                  className="bg-gray-800 rounded-lg p-3 space-y-2"
+                  style={{
+                    marginBottom: "4px",
+                    fontSize: "7px",
+                    opacity: 0.7,
+                  }}
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-mono text-purple-400 mb-1">
-                        {getWalletLabel(wallet.address)}
-                      </div>
-                      <div className="text-xs font-mono text-gray-400 break-all">
-                        {formatAddress(wallet.address)}
-                      </div>
-                    </div>
-                    <div className="text-right ml-2">
-                      <div className="text-lg font-bold text-green-400">
-                        {wallet.balance.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-gray-500">SOL</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleTopUp(wallet.address)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-mono transition-colors"
-                  >
-                    + ${topUpAmount}
-                  </button>
+                  Address: {userId.substring(0, 20)}...
                 </div>
-              ))
+                <div
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                    color: GAME_COLORS.TREASURE_GOLD,
+                  }}
+                >
+                  {userBalance.toLocaleString()} SOL
+                </div>
+              </>
+            ) : (
+              <div style={{ opacity: 0.5 }}>No user wallet</div>
             )}
           </div>
-        )}
 
-        {/* HOUSE TAB */}
-        {activeTab === "house" && (
-          <div className="space-y-3">
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h4 className="font-mono text-sm text-purple-400 mb-3">
-                House Vault Status
-              </h4>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400">Balance</span>
-                  <span className="text-lg font-bold text-green-400">
-                    {houseVaultBalance.toLocaleString()} SOL
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400">Reserved</span>
-                  <span className="text-lg font-bold text-orange-400">
-                    {houseVaultReserved.toLocaleString()} SOL
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400">Available</span>
-                  <span className="text-lg font-bold text-blue-400">
-                    {houseAvailableFunds.toLocaleString()} SOL
-                  </span>
-                </div>
-              </div>
+          {/* House Vault */}
+          <div
+            className="nes-container is-rounded"
+            style={{ marginBottom: "12px" }}
+          >
+            <div style={{ marginBottom: "8px" }}>
+              <strong>🏦 HOUSE VAULT</strong>
             </div>
-            <div className="text-xs text-gray-500 text-center font-mono">
-              Auto-syncs from localStorage every 2s
+            <div style={{ marginBottom: "4px" }}>
+              <span style={{ opacity: 0.7 }}>Total:</span>{" "}
+              <span style={{ fontWeight: "bold" }}>
+                {houseBalance.toLocaleString()} SOL
+              </span>
+            </div>
+            <div style={{ marginBottom: "4px" }}>
+              <span style={{ opacity: 0.7 }}>Reserved:</span>{" "}
+              <span style={{ color: GAME_COLORS.DANGER }}>
+                {houseReserved.toLocaleString()} SOL
+              </span>
+            </div>
+            <div>
+              <span style={{ opacity: 0.7 }}>Available:</span>{" "}
+              <span style={{ color: GAME_COLORS.SUCCESS }}>
+                {houseAvailable.toLocaleString()} SOL
+              </span>
             </div>
           </div>
-        )}
 
-        {/* CANVAS TAB */}
-        {activeTab === "canvas" && (
-          <div className="space-y-3">
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h4 className="font-mono text-sm text-purple-400 mb-3">
-                Canvas State
-              </h4>
-              <div className="space-y-2 text-sm font-mono">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Diving:</span>
-                  <span
-                    className={isDiving ? "text-yellow-400" : "text-gray-500"}
-                  >
-                    {isDiving ? "YES" : "NO"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">In Ocean:</span>
-                  <span
-                    className={isInOcean ? "text-blue-400" : "text-gray-500"}
-                  >
-                    {isInOcean ? "YES" : "NO"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Surfacing:</span>
-                  <span
-                    className={
-                      shouldSurface ? "text-cyan-400" : "text-gray-500"
-                    }
-                  >
-                    {shouldSurface ? "YES" : "NO"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Survived:</span>
-                  <span
-                    className={
-                      survived === undefined
-                        ? "text-gray-500"
-                        : survived
-                          ? "text-green-400"
-                          : "text-red-400"
-                    }
-                  >
-                    {survived === undefined ? "N/A" : survived ? "YES" : "NO"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Depth:</span>
-                  <span className="text-cyan-400">{depth}m</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Treasure:</span>
-                  <span className="text-yellow-400">${treasureValue}</span>
-                </div>
-                {animationMessage && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Message:</span>
-                    <span className="text-purple-400">{animationMessage}</span>
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Refresh Button */}
+          <button
+            onClick={() => refreshBalance()}
+            disabled={isLoading || !userId}
+            className={`nes-btn ${isLoading || !userId ? "is-disabled" : "is-primary"} w-full`}
+            style={{ fontSize: "8px", padding: "8px" }}
+          >
+            {isLoading ? "LOADING..." : "🔄 REFRESH"}
+          </button>
 
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h4 className="font-mono text-sm text-purple-400 mb-3">
-                Kaplay Debug
-              </h4>
-              <button
-                onClick={toggleKaplayDebug}
-                className={`w-full px-4 py-2 rounded font-mono text-sm transition-colors ${
-                  kaplayDebug
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                }`}
-              >
-                {kaplayDebug ? "✅ DEBUG ON" : "DEBUG OFF"}
-              </button>
-            </div>
+          {/* Info */}
+          <div
+            style={{
+              marginTop: "12px",
+              fontSize: "6px",
+              opacity: 0.5,
+              textAlign: "center",
+            }}
+          >
+            Balances are READ-ONLY. Only game actions can modify them.
+            <br />
+            Updates every 2 seconds automatically.
           </div>
-        )}
-
-        {/* GAME STATE TAB */}
-        {activeTab === "gameState" && (
-          <div className="space-y-3">
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h4 className="font-mono text-sm text-purple-400 mb-3">
-                Game Logic State
-              </h4>
-              <div className="space-y-2 text-sm font-mono">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Playing:</span>
-                  <span
-                    className={isPlaying ? "text-green-400" : "text-gray-500"}
-                  >
-                    {isPlaying ? "YES" : "NO"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Dive Number:</span>
-                  <span className="text-blue-400">#{diveNumber}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Current Treasure:</span>
-                  <span className="text-yellow-400">${currentTreasure}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Wallet Balance (Game):</span>
-                  <span className="text-green-400">${walletBalance_game}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Wallet Balance (Store):</span>
-                  <span className="text-green-400">{userBalance} SOL</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">User ID:</span>
-                  <span className="text-purple-400 text-xs break-all">
-                    {userId ? userId.substring(0, 20) + "..." : "Not set"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="text-xs text-gray-500 text-center font-mono">
-              Read-only view of Zustand store state
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Footer Actions */}
-      <div className="border-t border-gray-700 p-4 space-y-2">
-        {activeTab === "wallets" && (
-          <>
-            {wallets.length > 0 && (
-              <div className="bg-yellow-900/50 border border-yellow-600 rounded p-2 text-xs text-yellow-200 font-mono mb-2">
-                ⚠️ After changes, restart dev server:
-                <br />
-                <code className="text-yellow-100">Ctrl+C → npm run dev</code>
-              </div>
-            )}
-
-            <div className="mb-2">
-              <label className="text-xs text-gray-400 font-mono block mb-1">
-                Top-up Amount ($)
-              </label>
-              <input
-                type="number"
-                value={topUpAmount}
-                onChange={(e) => setTopUpAmount(Number(e.target.value))}
-                className="w-full bg-gray-800 border border-gray-600 text-white px-3 py-2 rounded font-mono text-sm"
-                min="1"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => initHouseVault()}
-                className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded font-mono text-xs transition-colors"
-              >
-                🏦 Init Vault
-              </button>
-              <button
-                onClick={() => topUpHouseVault(100000)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded font-mono text-xs transition-colors"
-              >
-                💰 +100k SOL
-              </button>
-            </div>
-
-            <button
-              onClick={() => createUserWallet()}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-mono text-sm transition-colors"
-            >
-              👤 Create User Wallet
-            </button>
-
-            <button
-              onClick={() => loadWalletsFromLocalStorage()}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-mono text-sm transition-colors"
-            >
-              🔄 Refresh Wallets
-            </button>
-
-            <button
-              onClick={handleClearAll}
-              className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-mono text-sm transition-colors"
-            >
-              🗑️ Clear All & Reload
-            </button>
-          </>
-        )}
-
-        {activeTab !== "wallets" && (
-          <div className="text-center text-gray-500 text-xs font-mono py-2">
-            Switch to Wallets tab for controls
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
