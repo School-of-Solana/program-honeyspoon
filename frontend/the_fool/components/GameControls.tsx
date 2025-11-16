@@ -77,7 +77,7 @@ export default function GameControls({
                 className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 rounded font-bold transition-colors"
               >
                 ${amount}
-            </button>
+              </button>
             ))}
           </div>
 
@@ -151,28 +151,6 @@ export default function GameControls({
             </div>
           )}
 
-          <div className="flex gap-4">
-            <button
-              onClick={onDiveDeeper}
-              disabled={isProcessing}
-              className="flex-1 py-4 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
-            >
-              🤿 DIVE DEEPER
-            </button>
-            <button
-              onClick={onSurface}
-              disabled={isProcessing}
-              className="flex-1 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
-            >
-              ⬆️ SURFACE NOW
-            </button>
-          </div>
-
-          {isProcessing && (
-            <div className="text-center text-yellow-400 animate-pulse">
-              🌊 Diving... 🌊
-            </div>
-          )}
         </div>
       )}
     </div>

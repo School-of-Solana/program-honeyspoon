@@ -603,7 +603,7 @@ export default function OceanScene({
       const beach = k.add([
         k.polygon(beachPoints),
         k.pos(0, 0),
-        k.color(194, 178, 128),
+        k.color(...CONST.COLORS.BEACH),
         k.opacity(0),
         k.z(1),
       ]);
@@ -658,7 +658,7 @@ export default function OceanScene({
           k.rect(2 + Math.random() * 3, 20 + Math.random() * 40),
           k.pos(Math.random() * k.width(), Math.random() * k.height()),
           k.anchor("center"),
-          k.color(150, 200, 255),
+          k.color(...CONST.COLORS.SPEED_LINE),
           k.opacity(0.6),
           k.z(25),
         ]);
@@ -729,7 +729,7 @@ export default function OceanScene({
       const fadeInOverlay = k.add([
         k.rect(k.width(), k.height()),
         k.pos(0, 0),
-        k.color(0, 0, 0),
+        k.color(...CONST.COLORS.FADE_BLACK),
         k.opacity(0.8),
         k.z(300),
       ]);
@@ -754,7 +754,7 @@ export default function OceanScene({
         const splash = k.add([
           k.circle(4 + Math.random() * 3),
           k.pos(k.width() * 0.25, k.height() * 0.3),
-          k.color(150, 200, 255),
+          k.color(...CONST.COLORS.SPLASH),
           k.opacity(0.8),
           k.z(250),
         ]);
@@ -779,7 +779,7 @@ export default function OceanScene({
       const darknessOverlay = k.add([
         k.rect(k.width(), k.height()),
         k.pos(0, 0),
-        k.color(0, 0, 0),
+        k.color(...CONST.COLORS.FADE_BLACK),
         k.opacity(Math.min(depth / 500, 0.6)),
         k.z(1),
       ]);
@@ -1108,7 +1108,7 @@ export default function OceanScene({
           const light = creature.add([
             k.circle(15),
             k.pos(direction > 0 ? 20 : -20, -10), // Lure position
-            k.color(255, 255, 150),
+            k.color(...CONST.COLORS.GLOW_YELLOW),
             k.opacity(0.6),
           ]);
 
