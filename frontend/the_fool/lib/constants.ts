@@ -24,9 +24,9 @@ export const GAME_CONFIG = {
 // Depth zones with visual themes
 export const DEPTH_ZONES = {
   SUNLIGHT: { max: 200, color: "#4A90E2", light: 1.0, name: "Sunlight Zone" },
-  TWILIGHT: { max: 500, color: "#2E5C8A", light: 0.7, name: "Twilight Zone" },
-  MIDNIGHT: { max: 1000, color: "#1A2F4A", light: 0.4, name: "Midnight Zone" },
-  ABYSS: { max: 2000, color: "#0A1220", light: 0.1, name: "Abyssal Zone" },
+  TWILIGHT: { max: 1000, color: "#2E5C8A", light: 0.7, name: "Twilight Zone" },
+  MIDNIGHT: { max: 4000, color: "#1A2F4A", light: 0.4, name: "Midnight Zone" },
+  ABYSS: { max: 6000, color: "#0A1220", light: 0.1, name: "Abyssal Zone" },
   HADAL: { max: Infinity, color: "#000000", light: 0.05, name: "Hadal Zone" },
 } as const;
 

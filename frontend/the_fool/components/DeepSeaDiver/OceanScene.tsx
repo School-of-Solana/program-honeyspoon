@@ -33,6 +33,7 @@ interface OceanSceneProps {
   onAnimationComplete?: () => void;
   debugMode?: boolean;
   animationMessage?: string; // NEW: Pass messages from React instead of Kaplay text
+  isInOcean?: boolean; // Track if we're in the ocean scene (not on beach)
 }
 
 export default function OceanScene({
@@ -42,6 +43,7 @@ export default function OceanScene({
   survived,
   shouldSurface = false,
   debugMode = true,
+  isInOcean = false,
 }: OceanSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const kRef = useRef<KAPLAYCtx | null>(null);
@@ -53,6 +55,7 @@ export default function OceanScene({
   const shouldSurfaceRef = useRef(shouldSurface);
   const depthRef = useRef(depth);
   const treasureRef = useRef(treasureValue);
+  const isInOceanRef = useRef(isInOcean);
 
   // Update refs when props change
   useEffect(() => {
@@ -62,6 +65,7 @@ export default function OceanScene({
     if (shouldSurfaceRef.current !== shouldSurface) changes.push(`shouldSurface: ${shouldSurfaceRef.current} → ${shouldSurface}`);
     if (depthRef.current !== depth) changes.push(`depth: ${depthRef.current}m → ${depth}m`);
     if (treasureRef.current !== treasureValue) changes.push(`treasure: $${treasureRef.current} → $${treasureValue}`);
+    if (isInOceanRef.current !== isInOcean) changes.push(`isInOcean: ${isInOceanRef.current} → ${isInOcean}`);
 
     if (changes.length > 0) {
       console.log('[CANVAS] 📊 Props changed:', changes.join(', '));
@@ -72,7 +76,8 @@ export default function OceanScene({
     shouldSurfaceRef.current = shouldSurface;
     depthRef.current = depth;
     treasureRef.current = treasureValue;
-  }, [isDiving, survived, shouldSurface, depth, treasureValue]);
+    isInOceanRef.current = isInOcean;
+  }, [isDiving, survived, shouldSurface, depth, treasureValue, isInOcean]);
 
   useEffect(() => {
     console.log('[CANVAS] 🎬 OceanScene useEffect triggered');
@@ -147,6 +152,7 @@ export default function OceanScene({
     // Boat creation moved to entities/boat.ts
 
     // ===== BEACH/SURFACE SCENE =====
+    // NOTE: Beach scene logic can be extracted to scenes/BeachScene.ts for better organization
     k.scene("beach", () => {
       console.log('[CANVAS] 🏖️ Beach scene created!');
 
@@ -229,35 +235,6 @@ export default function OceanScene({
           k.color(...CONST.COLORS.FOAM),
           k.opacity(CONST.OPACITY.FOAM),
           k.z(CONST.Z_LAYERS.FOAM),
-        ]);
-      }
-
-      // Bottom-right corner
-      beachPoints.push(k.vec2(k.width(), k.height()));
-
-      // Top-right corner (close polygon)
-      beachPoints.push(k.vec2(k.width(), beachStartY));
-
-      // Create beach polygon with wavy left edge
-      k.add([
-        k.polygon(beachPoints),
-        k.pos(0, 0),
-        k.color(...CONST.COLORS.BEACH),
-        k.z(1),
-      ]);
-
-      // Add foam/wave line along beach LEFT edge (decorative white dots)
-      for (let y = beachStartY; y <= k.height(); y += 10) {
-        const progress = (y - beachStartY) / (k.height() - beachStartY);
-        const baseX = beachBaseX + progress * k.width() * 0.15;
-        const waveX = baseX + Math.sin(y * waveFrequency) * waveAmplitude;
-
-        k.add([
-          k.circle(3),
-          k.pos(waveX, y),
-          k.color(...CONST.COLORS.FOAM),
-          k.opacity(0.6),
-          k.z(7),
         ]);
       }
 
@@ -400,7 +377,7 @@ export default function OceanScene({
       // Transition to diving with animation when game starts
       let transitionStarted = false;
       k.onUpdate(() => {
-        if (isDivingRef.current && !transitionStarted) {
+        if (isInOceanRef.current && isDivingRef.current && !transitionStarted) {
           transitionStarted = true;
           console.log('[CANVAS] 🤿 Starting dive transition...');
 

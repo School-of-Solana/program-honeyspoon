@@ -143,14 +143,19 @@ function seededRandom(seed: string): () => number {
  * Get treasure visualization based on total value
  */
 export function getTreasureVisual(totalValue: number) {
-  if (totalValue < 100) {
+  // Base size for zero/minimal treasure
+  const baseSize = 20;
+  
+  if (totalValue === 0) {
+    return { size: baseSize, glow: 0.1, particles: 0, color: "#FFD700" };
+  } else if (totalValue < 100) {
     return { size: 30, glow: 0.2, particles: 5, color: "#FFD700" };
   } else if (totalValue < 500) {
     return { size: 45, glow: 0.5, particles: 15, color: "#FFA500" };
   } else if (totalValue < 1000) {
     return { size: 60, glow: 0.8, particles: 30, color: "#FF6347" };
   } else {
-    return { size: 80, glow: 1.0, particles: 50, color: "#FF00FF" };
+    return { size: Math.min(120, 80 + Math.floor(totalValue / 10000)), glow: 1.0, particles: 50, color: "#FF00FF" };
   }
 }
 
@@ -161,6 +166,11 @@ export function validateBet(amount: number): {
   valid: boolean;
   error?: string;
 } {
+  // Check for invalid numeric values
+  if (!Number.isFinite(amount) || Number.isNaN(amount)) {
+    return { valid: false, error: 'Bet amount must be a valid number' };
+  }
+  
   if (amount < GAME_CONFIG.MIN_BET) {
     return { valid: false, error: `Minimum bet is $${GAME_CONFIG.MIN_BET}` };
   }

@@ -38,6 +38,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDiving, setIsDiving] = useState(false); // Separate state for diving animation
   const [shouldSurface, setShouldSurface] = useState(false); // Only surface when player cashes out
+  const [isInOcean, setIsInOcean] = useState(false); // Track if we're in the ocean (not on beach)
   const [lastShipwreck, setLastShipwreck] = useState<Shipwreck | undefined>();
   const [survived, setSurvived] = useState<boolean | undefined>(undefined);
   const [showBettingCard, setShowBettingCard] = useState(true);
@@ -196,6 +197,7 @@ export default function Home() {
     try {
       // STEP 1: Start diving animation
       setIsDiving(true);
+      setIsInOcean(true); // Mark that we're now in the ocean
       setAnimationMessage('DIVING...');
       playSound('DIVE'); // Play diving swoosh sound
       setTimeout(() => playSound('BUBBLES'), 200); // Bubbles shortly after
@@ -399,6 +401,7 @@ export default function Home() {
         setLastShipwreck(undefined);
         setSurvived(undefined);
         setShouldSurface(false); // Reset surface trigger
+        setIsInOcean(false); // Back to beach
         
         setTimeout(() => setShowBettingCard(true), 500);
       }
@@ -428,6 +431,7 @@ export default function Home() {
           shouldSurface={shouldSurface}
           lastShipwreck={lastShipwreck}
           debugMode={kaplayDebug}
+          isInOcean={isInOcean}
         />
       </div>
 
