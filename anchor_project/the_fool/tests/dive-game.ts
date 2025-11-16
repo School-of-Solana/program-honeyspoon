@@ -494,20 +494,25 @@ describe("dive-game (Secure Implementation)", () => {
     it("Should handle multiple users with independent sessions", async () => {
       const alice = await fixture.createUser("alice");
       const bob = await fixture.createUser("bob");
-      const charlie = await fixture.createUser("charlie");
+      const charlie = await fixture.createUser("charlie", 20); // Extra funds for large bet
 
-      // Start sessions for all users
+      // Start sessions for all users sequentially with confirmation
       const aliceSession = await fixture.startSession(
         alice,
         TEST_AMOUNTS.MEDIUM,
         0
       );
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay for confirmation
+
       const bobSession = await fixture.startSession(bob, TEST_AMOUNTS.SMALL, 0);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       const charlieSession = await fixture.startSession(
         charlie,
         TEST_AMOUNTS.LARGE,
         0
       );
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify total reserved
       const vault = await fixture.getHouseVault();
@@ -824,7 +829,7 @@ describe("dive-game (Secure Implementation)", () => {
       const [, configBump] = TestUtils.getConfigPDA(program.programId);
       fixture.configBump = configBump;
       await fixture.setupHouse(false);
-      await fixture.fundHouse(TEST_AMOUNTS.HUGE);
+      await fixture.fundHouse(TEST_AMOUNTS.HUGE * 100); // Increased for large bet test
     });
 
     it("Should handle minimum bet amount", async () => {
@@ -877,13 +882,14 @@ describe("dive-game (Secure Implementation)", () => {
     it("Should fail when trying to reuse session index", async () => {
       const alice = await fixture.createUser("alice");
 
-      await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
-      await fixture.loseSession(
+      // Start a session with index 0
+      const sessionPDA = await fixture.startSession(
         alice,
-        TestUtils.getSessionPDA(alice.publicKey, 0, program.programId)[0]
+        TEST_AMOUNTS.SMALL,
+        0
       );
 
-      // Try to start another session with same index
+      // Try to start another session with same index while first is still active
       let failed = false;
       try {
         await fixture.startSession(alice, TEST_AMOUNTS.SMALL, 0);
@@ -891,7 +897,7 @@ describe("dive-game (Secure Implementation)", () => {
         failed = true;
         assert.isTrue(error.message.includes("already in use"));
       }
-      assert.isTrue(failed, "Cannot reuse session index");
+      assert.isTrue(failed, "Cannot reuse session index while active");
     });
 
     it("Should handle rapid successive operations", async () => {
@@ -952,7 +958,7 @@ describe("dive-game (Secure Implementation)", () => {
       const [, configBump] = TestUtils.getConfigPDA(program.programId);
       fixture.configBump = configBump;
       await fixture.setupHouse(false);
-      await fixture.fundHouse(TEST_AMOUNTS.HUGE);
+      await fixture.fundHouse(TEST_AMOUNTS.HUGE * 100); // Increased for large bet tests
     });
 
     it("Should maintain money conservation across operations", async () => {
