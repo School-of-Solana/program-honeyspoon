@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manual Dive Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .step { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .pass { background: #d4edda; }
+        .fail { background: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>Manual Scene Transition Test</h1>
+    <p>Follow these steps to verify the dive button works:</p>
+    
+    <div class="step">
+        <h3>Step 1: Open the game</h3>
+        <p>Open <a href="http://localhost:3000" target="_blank">http://localhost:3000</a> in a new tab</p>
+        <p>Open the browser console (F12)</p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 2: Check initialization logs</h3>
+        <p>You should see in the console:</p>
+        <pre>
+[CANVAS] 🎬 OceanScene useEffect triggered
+[CANVAS] ✅ Using Zustand store - no more refs!
+[CANVAS] 🎨 Initializing Kaplay...
+[CANVAS] ✅ Kaplay initialized!
+[CANVAS] 📦 Loading sprites from config...
+[CANVAS] ✅ All sprites loaded!
+[CANVAS] 🚀 Starting at beach...
+[CANVAS] 🏖️ Beach scene created!
+[CANVAS] ✅ Beach scene started!
+        </pre>
+        <p>✅ If you see these, mark this step PASS</p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 3: Start the game</h3>
+        <p>The betting card should appear on the right side</p>
+        <p>Click the "START GAME ($50)" button</p>
+        <p><strong>Note:</strong> You might not have enough balance. If so, check the console for wallet errors.</p>
+    </div>
+    
+    <div class="step">
+        <h3>Step 4: Click "DIVE DEEPER"</h3>
+        <p>After starting, click the "DIVE DEEPER" button</p>
+        <p>Watch the console for these logs:</p>
+        <pre>
+[GAME] 🤿 Dive initiated
+[STORE] 🤿 Starting dive animation
+[CANVAS] 🏖️ → 🤿 Dive started! Transitioning to diving scene...
+[STORE] 🌊 Entering ocean
+[CANVAS] 🤿 Diving scene created!
+        </pre>
+        <p>✅ If you see "[STORE] 🤿 Starting dive animation" = STORE IS WORKING</p>
+        <p>✅ If you see "[CANVAS] 🏖️ → 🤿 Dive started!" = SCENE TRANSITION IS WORKING</p>
+        <p>✅ If the scene visually changes from beach to underwater = COMPLETE SUCCESS</p>
+    </div>
+    
+    <div class="step">
+        <h3>Expected vs Actual</h3>
+        <h4>If logs appear but scene doesn't change:</h4>
+        <p>❌ Problem: Visual transition failed (Kaplay scene switch issue)</p>
+        
+        <h4>If [STORE] log appears but [CANVAS] log doesn't:</h4>
+        <p>❌ Problem: BeachScene not detecting isDiving flag</p>
+        
+        <h4>If [GAME] log appears but [STORE] log doesn't:</h4>
+        <p>❌ Problem: startDiveAnimation() not working</p>
+        
+        <h4>If no logs appear at all:</h4>
+        <p>❌ Problem: handleDiveDeeper() not being called</p>
+    </div>
+    
+    <h2>Report your findings:</h2>
+    <textarea id="findings" rows="10" cols="80" placeholder="Paste console logs and describe what you see..."></textarea>
+</body>
+</html>
