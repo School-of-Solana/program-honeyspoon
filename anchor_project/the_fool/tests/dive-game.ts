@@ -141,7 +141,17 @@ class TestFixture {
     );
 
     await this.program.methods
-      .initConfig(null, null, null, null, null, null, null, null, null)
+      .initConfig({
+        baseSurvivalPpm: null,
+        decayPerDivePpm: null,
+        minSurvivalPpm: null,
+        treasureMultiplierNum: null,
+        treasureMultiplierDen: null,
+        maxPayoutMultiplier: null,
+        maxDives: null,
+        minBet: null,
+        maxBet: null,
+      })
       .accounts({
         admin: admin.publicKey,
         config: this.configPDA,
@@ -301,12 +311,22 @@ describe("dive-game (Secure Implementation)", () => {
   const program = anchor.workspace.DiveGame as Program;
 
   let fixture: TestFixture;
+  let globalConfigPDA: PublicKey;
+
+  // Initialize config once for all tests
+  before(async () => {
+    const tempFixture = new TestFixture(program, provider);
+    await tempFixture.setupConfig();
+    globalConfigPDA = tempFixture.configPDA;
+  });
 
   describe("House Vault Management", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
-      await fixture.setupConfig();
-      await fixture.setupConfig();
+      // Reuse the global config instead of creating a new one
+      fixture.configPDA = globalConfigPDA;
+      const [, configBump] = TestUtils.getConfigPDA(program.programId);
+      fixture.configBump = configBump;
     });
 
     it("Should initialize house vault", async () => {
@@ -337,7 +357,9 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Session Lifecycle", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
-      await fixture.setupConfig();
+      fixture.configPDA = globalConfigPDA;
+      const [, configBump] = TestUtils.getConfigPDA(program.programId);
+      fixture.configBump = configBump;
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE);
     });
@@ -409,7 +431,9 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Failure Modes", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
-      await fixture.setupConfig();
+      fixture.configPDA = globalConfigPDA;
+      const [, configBump] = TestUtils.getConfigPDA(program.programId);
+      fixture.configBump = configBump;
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE);
     });
@@ -467,7 +491,9 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Multi-User Concurrent Sessions", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
-      await fixture.setupConfig();
+      fixture.configPDA = globalConfigPDA;
+      const [, configBump] = TestUtils.getConfigPDA(program.programId);
+      fixture.configBump = configBump;
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE * 2); // Extra funding for multiple sessions
     });
@@ -651,7 +677,9 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Game Progression & State Transitions", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
-      await fixture.setupConfig();
+      fixture.configPDA = globalConfigPDA;
+      const [, configBump] = TestUtils.getConfigPDA(program.programId);
+      fixture.configBump = configBump;
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE);
     });
@@ -799,7 +827,9 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Edge Cases & Boundary Conditions", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
-      await fixture.setupConfig();
+      fixture.configPDA = globalConfigPDA;
+      const [, configBump] = TestUtils.getConfigPDA(program.programId);
+      fixture.configBump = configBump;
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE);
     });
@@ -926,7 +956,9 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Invariant & Conservation Properties", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
-      await fixture.setupConfig();
+      fixture.configPDA = globalConfigPDA;
+      const [, configBump] = TestUtils.getConfigPDA(program.programId);
+      fixture.configBump = configBump;
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE);
     });
@@ -1080,7 +1112,9 @@ describe("dive-game (Secure Implementation)", () => {
   describe("Stress & Load Testing", () => {
     beforeEach(async () => {
       fixture = new TestFixture(program, provider);
-      await fixture.setupConfig();
+      fixture.configPDA = globalConfigPDA;
+      const [, configBump] = TestUtils.getConfigPDA(program.programId);
+      fixture.configBump = configBump;
       await fixture.setupHouse(false);
       await fixture.fundHouse(TEST_AMOUNTS.HUGE * 3);
     });

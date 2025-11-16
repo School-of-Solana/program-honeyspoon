@@ -10,7 +10,7 @@ use anchor_lang::solana_program::keccak;
 ///
 /// For production use with high stakes, upgrade to VRF (Switchboard)
 /// See: RNG_IMPLEMENTATION_PLAN.md Phase 2
-
+///
 /// Generate a base RNG seed from slot hashes and session identifier
 ///
 /// This seed should be generated once per session and stored.

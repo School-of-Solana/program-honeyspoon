@@ -10,7 +10,6 @@ pub enum SessionStatus {
     Active,
     Lost,
     CashedOut,
-    Expired,
 }
 
 #[account]
