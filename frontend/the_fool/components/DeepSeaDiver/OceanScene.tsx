@@ -216,66 +216,92 @@ export default function OceanScene({
 
       // Sky gradient
       k.add([
-        k.rect(k.width(), k.height() * 0.6),
+        k.rect(k.width(), k.height() * CONST.LAYOUT.SKY_HEIGHT),
         k.pos(0, 0),
-        k.color(135, 206, 250), // Sky blue
-        k.z(0),
+        k.color(...CONST.COLORS.SKY),
+        k.z(CONST.Z_LAYERS.SKY),
       ]);
 
       // Sun
       const sun = k.add([
-        k.circle(50),
-        k.pos(k.width() * 0.8, k.height() * 0.15),
-        k.color(255, 220, 100),
-        k.z(2),
+        k.circle(CONST.SCALES.SUN_RADIUS),
+        k.pos(k.width() * CONST.LAYOUT.SUN_X, k.height() * CONST.LAYOUT.SUN_Y),
+        k.color(...CONST.COLORS.SUN),
+        k.z(CONST.Z_LAYERS.SUN),
       ]);
 
       // Rotating sun rays
-      for (let i = 0; i < 8; i++) {
-        const angle = (Math.PI * 2 * i) / 8;
-        const rayLength = 80;
+      for (let i = 0; i < CONST.SPAWN_RATES.SUN_RAY_COUNT; i++) {
+        const angle = (Math.PI * 2 * i) / CONST.SPAWN_RATES.SUN_RAY_COUNT;
         const sunRay = k.add([
-          k.rect(8, rayLength),
+          k.rect(CONST.SCALES.SUN_RAY_WIDTH, CONST.SCALES.SUN_RAY_LENGTH),
           k.pos(sun.pos.x, sun.pos.y),
           k.anchor("bot"),
           k.rotate(angle * (180 / Math.PI)),
-          k.color(255, 240, 150),
-          k.opacity(0.6),
-          k.z(2),
+          k.color(...CONST.COLORS.SUN_RAY),
+          k.opacity(CONST.OPACITY.FOAM),
+          k.z(CONST.Z_LAYERS.SUN),
         ]);
 
         sunRay.onUpdate(() => {
-          sunRay.angle += 20 * k.dt();
+          sunRay.angle += CONST.MOTION.SUN_RAY_ROTATION_SPEED * k.dt();
         });
       }
 
       // Water surface line (matches beach top edge)
-      const waterSurfaceY = k.height() * 0.6;
+      const waterSurfaceY = k.height() * CONST.LAYOUT.WATER_SURFACE_Y;
       k.add([
-        k.rect(k.width(), 4),
+        k.rect(k.width(), CONST.SCALES.WATER_LINE_HEIGHT),
         k.pos(0, waterSurfaceY),
-        k.color(100, 150, 255),
-        k.z(5),
+        k.color(...CONST.COLORS.WATER_SURFACE),
+        k.z(CONST.Z_LAYERS.WATER_SURFACE),
       ]);
 
-      // Beach/sand - DIAGONAL with WAVY LEFT EDGE (more water, less beach)
-      // Create wavy shoreline using polygon with sine wave on LEFT EDGE
+      // Beach/sand - DIAGONAL with WAVY LEFT EDGE
       const beachPoints: any[] = [];
-      const waveAmplitude = 40; // Wave depth (horizontal)
-      const waveFrequency = 0.008; // Wave density (vertical)
-      const beachStartY = waterSurfaceY; // Beach starts at SAME height as water surface
-      const beachBaseX = k.width() * 0.45; // Base position (45% from left)
+      const waveAmplitude = CONST.SCALES.WAVE_AMPLITUDE;
+      const waveFrequency = CONST.SCALES.WAVE_FREQUENCY;
+      const beachStartY = waterSurfaceY;
+      const beachBaseX = k.width() * CONST.LAYOUT.BEACH_BASE_X;
 
       // Top-right corner (start of beach) - at water surface level
       beachPoints.push(k.vec2(beachBaseX + waveAmplitude, beachStartY));
 
       // Wavy LEFT EDGE (water side) - vertical sine wave
-      for (let y = beachStartY; y <= k.height(); y += 10) {
+      for (let y = beachStartY; y <= k.height(); y += CONST.SCALES.SHELL_SIZE) {
         const progress = (y - beachStartY) / (k.height() - beachStartY);
-        // Diagonal: beach edge moves right as we go down
-        const baseX = beachBaseX + progress * k.width() * 0.15; // Diagonal from 45% to 60%
-        const waveX = baseX + Math.sin(y * waveFrequency) * waveAmplitude; // Add wave
+        const baseX = beachBaseX + progress * k.width() * CONST.LAYOUT.BEACH_DIAGONAL_WIDTH;
+        const waveX = baseX + Math.sin(y * waveFrequency) * waveAmplitude;
         beachPoints.push(k.vec2(waveX, y));
+      }
+
+      // Bottom-right corner
+      beachPoints.push(k.vec2(k.width(), k.height()));
+
+      // Top-right corner (close polygon)
+      beachPoints.push(k.vec2(k.width(), beachStartY));
+
+      // Create beach polygon with wavy left edge
+      k.add([
+        k.polygon(beachPoints),
+        k.pos(0, 0),
+        k.color(...CONST.COLORS.BEACH),
+        k.z(CONST.Z_LAYERS.BEACH),
+      ]);
+
+      // Add foam/wave line along beach LEFT edge (decorative white dots)
+      for (let y = beachStartY; y <= k.height(); y += CONST.SCALES.SHELL_SIZE) {
+        const progress = (y - beachStartY) / (k.height() - beachStartY);
+        const baseX = beachBaseX + progress * k.width() * CONST.LAYOUT.BEACH_DIAGONAL_WIDTH;
+        const waveX = baseX + Math.sin(y * waveFrequency) * waveAmplitude;
+
+        k.add([
+          k.circle(3),
+          k.pos(waveX, y),
+          k.color(...CONST.COLORS.FOAM),
+          k.opacity(CONST.OPACITY.FOAM),
+          k.z(CONST.Z_LAYERS.FOAM),
+        ]);
       }
 
       // Bottom-right corner
@@ -310,106 +336,85 @@ export default function OceanScene({
       // === BEACH DECORATIONS (on diagonal beach) ===
 
       // Palm tree on far right (on beach)
-      const palmX = k.width() * 0.85;
-      const palmY = k.height() * 0.63; // Adjusted for diagonal beach
+      const palmX = k.width() * CONST.LAYOUT.PALM_X;
+      const palmY = k.height() * CONST.LAYOUT.PALM_Y;
 
       // Palm trunk
       k.add([
-        k.rect(15, 80),
+        k.rect(CONST.SCALES.PALM_TRUNK.width, CONST.SCALES.PALM_TRUNK.height),
         k.pos(palmX, palmY),
         k.anchor("top"),
-        k.color(101, 67, 33),
-        k.z(3),
+        k.color(...CONST.COLORS.PALM_TRUNK),
+        k.z(CONST.Z_LAYERS.LIGHT_RAYS),
       ]);
 
-      // Palm leaves (6 leaves in circle) - using stretched rectangles
-      for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI * 2 * i) / 6;
+      // Palm leaves (6 leaves in circle)
+      const palmLeafCount = 6;
+      for (let i = 0; i < palmLeafCount; i++) {
+        const angle = (Math.PI * 2 * i) / palmLeafCount;
         k.add([
-          k.rect(40, 15),
+          k.rect(CONST.SCALES.PALM_LEAF.width, CONST.SCALES.PALM_LEAF.height),
           k.pos(palmX + Math.cos(angle) * 20, palmY + Math.sin(angle) * 20),
           k.anchor("center"),
           k.rotate(angle * (180 / Math.PI)),
-          k.color(34, 139, 34), // Forest green
-          k.z(3),
+          k.color(...CONST.COLORS.PALM_LEAF),
+          k.z(CONST.Z_LAYERS.LIGHT_RAYS),
         ]);
       }
 
       // Rocks on beach (scattered on diagonal beach)
-      const rockPositions = [
-        { x: 0.50, y: 0.68, size: 20 },
-        { x: 0.62, y: 0.75, size: 15 },
-        { x: 0.75, y: 0.78, size: 18 },
-        { x: 0.88, y: 0.82, size: 12 },
-      ];
-
-      rockPositions.forEach(rock => {
+      CONST.DECORATIONS.ROCKS.forEach(rock => {
         k.add([
           k.circle(rock.size),
           k.pos(k.width() * rock.x, k.height() * rock.y),
-          k.color(100, 100, 100),
+          k.color(...CONST.COLORS.ROCK),
           k.outline(2, k.rgb(70, 70, 70)),
-          k.z(2),
+          k.z(CONST.Z_LAYERS.SUN),
         ]);
       });
 
       // Shells on beach (small decorative, on diagonal beach)
-      const shellPositions = [
-        { x: 0.52, y: 0.65 },
-        { x: 0.64, y: 0.70 },
-        { x: 0.72, y: 0.76 },
-        { x: 0.80, y: 0.80 },
-        { x: 0.92, y: 0.85 },
-      ];
-
-      shellPositions.forEach(shell => {
+      CONST.DECORATIONS.SHELLS.forEach(shell => {
         k.add([
           k.polygon([
             k.vec2(0, 0),
             k.vec2(8, -3),
-            k.vec2(10, 4),
+            k.vec2(CONST.SCALES.SHELL_SIZE, 4),
             k.vec2(5, 8),
             k.vec2(0, 6),
           ]),
           k.pos(k.width() * shell.x, k.height() * shell.y),
-          k.color(255, 240, 220),
+          k.color(...CONST.COLORS.SHELL),
           k.outline(1, k.rgb(200, 180, 160)),
-          k.z(2),
+          k.z(CONST.Z_LAYERS.SUN),
         ]);
       });
 
       // Clouds in sky (fluffy)
-      const cloudPositions = [
-        { x: 0.2, y: 0.15, scale: 1 },
-        { x: 0.5, y: 0.25, scale: 0.8 },
-        { x: 0.75, y: 0.12, scale: 1.2 },
-      ];
-
-      cloudPositions.forEach(cloud => {
-        // Cloud made of 3 circles
+      CONST.DECORATIONS.CLOUDS.forEach(cloud => {
         const cloudX = k.width() * cloud.x;
         const cloudY = k.height() * cloud.y;
 
         k.add([
-          k.circle(20 * cloud.scale),
+          k.circle(CONST.SCALES.CLOUD_BASE * cloud.scale),
           k.pos(cloudX, cloudY),
-          k.color(255, 255, 255),
-          k.opacity(0.8),
-          k.z(1),
+          k.color(...CONST.COLORS.CLOUD),
+          k.opacity(CONST.OPACITY.CLOUD),
+          k.z(CONST.Z_LAYERS.BEACH),
         ]);
         k.add([
-          k.circle(25 * cloud.scale),
+          k.circle((CONST.SCALES.CLOUD_BASE + 5) * cloud.scale),
           k.pos(cloudX + 15 * cloud.scale, cloudY),
-          k.color(255, 255, 255),
-          k.opacity(0.8),
-          k.z(1),
+          k.color(...CONST.COLORS.CLOUD),
+          k.opacity(CONST.OPACITY.CLOUD),
+          k.z(CONST.Z_LAYERS.BEACH),
         ]);
         k.add([
-          k.circle(18 * cloud.scale),
+          k.circle((CONST.SCALES.CLOUD_BASE - 2) * cloud.scale),
           k.pos(cloudX + 30 * cloud.scale, cloudY),
-          k.color(255, 255, 255),
-          k.opacity(0.8),
-          k.z(1),
+          k.color(...CONST.COLORS.CLOUD),
+          k.opacity(CONST.OPACITY.CLOUD),
+          k.z(CONST.Z_LAYERS.BEACH),
         ]);
       });
 
@@ -418,62 +423,61 @@ export default function OceanScene({
         const seagull = k.add([
           k.polygon([
             k.vec2(0, 0),
-            k.vec2(-10, -5),
-            k.vec2(-8, 0),
+            k.vec2(-CONST.SEAGULL.WING_WIDTH, -CONST.SEAGULL.WING_HEIGHT),
+            k.vec2(-CONST.SEAGULL.BODY_WIDTH, 0),
             k.vec2(0, -2),
-            k.vec2(8, 0),
-            k.vec2(10, -5),
+            k.vec2(CONST.SEAGULL.BODY_WIDTH, 0),
+            k.vec2(CONST.SEAGULL.WING_WIDTH, -CONST.SEAGULL.WING_HEIGHT),
           ]),
           k.pos(startX, startY),
-          k.color(255, 255, 255),
+          k.color(...CONST.COLORS.SEAGULL),
           k.outline(1, k.rgb(200, 200, 200)),
-          k.z(4),
+          k.z(CONST.Z_LAYERS.SEAGULL),
         ]);
 
         seagull.onUpdate(() => {
           seagull.pos.x += speed * k.dt();
-          seagull.pos.y += Math.sin(k.time() * 3 + startX) * 20 * k.dt();
+          seagull.pos.y += Math.sin(k.time() * CONST.SEAGULL.VERTICAL_WAVE_SPEED + startX) * CONST.SEAGULL.VERTICAL_WAVE_AMPLITUDE * k.dt();
 
-          // Wrap around screen
-          if (seagull.pos.x > k.width() + 50) {
-            seagull.pos.x = -50;
+          if (seagull.pos.x > k.width() + CONST.SEAGULL.WRAP_OFFSET) {
+            seagull.pos.x = -CONST.SEAGULL.WRAP_OFFSET;
           }
         });
 
         return seagull;
       }
 
-      // Spawn 3 seagulls
-      createSeagull(k.width() * 0.3, k.height() * 0.2, 50);
-      createSeagull(k.width() * 0.6, k.height() * 0.15, 60);
-      createSeagull(k.width() * 0.1, k.height() * 0.25, 45);
+      // Spawn seagulls
+      CONST.DECORATIONS.SEAGULLS.forEach(seagull => {
+        createSeagull(k.width() * seagull.x, k.height() * seagull.y, seagull.speed);
+      });
 
       // Create boat at water surface (LEFT SIDE - UI is on right)
-      const boatBaseY = k.height() * 0.6;
-      const boatX = k.width() * 0.25; // 25% from left (leaves right side clear for UI)
-      const boat = createBoat(boatX, boatBaseY, 18);
+      const boatBaseY = k.height() * CONST.LAYOUT.WATER_SURFACE_Y;
+      const boatX = k.width() * CONST.LAYOUT.BOAT_X;
+      const boat = createBoat(boatX, boatBaseY, CONST.Z_LAYERS.BOAT);
 
-      // Boat bobbing animation (follows wave motion)
+      // Boat bobbing animation
       boat.onUpdate(() => {
-        boat.pos.y = boatBaseY + Math.sin(k.time() * 1.5) * 8;
-        boat.angle = Math.sin(k.time() * 1.2) * 2; // Gentle rocking
+        boat.pos.y = boatBaseY + Math.sin(k.time() * CONST.MOTION.BOAT_BOB_SPEED) * CONST.MOTION.BOAT_BOB_AMPLITUDE;
+        boat.angle = Math.sin(k.time() * CONST.MOTION.BOAT_ROCK_SPEED) * CONST.MOTION.BOAT_ROCK_AMPLITUDE;
       });
 
       // Diver standing on boat deck
       const diver = k.add([
         k.sprite("diver", { anim: "idle" }),
-        k.pos(boatX, boatBaseY - 15), // Standing on deck
+        k.pos(boatX, boatBaseY - 15),
         k.anchor("center"),
-        k.scale(2.5),
+        k.scale(CONST.SCALES.DIVER),
         k.rotate(0),
-        k.z(20),
+        k.z(CONST.Z_LAYERS.DIVER),
       ]);
 
       // Diver follows boat movement
       diver.onUpdate(() => {
-        diver.pos.x = boat.pos.x; // Follow boat X (in case it moves)
-        diver.pos.y = boat.pos.y - 15; // Stay on deck
-        diver.angle = boat.angle * 0.5; // Slight lean with boat
+        diver.pos.x = boat.pos.x;
+        diver.pos.y = boat.pos.y - 15;
+        diver.angle = boat.angle * 0.5;
       });
 
       // Bubbles from diver

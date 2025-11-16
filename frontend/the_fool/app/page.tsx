@@ -414,11 +414,11 @@ export default function Home() {
 
       {/* Animation Message Overlay (NES Style) */}
       {animationMessage && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50" style={{ paddingTop: '15%' }}>
           <div className="nes-container is-dark" style={{ 
             backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
-            padding: '16px 32px',
-            fontSize: '16px',
+            padding: '12px 24px',
+            fontSize: '12px',
             animation: 'pulse 1s ease-in-out infinite',
             minWidth: 'auto',
             whiteSpace: 'nowrap'
