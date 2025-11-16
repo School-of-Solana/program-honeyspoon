@@ -183,7 +183,8 @@ describe("Game Logic - EV Calculations", () => {
 
   it("should approach zero for many dives", () => {
     const ev50 = calculateCumulativeEV(50);
-    assert.ok(ev50 < 0.01);
+    // With 5% house edge: 0.95^50 ≈ 0.0769 (much higher than with 15% edge)
+    assert.ok(ev50 < 0.1, "EV after 50 dives should be < 0.10");
   });
 
   it("should show house edge exists", () => {
@@ -225,9 +226,11 @@ describe("Game Logic - Probability Distribution", () => {
     const d10 = calculateDiveStats(10);
     const d20 = calculateDiveStats(20);
 
-    assert.ok(d1.survivalProbability > 0.9);
-    assert.ok(d10.survivalProbability > 0.1);
-    assert.ok(d20.survivalProbability > 0.01);
+    // With 70% base survival and 0.08 decay:
+    // Round 1: 70%, Round 10: ~34%, Round 20: ~16%
+    assert.ok(d1.survivalProbability > 0.65, "Round 1 should be ~70%");
+    assert.ok(d10.survivalProbability > 0.3, "Round 10 should be ~34%");
+    assert.ok(d20.survivalProbability > 0.1, "Round 20 should be ~16%");
   });
 
   it("should respect minimum survival", () => {
@@ -284,10 +287,14 @@ describe("Game Logic - Multiplier Chains", () => {
     assert.ok(m10 > m1 * 2);
   });
 
-  it("should have first dive multiplier < 1", () => {
+  it("should have first dive multiplier > 1 (players profit on wins)", () => {
     const m = calculateDiveStats(1).multiplier;
-    assert.ok(m < 1);
-    assert.ok(m > 0.8);
+    // With 5% house edge and 70% survival: multiplier = 0.95/0.70 ≈ 1.357
+    assert.ok(
+      m > 1,
+      "Multiplier should be > 1 (players profit on successful dives)"
+    );
+    assert.ok(m > 1.3 && m < 1.4, "Round 1 multiplier should be ~1.357");
   });
 });
 

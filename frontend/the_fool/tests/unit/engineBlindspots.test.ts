@@ -87,13 +87,14 @@ describe("Round Stats - Edge Cases", () => {
     assert.strictEqual(stats.roundNumber, 1, "Round number should be 1");
 
     // Note: winProbability is rounded to 3 decimals in calculateRoundStats
+    // With new config: BASE_WIN_PROB = 0.70 (70%)
     assert.ok(
-      Math.abs(stats.winProbability - 0.95) < 0.01,
-      "Round 1 should have ~95% probability"
+      Math.abs(stats.winProbability - 0.7) < 0.01,
+      "Round 1 should have ~70% probability"
     );
 
     // Verify multiplier maintains house edge (using actual probability, not rounded)
-    const actualProb = 0.95; // We know round 1 starts at 95%
+    const actualProb = 0.7; // Round 1 starts at 70%
     const ev = actualProb * stats.multiplier;
     assert.ok(Math.abs(ev - 0.95) < 0.02, "EV should be ~0.95 (5% edge)");
 
@@ -340,9 +341,9 @@ describe("Simulate Round - Boundary Rolls", () => {
   it("should handle roll = 0 (lowest possible)", () => {
     const result = simulateRound(1, 50, 0, DEFAULT_CONFIG);
 
-    // Round 1 threshold is 5, so roll=0 should fail
+    // Round 1 threshold is 70 (70% survival), so roll=0 should survive
     const stats = calculateRoundStats(1, DEFAULT_CONFIG);
-    const shouldSurvive = 0 >= stats.threshold;
+    const shouldSurvive = 0 < stats.threshold;
 
     assert.strictEqual(
       result.survived,
@@ -355,11 +356,14 @@ describe("Simulate Round - Boundary Rolls", () => {
   it("should handle roll = 99 (highest possible)", () => {
     const result = simulateRound(1, 50, 99, DEFAULT_CONFIG);
 
-    // Round 1 threshold is 5, so roll=99 should succeed
+    // Round 1 threshold is 70 (70% survival), so roll=99 should fail (99 >= 70)
+    const stats = calculateRoundStats(1, DEFAULT_CONFIG);
+    const shouldSurvive = 99 < stats.threshold;
+
     assert.strictEqual(
       result.survived,
-      true,
-      "Roll 99 should always survive round 1"
+      shouldSurvive,
+      `Roll 99 vs threshold ${stats.threshold} (should ${shouldSurvive ? "survive" : "fail"})`
     );
     assert.strictEqual(result.randomRoll, 99, "Should record roll");
   });

@@ -21,7 +21,7 @@ describe("Probability Verification", () => {
     resetWalletStore();
   });
 
-  it("should verify Round 1 has 95% survival rate (statistical test)", async () => {
+  it("should verify Round 1 has 70% survival rate (statistical test)", async () => {
     const trials = 100;
     const userId = `test_user_${Date.now()}`;
     let survived = 0;
@@ -39,8 +39,8 @@ describe("Probability Verification", () => {
     }
 
     const survivalRate = survived / trials;
-    const expectedRate = 0.95;
-    const tolerance = 0.1; // ±10% due to small sample
+    const expectedRate = 0.7; // Changed from 0.95 to 0.70 (70% baseline)
+    const tolerance = 0.15; // ±15% due to small sample and lower probability
 
     console.log(
       `  Survival rate: ${(survivalRate * 100).toFixed(1)}% (expected: ${(expectedRate * 100).toFixed(1)}%)`
