@@ -1,11 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import {
-  PublicKey,
-  Keypair,
-  LAMPORTS_PER_SOL,
-  SYSVAR_SLOT_HASHES_PUBKEY,
-} from "@solana/web3.js";
+import { PublicKey, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { assert } from "chai";
 
@@ -231,7 +226,6 @@ class TestFixture {
         houseVault: this.houseVaultPDA,
         houseAuthority: this.houseAuthority.publicKey,
         session: sessionPDA,
-        slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .signers([user])
@@ -470,7 +464,6 @@ describe("dive-game (Secure Implementation)", () => {
             houseVault: fixture.houseVaultPDA,
             houseAuthority: fixture.houseAuthority.publicKey,
             session: sessionPDA,
-            slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
             systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([alice])
@@ -850,7 +843,6 @@ describe("dive-game (Secure Implementation)", () => {
           houseVault: fixture.houseVaultPDA,
           houseAuthority: fixture.houseAuthority.publicKey,
           session: sessionPDA,
-          slotHashes: SYSVAR_SLOT_HASHES_PUBKEY,
           systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([alice])

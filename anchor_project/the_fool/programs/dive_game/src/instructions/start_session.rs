@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::sysvar::slot_hashes::SlotHashes;
 use anchor_lang::system_program;
 
 use crate::errors::GameError;
@@ -61,26 +60,15 @@ pub fn start_session(
         .checked_add(max_payout)
         .ok_or(GameError::Overflow)?;
 
-    // Generate RNG seed from slot hashes
-    // We access SlotHashes sysvar to get recent slot hash
-    let slot_hashes = SlotHashes::from_account_info(&ctx.accounts.slot_hashes)?;
+    // Generate RNG seed using Clock (works in all environments including test validator)
+    // Combine slot + unix timestamp + session PDA for randomness
+    let mut seed_material = [0u8; 32];
+    seed_material[0..8].copy_from_slice(&clock.slot.to_le_bytes());
+    seed_material[8..16].copy_from_slice(&clock.unix_timestamp.to_le_bytes());
+    seed_material[16..32].copy_from_slice(&session.key().to_bytes()[0..16]);
 
-    // Use a recent slot hash (not the very latest to reduce validator manipulation)
-    // Try to get 5 slots back, otherwise use most recent
-    let recent_slot = clock.slot.saturating_sub(5);
-    let slot_hash = if let Some(hash) = slot_hashes.get(&recent_slot) {
-        hash.to_bytes()
-    } else if let Some(hash) = slot_hashes.get(&clock.slot.saturating_sub(1)) {
-        hash.to_bytes()
-    } else {
-        // Fallback: use clock slot as seed (less ideal but prevents failure)
-        let mut fallback = [0u8; 32];
-        fallback[0..8].copy_from_slice(&clock.slot.to_le_bytes());
-        fallback
-    };
-
-    // Generate seed using slot hash + session PDA
-    let rng_seed = rng::generate_seed(&slot_hash, &session.key());
+    // Generate final seed using the seed material
+    let rng_seed = rng::generate_seed(&seed_material, &session.key());
 
     // Initialize session
     session.user = ctx.accounts.user.key();
@@ -139,11 +127,6 @@ pub struct StartSession<'info> {
         bump
     )]
     pub session: Account<'info, GameSession>,
-
-    /// Slot hashes sysvar for RNG seed generation
-    /// CHECK: This is the slot hashes sysvar
-    #[account(address = anchor_lang::solana_program::sysvar::slot_hashes::ID)]
-    pub slot_hashes: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
 }
