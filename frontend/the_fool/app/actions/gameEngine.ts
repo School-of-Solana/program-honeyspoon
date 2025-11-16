@@ -43,19 +43,27 @@ import {
   getGameSession,
   deleteGameSession,
 } from "@/lib/walletStore";
+import { GAME_CONFIG as LIB_CONFIG } from "@/lib/constants";
 
-// Game configuration (can be customized per game theme)
+// Server-side game configuration (synced from lib/constants.ts)
 const GAME_CONFIG: GameConfig = {
   ...DEFAULT_CONFIG,
-  houseEdge: 0.15, // 15% house edge
-  baseWinProbability: 0.95,
-  decayConstant: 0.15,
-  minWinProbability: 0.01,
-  minBet: 10,
-  maxBet: 500,
-  maxPotentialWin: 100000,
-  maxRounds: 50,
+  houseEdge: LIB_CONFIG.HOUSE_EDGE,
+  baseWinProbability: LIB_CONFIG.BASE_WIN_PROB,
+  decayConstant: LIB_CONFIG.DECAY_CONSTANT,
+  minWinProbability: LIB_CONFIG.MIN_WIN_PROB,
+  minBet: LIB_CONFIG.MIN_BET,
+  maxBet: LIB_CONFIG.MAX_BET,
+  maxPotentialWin: 100000, // Server-only config (not in client constants)
+  maxRounds: 50, // Server-only config (not in client constants)
 };
+
+// Validation: Ensure sync in development
+if (process.env.NODE_ENV === "development") {
+  console.log("[CONFIG] ✅ Server config synced from lib/constants.ts");
+  console.log(`[CONFIG] House edge: ${GAME_CONFIG.houseEdge * 100}%`);
+  console.log(`[CONFIG] Base win prob: ${GAME_CONFIG.baseWinProbability * 100}%`);
+}
 
 /**
  * Start a new game session (place initial bet)
@@ -176,7 +184,7 @@ export async function executeRound(
   // This prevents clients from replaying old rounds or skipping ahead
   if (roundNumber !== gameSession.diveNumber) {
     throw new Error(
-      `Round number mismatch: client sent ${roundNumber}, server expects ${gameSession.diveNumber}`
+      `Round mismatch: Expected round ${gameSession.diveNumber}, received ${roundNumber}. Please refresh.`
     );
   }
 
@@ -187,7 +195,7 @@ export async function executeRound(
 
   if (currentValue !== expectedValue) {
     throw new Error(
-      `Current value mismatch: client sent ${currentValue}, server has ${expectedValue} (round ${roundNumber})`
+      `Treasure mismatch: Expected $${expectedValue}, received $${currentValue}. Data corruption detected.`
     );
   }
 
@@ -292,7 +300,7 @@ export async function cashOut(
   // This prevents client tampering (sending inflated finalValue)
   if (finalValue !== gameSession.currentTreasure) {
     throw new Error(
-      `Cash-out amount (${finalValue}) doesn't match session treasure (${gameSession.currentTreasure})`
+      `Cash-out mismatch: Session has $${gameSession.currentTreasure}, attempting to cash out $${finalValue}. Please contact support.`
     );
   }
 

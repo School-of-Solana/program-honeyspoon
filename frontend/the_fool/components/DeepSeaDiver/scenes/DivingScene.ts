@@ -453,11 +453,16 @@ export function createDivingScene(
           state.animationType = AnimationType.IDLE;
           state.isAnimating = false;
           state.treasurePulseTime = 0;
-          console.log("[CANVAS] ✅ Treasure animation complete - ready for next action");
+          console.log(
+            "[CANVAS] ✅ Treasure animation complete - ready for next action"
+          );
+          // ✅ FIX: Clear survived flag to prevent re-trigger
+          useGameStore.getState().setSurvived(undefined);
         }
       }
 
-      // Check for surfacing request (player cashed out)
+      // ✅ FIX: Check animations in priority order
+      // Priority 1: Surfacing (player cashing out)
       if (
         useGameStore.getState().shouldSurface &&
         !state.isAnimating &&
@@ -469,30 +474,9 @@ export function createDivingScene(
         // Immediately set to animating to prevent duplicate triggers
         state.isAnimating = true;
         k.go("surfacing", { treasure: useGameStore.getState().treasureValue });
-      } else if (
-        useGameStore.getState().isDiving &&
-        !state.isAnimating &&
-        state.animationType === AnimationType.IDLE
-      ) {
-        console.log("[CANVAS] 🤿 Starting dive animation (2.5s)");
-        state.isAnimating = true;
-        state.animationType = AnimationType.DIVING;
-        state.divingElapsed = 0;
       }
-
-      // Treasure collection animation
-      if (
-        useGameStore.getState().survived === true &&
-        !state.isAnimating &&
-        state.animationType === AnimationType.IDLE
-      ) {
-        console.log("[CANVAS] 💰 Treasure collected! Playing celebration");
-        state.isAnimating = true;
-        state.animationType = AnimationType.TREASURE;
-        state.treasurePulseTime = 0;
-        createTreasureParticles(k, diver.pos.x, diver.pos.y);
-        // Treasure chest animation removed - just showing particles
-      } else if (
+      // Priority 2: Death (immediate game over)
+      else if (
         useGameStore.getState().survived === false &&
         !state.isAnimating &&
         state.animationType === AnimationType.IDLE
@@ -501,6 +485,8 @@ export function createDivingScene(
         // Immediately set to animating to prevent duplicate triggers
         state.isAnimating = true;
         state.animationType = AnimationType.DEATH;
+        // ✅ FIX: Clear survived flag immediately
+        useGameStore.getState().setSurvived(undefined);
         triggerDeathAnimation(
           k,
           diver,
@@ -515,6 +501,31 @@ export function createDivingScene(
             k.go("beach");
           }
         );
+      }
+      // Priority 3: Treasure collection (survived a dive)
+      else if (
+        useGameStore.getState().survived === true &&
+        !state.isAnimating &&
+        state.animationType === AnimationType.IDLE
+      ) {
+        console.log("[CANVAS] 💰 Treasure collected! Playing celebration");
+        state.isAnimating = true;
+        state.animationType = AnimationType.TREASURE;
+        state.treasurePulseTime = 0;
+        // ✅ FIX: Clear survived flag immediately to prevent re-trigger
+        useGameStore.getState().setSurvived(undefined);
+        createTreasureParticles(k, diver.pos.x, diver.pos.y);
+      }
+      // Priority 4: Diving deeper (new dive initiated)
+      else if (
+        useGameStore.getState().isDiving &&
+        !state.isAnimating &&
+        state.animationType === AnimationType.IDLE
+      ) {
+        console.log("[CANVAS] 🤿 Starting dive animation (2.5s)");
+        state.isAnimating = true;
+        state.animationType = AnimationType.DIVING;
+        state.divingElapsed = 0;
       }
     });
   });

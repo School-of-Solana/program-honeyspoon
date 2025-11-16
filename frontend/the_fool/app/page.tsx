@@ -42,6 +42,14 @@ export default function Home() {
   const [showBettingCard, setShowBettingCard] = useState(true);
   const [showHUD, setShowHUD] = useState(false);
 
+  // Error state for user feedback
+  const [errorState, setErrorState] = useState<{
+    message: string;
+    type: "error" | "warning" | "info";
+    action?: () => void;
+    actionLabel?: string;
+  } | null>(null);
+
   // Use Zustand store for canvas/scene state
   const startDiveAnimation = useGameStore((state) => state.startDiveAnimation);
   const setSurvived = useGameStore((state) => state.setSurvived);
@@ -88,6 +96,11 @@ export default function Home() {
     initializeSession();
   }, [userId]);
 
+  // Sync initial sound state from manager on mount
+  useEffect(() => {
+    setSoundMuted(getSoundManager().isMuted());
+  }, []);
+
   // Update house wallet info periodically in debug mode
   useEffect(() => {
     if (!debugMode) return;
@@ -112,15 +125,31 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, []);
 
+  // Error handling helpers
+  const showError = (
+    message: string,
+    type: "error" | "warning" | "info" = "error",
+    action?: () => void,
+    actionLabel?: string
+  ) => {
+    console.error("[UI ERROR]", message);
+    setErrorState({ message, type, action, actionLabel });
+    // Auto-dismiss after 5 seconds if no action
+    if (!action) {
+      setTimeout(() => setErrorState(null), 5000);
+    }
+  };
+
+  const dismissError = () => setErrorState(null);
+
   // Start new game
   const handleStartGame = async () => {
     // Check if user has enough balance for fixed bet
     if (betAmount > (gameState.walletBalance || 0)) {
-      console.error("[GAME] ❌ Insufficient balance", {
-        betAmount,
-        walletBalance: gameState.walletBalance,
-        needed: betAmount - (gameState.walletBalance || 0),
-      });
+      showError(
+        `Insufficient balance. Need $${betAmount}, have $${gameState.walletBalance || 0}`,
+        "warning"
+      );
       return;
     }
 
@@ -138,11 +167,10 @@ export default function Home() {
       const result = await startGame(betAmount, userId, gameState.sessionId);
 
       if (!result.success) {
-        console.error("[GAME] ❌ Failed to start game", {
-          error: result.error,
-          betAmount,
-          userId,
-        });
+        showError(
+          result.error || "Failed to start game. Please try again.",
+          "error"
+        );
         setIsProcessing(false);
         return;
       }
@@ -186,7 +214,13 @@ export default function Home() {
         });
       }, 500);
     } catch (error) {
-      console.error("[GAME] ❌ Exception during start:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      showError(
+        `Game start failed: ${message}`,
+        "error",
+        () => window.location.reload(),
+        "Reload Page"
+      );
       setIsProcessing(false);
     }
   };
@@ -288,8 +322,8 @@ export default function Home() {
           });
         }
 
-        // Reset survived state for next dive
-        setTimeout(() => setSurvived(undefined), 100);
+        // ✅ FIX: Don't reset survived here - the canvas handles it now
+        // This prevents race conditions with the animation state machine
       } else {
         console.log(`[GAME] 💀 DROWNED - Game Over`, {
           depth: result.depth,
@@ -333,7 +367,29 @@ export default function Home() {
         setTimeout(() => setShowBettingCard(true), 500);
       }
     } catch (error) {
-      console.error("[GAME] ❌ Exception during dive:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+
+      // Check for session errors
+      if (message.includes("session") || message.includes("inactive")) {
+        showError(
+          "Game session expired. Starting new game...",
+          "warning",
+          async () => {
+            const newSessionId = await generateSessionId();
+            setGameState((prev) => ({
+              ...prev,
+              sessionId: newSessionId,
+              isPlaying: false,
+            }));
+            setShowHUD(false);
+            setShowBettingCard(true);
+            dismissError();
+          },
+          "Reset Game"
+        );
+      } else {
+        showError(`Dive failed: ${message}`, "error");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -423,7 +479,19 @@ export default function Home() {
         setTimeout(() => setShowBettingCard(true), 500);
       }
     } catch (error) {
-      console.error("[GAME] ❌ Exception during surface:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+
+      // Handle treasure mismatch specifically
+      if (message.includes("treasure")) {
+        showError(
+          "Treasure amount mismatch. Please contact support.",
+          "error",
+          () => window.location.reload(),
+          "Reload"
+        );
+      } else {
+        showError(`Surface failed: ${message}`, "error");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -440,6 +508,56 @@ export default function Home() {
         <div className="absolute inset-0 w-full h-full">
           <OceanScene />
         </div>
+
+        {/* Error Message Overlay (NES Style) */}
+        {errorState && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[60]">
+            <div
+              className={`nes-container pointer-events-auto ${
+                errorState.type === "error"
+                  ? "is-error"
+                  : errorState.type === "warning"
+                    ? "is-warning"
+                    : "is-primary"
+              }`}
+              style={{
+                backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
+                padding: "20px 32px",
+                maxWidth: "500px",
+                margin: "0 20px",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "12px",
+                  marginBottom: errorState.action ? "16px" : "0",
+                }}
+              >
+                {errorState.message}
+              </p>
+
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={dismissError}
+                  className="nes-btn is-primary"
+                  style={{ fontSize: "10px", padding: "8px 16px" }}
+                >
+                  Dismiss
+                </button>
+
+                {errorState.action && (
+                  <button
+                    onClick={errorState.action}
+                    className="nes-btn is-success"
+                    style={{ fontSize: "10px", padding: "8px 16px" }}
+                  >
+                    {errorState.actionLabel || "Retry"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Animation Message Overlay (NES Style) */}
         {animationMessage && (

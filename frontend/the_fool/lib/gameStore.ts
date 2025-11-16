@@ -154,6 +154,7 @@ export const useGameStore = create<GameState>((set) => ({
     set({
       isDiving: true,
       animationMessage: "DIVING...",
+      // ✅ FIX: Clear all other animation flags
       survived: undefined,
       shouldSurface: false,
     });
@@ -223,6 +224,9 @@ export const useGameStore = create<GameState>((set) => ({
     set({
       shouldSurface: true,
       animationMessage: "SURFACING!",
+      // ✅ FIX: Clear other animation flags
+      isDiving: false,
+      survived: undefined,
     });
   },
 
