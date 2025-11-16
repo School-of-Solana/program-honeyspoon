@@ -15,6 +15,34 @@ declare_id!("5f9Gn6yLcMPqZfFPM9pBYQV1f1h6EBDCSs8jynjfoEQ3");
 pub mod dive_game {
     use super::*;
 
+    /// Initialize game configuration (single source of truth for parameters)
+    /// Pass None for any parameter to use defaults
+    pub fn init_config(
+        ctx: Context<InitializeConfig>,
+        base_survival_ppm: Option<u32>,
+        decay_per_dive_ppm: Option<u32>,
+        min_survival_ppm: Option<u32>,
+        treasure_multiplier_num: Option<u16>,
+        treasure_multiplier_den: Option<u16>,
+        max_payout_multiplier: Option<u16>,
+        max_dives: Option<u16>,
+        min_bet: Option<u64>,
+        max_bet: Option<u64>,
+    ) -> Result<()> {
+        instructions::init_config(
+            ctx,
+            base_survival_ppm,
+            decay_per_dive_ppm,
+            min_survival_ppm,
+            treasure_multiplier_num,
+            treasure_multiplier_den,
+            max_payout_multiplier,
+            max_dives,
+            min_bet,
+            max_bet,
+        )
+    }
+
     pub fn init_house_vault(ctx: Context<InitializeHouseVault>, locked: bool) -> Result<()> {
         instructions::init_house_vault(ctx, locked)
     }

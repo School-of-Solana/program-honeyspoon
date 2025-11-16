@@ -1,3 +1,6 @@
+pub mod init_config;
+pub use init_config::*;
+
 pub mod init_house_vault;
 pub use init_house_vault::*;
 

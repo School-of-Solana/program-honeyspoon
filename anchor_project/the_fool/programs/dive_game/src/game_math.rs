@@ -1,4 +1,3 @@
-
 /// Game mathematics and payout calculations
 ///
 /// This module contains the core game logic for:
@@ -452,11 +451,11 @@ mod tests {
     fn test_treasure_no_panic_on_realistic_bets() {
         // Test realistic SOL amounts (up to 10 SOL) for many dives
         let sol_amounts = [
-            100_000,       // 0.0001 SOL
-            1_000_000,     // 0.001 SOL
-            10_000_000,    // 0.01 SOL
-            100_000_000,   // 0.1 SOL
-            1_000_000_000, // 1 SOL
+            100_000,        // 0.0001 SOL
+            1_000_000,      // 0.001 SOL
+            10_000_000,     // 0.01 SOL
+            100_000_000,    // 0.1 SOL
+            1_000_000_000,  // 1 SOL
             10_000_000_000, // 10 SOL
         ];
 
@@ -464,13 +463,13 @@ mod tests {
             for dive in 0..=200 {
                 let treasure = treasure_for_dive(bet, dive);
                 let max = max_payout_for_bet(bet);
-                
+
                 // Should never exceed max
                 assert!(
                     treasure <= max,
                     "Bet {bet}, dive {dive}: treasure {treasure} exceeds max {max}"
                 );
-                
+
                 // Should be reasonable
                 assert!(treasure > 0 || bet == 0, "Treasure should be positive");
             }
