@@ -533,6 +533,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "dive_game"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1950,13 +1957,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "the_fool"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
 ]
 
 [[package]]

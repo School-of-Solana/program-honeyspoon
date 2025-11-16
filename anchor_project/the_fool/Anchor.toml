@@ -7,6 +7,7 @@ skip-lint = false
 
 [programs.localnet]
 the_fool = "4HMPqfgZTqsB4iecehvxJcmEMS1tevL9Lv9T83bVvUgb"
+dive_game = "5f9Gn6yLcMPqZfFPM9pBYQV1f1h6EBDCSs8jynjfoEQ3"
 
 [registry]
 url = "https://api.apr.dev"
