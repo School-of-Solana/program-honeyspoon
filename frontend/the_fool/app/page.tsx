@@ -16,6 +16,7 @@ import type { GameState, Shipwreck, DiveStats } from "@/lib/types";
 import { GAME_CONFIG } from "@/lib/constants";
 import { GAME_COLORS } from "@/lib/gameColors";
 import { playSound, stopSound, getSoundManager } from "@/lib/soundManager";
+import { useGameStore } from "@/lib/gameStore";
 
 export default function Home() {
   // Generate a fixed userId for this session (in production, would come from auth)
@@ -38,14 +39,21 @@ export default function Home() {
 
   const betAmount = GAME_CONFIG.FIXED_BET; // Fixed bet amount for simplified gameplay
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isDiving, setIsDiving] = useState(false); // Separate state for diving animation
-  const [shouldSurface, setShouldSurface] = useState(false); // Only surface when player cashes out
-  const [isInOcean, setIsInOcean] = useState(false); // Track if we're in the ocean (not on beach)
-  const [lastShipwreck, setLastShipwreck] = useState<Shipwreck | undefined>();
-  const [survived, setSurvived] = useState<boolean | undefined>(undefined);
   const [showBettingCard, setShowBettingCard] = useState(true);
   const [showHUD, setShowHUD] = useState(false);
-  const [animationMessage, setAnimationMessage] = useState<string>("");
+  
+  // Use Zustand store for canvas/scene state
+  const startDiveAnimation = useGameStore((state) => state.startDiveAnimation);
+  const endDiveAnimation = useGameStore((state) => state.endDiveAnimation);
+  const setSurvived = useGameStore((state) => state.setSurvived);
+  const setLastShipwreck = useGameStore((state) => state.setLastShipwreck);
+  const setAnimationMessage = useGameStore((state) => state.setAnimationMessage);
+  const triggerSurfacing = useGameStore((state) => state.triggerSurfacing);
+  const setDepth = useGameStore((state) => state.setDepth);
+  const setTreasure = useGameStore((state) => state.setTreasure);
+  
+  // Read animation message from store for display
+  const animationMessage = useGameStore((state) => state.animationMessage);
 
   // Debug mode states
   const [debugMode, setDebugMode] = useState(false); // House wallet debug
@@ -199,18 +207,15 @@ export default function Home() {
     setIsProcessing(true);
 
     try {
-      // STEP 1: Start diving animation
-      setIsDiving(true);
-      // NOTE: Don't set isInOcean here - let BeachScene set it when transitioning
-      setAnimationMessage("DIVING...");
+      // STEP 1: Start diving animation via Zustand store
+      startDiveAnimation(); // This triggers BeachScene to detect and transition!
       playSound("DIVE"); // Play diving swoosh sound
       setTimeout(() => playSound("BUBBLES"), 200); // Bubbles shortly after
       console.log("[GAME] 🎬 Starting diving animation (2.5s)...");
 
       // Wait for diving animation (2.5 seconds as defined in OceanScene)
       await new Promise((resolve) => setTimeout(resolve, 2500));
-      setIsDiving(false);
-      setAnimationMessage("");
+      endDiveAnimation();
 
       // STEP 2: Call server to determine result
       console.log("[GAME] 🎲 Calling server for dive result...");
@@ -236,7 +241,7 @@ export default function Home() {
         depth: result.depth,
       });
 
-      // STEP 3: Show result animation
+      // STEP 3: Show result animation via store
       setSurvived(result.survived);
       if (result.survived) {
         setAnimationMessage("TREASURE FOUND!");
@@ -269,6 +274,10 @@ export default function Home() {
             ? [...prev.discoveredShipwrecks, result.shipwreck]
             : prev.discoveredShipwrecks,
         }));
+
+        // Update store with new visual state
+        setDepth(result.depth);
+        setTreasure(result.totalTreasure);
 
         if (result.shipwreck) {
           setLastShipwreck(result.shipwreck);
@@ -350,8 +359,7 @@ export default function Home() {
     });
 
     setIsProcessing(true);
-    setShouldSurface(true); // Trigger surfacing animation
-    setAnimationMessage("SURFACING!");
+    triggerSurfacing(); // Trigger surfacing animation via store
     playSound("SURFACE"); // Play splash sound
 
     try {
@@ -405,10 +413,12 @@ export default function Home() {
           walletBalance: walletInfo.balance,
           sessionId: newSessionId, // ✅ NEW SESSION ID
         }));
+        
+        // Reset store state
         setLastShipwreck(undefined);
         setSurvived(undefined);
-        setShouldSurface(false); // Reset surface trigger
-        setIsInOcean(false); // Back to beach
+        setDepth(0);
+        setTreasure(0);
 
         setTimeout(() => setShowBettingCard(true), 500);
       }
@@ -416,7 +426,6 @@ export default function Home() {
       console.error("[GAME] ❌ Exception during surface:", error);
     } finally {
       setIsProcessing(false);
-      setShouldSurface(false); // Reset surface trigger
     }
   };
 
