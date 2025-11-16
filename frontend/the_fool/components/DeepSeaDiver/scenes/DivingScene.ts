@@ -443,6 +443,20 @@ export function createDivingScene(
         }
       }
 
+      // Treasure collection animation (pulse effect)
+      if (state.animationType === AnimationType.TREASURE) {
+        state.treasurePulseTime += k.dt();
+        const TREASURE_ANIMATION_DURATION = 1.5; // 1.5 seconds
+
+        // Pulse complete - return to idle
+        if (state.treasurePulseTime >= TREASURE_ANIMATION_DURATION) {
+          state.animationType = AnimationType.IDLE;
+          state.isAnimating = false;
+          state.treasurePulseTime = 0;
+          console.log("[CANVAS] ✅ Treasure animation complete - ready for next action");
+        }
+      }
+
       // Check for surfacing request (player cashed out)
       if (
         useGameStore.getState().shouldSurface &&
