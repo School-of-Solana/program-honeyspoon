@@ -121,7 +121,7 @@ export function resetWalletStore(): void {
   transactions.length = 0;
   activeSessions.clear();
   houseWallet = {
-    balance: 50000,
+    balance: 500000, // $500,000 house bankroll (matches initial value)
     totalPaidOut: 0,
     totalReceived: 0,
     reservedFunds: 0,

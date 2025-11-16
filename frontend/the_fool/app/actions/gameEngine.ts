@@ -187,7 +187,7 @@ export async function executeRound(
   // This prevents clients from replaying old rounds or skipping ahead
   if (roundNumber !== gameSession.diveNumber) {
     throw new Error(
-      `Round mismatch: Expected round ${gameSession.diveNumber}, received ${roundNumber}. Please refresh.`
+      `Round number mismatch: server expects ${gameSession.diveNumber}, client sent ${roundNumber}. Please refresh.`
     );
   }
 
@@ -198,7 +198,7 @@ export async function executeRound(
 
   if (currentValue !== expectedValue) {
     throw new Error(
-      `Treasure mismatch: Expected $${expectedValue}, received $${currentValue}. Data corruption detected.`
+      `Current value mismatch: server has ${expectedValue}, client sent ${currentValue}. Data corruption detected.`
     );
   }
 

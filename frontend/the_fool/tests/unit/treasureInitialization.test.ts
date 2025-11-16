@@ -375,18 +375,29 @@ describe("Edge Cases - Zero Treasure Handling", () => {
     await startGame(50, userId, sessionId);
 
     // This would be the BUG: passing 0 instead of betAmount
-    const dive1 = await performDive(1, 0, sessionId, userId, "99");
-
-    // With currentValue = 0:
-    // newValue = 0 * multiplier = 0
-    assert.strictEqual(
-      dive1.totalTreasure,
-      0,
-      "BUG: Passing 0 results in 0 treasure!"
+    // The server should reject this with treasure mismatch error
+    await assert.rejects(
+      async () => performDive(1, 0, sessionId, userId, "99"),
+      (error: Error) => {
+        assert.ok(
+          error.message.includes("Treasure mismatch"),
+          `Expected treasure mismatch error, got: ${error.message}`
+        );
+        assert.ok(
+          error.message.includes("$50"),
+          `Expected error to mention correct value $50, got: ${error.message}`
+        );
+        assert.ok(
+          error.message.includes("$0"),
+          `Expected error to mention received value $0, got: ${error.message}`
+        );
+        return true;
+      },
+      "Should reject passing 0 as treasure on first dive"
     );
 
     console.log(
-      `✗ BUG DEMO: First dive with value=0 → treasure=$${dive1.totalTreasure} (broken!)`
+      `✓ FIXED: First dive with value=0 is correctly rejected with treasure mismatch error`
     );
     console.log(`  This is why we must pass betAmount on first dive, not 0`);
   });
