@@ -361,4 +361,119 @@ mod tests {
         assert_eq!(max_payout_for_bet(bet), max_payout_for_bet(bet));
         assert_eq!(max_dives_for_bet(bet), max_dives_for_bet(bet));
     }
+
+    // ============================================================================
+    // Property-Based Tests (Broad Coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_survival_probability_always_in_bounds() {
+        // Test a wide range of dive numbers
+        for dive in 0..=300 {
+            let p = survival_probability_bps(dive);
+            assert!(
+                p >= 100_000 && p <= 1_000_000,
+                "Dive {dive} produced out-of-bounds prob {p}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_survival_probability_step_is_bounded() {
+        const DECAY: u32 = 5_000;
+
+        let mut prev = survival_probability_bps(1);
+        for dive in 2..=200 {
+            let p = survival_probability_bps(dive);
+            // Difference per step should be at most DECAY (or 0 near floor)
+            let step = prev.saturating_sub(p);
+            assert!(
+                step <= DECAY,
+                "Dive {dive}: step too large (prev={prev}, curr={p}, step={step})"
+            );
+            prev = p;
+        }
+    }
+
+    #[test]
+    fn test_treasure_stays_at_cap_after_reaching_max() {
+        let bet = 1_000_000;
+        let max = max_payout_for_bet(bet);
+
+        let mut reached = false;
+        for d in 0..200 {
+            let t = treasure_for_dive(bet, d);
+            if t == max {
+                reached = true;
+            }
+            if reached {
+                assert_eq!(t, max, "Once capped, treasure stays capped (dive {d})");
+            }
+        }
+        assert!(reached, "Curve must reach cap by 200 dives");
+    }
+
+    #[test]
+    fn test_ev_of_single_round_is_sane() {
+        let bet = 1_000_000u64;
+
+        let p = survival_probability_bps(1) as u128;
+        let t = treasure_for_dive(bet, 1) as u128;
+        let ev = p * t / 1_000_000;
+
+        assert!(ev >= (bet as u128) / 2, "EV should be at least 0.5x bet");
+        assert!(ev <= (bet as u128) * 2, "EV should be at most 2x bet");
+    }
+
+    #[test]
+    fn test_always_continue_strategy_is_house_edge() {
+        let bet = 1_000_000u64;
+        let max_dive = max_dives_for_bet(bet);
+        let max_payout = max_payout_for_bet(bet) as u128;
+
+        // Assume player always continues to max_dive
+        // EV = product_over_rounds(p_survive) * max_payout
+        let mut prob_survive_all = 1_000_000u128; // start at 1.0 in bps
+
+        for d in 1..=max_dive {
+            let p = survival_probability_bps(d) as u128;
+            prob_survive_all = prob_survive_all * p / 1_000_000;
+        }
+
+        let ev = prob_survive_all * max_payout / 1_000_000;
+
+        assert!(
+            ev < bet as u128,
+            "Always-continue strategy should be -EV for player (EV={ev}, bet={bet})"
+        );
+    }
+
+    #[test]
+    fn test_treasure_no_panic_on_realistic_bets() {
+        // Test realistic SOL amounts (up to 10 SOL) for many dives
+        let sol_amounts = [
+            100_000,       // 0.0001 SOL
+            1_000_000,     // 0.001 SOL
+            10_000_000,    // 0.01 SOL
+            100_000_000,   // 0.1 SOL
+            1_000_000_000, // 1 SOL
+            10_000_000_000, // 10 SOL
+        ];
+
+        for bet in sol_amounts {
+            for dive in 0..=200 {
+                let treasure = treasure_for_dive(bet, dive);
+                let max = max_payout_for_bet(bet);
+                
+                // Should never exceed max
+                assert!(
+                    treasure <= max,
+                    "Bet {bet}, dive {dive}: treasure {treasure} exceeds max {max}"
+                );
+                
+                // Should be reasonable
+                assert!(treasure > 0 || bet == 0, "Treasure should be positive");
+            }
+        }
+    }
 }
