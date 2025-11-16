@@ -33,6 +33,7 @@ export default function Home() {
   const setUserId = useChainWalletStore((state) => state.setUserId);
   const userBalance = useChainWalletStore((state) => state.userBalance);
   const refreshBalance = useChainWalletStore((state) => state.refreshBalance);
+  const lastUpdated = useChainWalletStore((state) => state.lastUpdated);
   const houseVaultBalance = useChainWalletStore(
     (state) => state.houseVaultBalance
   );
@@ -158,10 +159,18 @@ export default function Home() {
     totalReceived: 0, // Not tracked yet
   };
 
-  // Initialize session on mount (only once when userId is set)
+  // Initialize session on mount (only once when userId is set AND balance is loaded)
   useEffect(() => {
     const initializeSession = async () => {
       if (!userId) return; // Wait for userId to be set
+
+      // CRITICAL FIX: Wait for initial balance to load
+      // userBalance starts at 0, but after initial fetch it will be 1000 (for new users)
+      // We need to wait for lastUpdated to be set, which indicates the fetch completed
+      if (!lastUpdated && userBalance === 0) {
+        console.log("[GAME] ⏳ Waiting for initial balance fetch...");
+        return;
+      }
 
       const sessionId = await generateSessionId();
 
@@ -176,18 +185,22 @@ export default function Home() {
         sessionId,
         userId: userId.substring(0, 30) + "...",
         walletBalance: userBalance,
+        zustandStoreBalance: userBalance,
       });
     };
 
     initializeSession();
-    // IMPORTANT: Only run when userId changes, NOT when userBalance changes!
-    // If userBalance is in deps, it regenerates session ID on every balance update,
-    // which overwrites the server's real session ID and breaks game flow.
+    // IMPORTANT: Now also depends on lastUpdated to wait for initial fetch
+    // This ensures we don't initialize with stale balance (0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [userId, lastUpdated]);
 
   // Sync wallet balance to game state (without regenerating session ID)
   useEffect(() => {
+    console.log("[GAME] 💰 Syncing balance to game state", {
+      zustandBalance: userBalance,
+      previousGameBalance: gameState.walletBalance,
+    });
     setGameState((prev) => ({
       ...prev,
       walletBalance: userBalance,
@@ -220,10 +233,18 @@ export default function Home() {
 
   // Start new game
   const handleStartGame = async () => {
+    console.log("[GAME] 🎮 handleStartGame called", {
+      betAmount,
+      gameStateBalance: gameState.walletBalance,
+      zustandBalance: userBalance,
+      canStart: betAmount <= (gameState.walletBalance || 0),
+    });
+
     // Check if user has enough balance for fixed bet
     if (betAmount > (gameState.walletBalance || 0)) {
+      console.log("[GAME] ❌ Insufficient balance check failed!");
       showError(
-        `Insufficient balance. Need $${betAmount}, have $${gameState.walletBalance || 0}`,
+        `Insufficient balance. Need ${betAmount} SOL, have ${gameState.walletBalance || 0} SOL`,
         "warning"
       );
       return;
@@ -332,7 +353,12 @@ export default function Home() {
       await new Promise((resolve) => setTimeout(resolve, 2500));
 
       // STEP 2: Call server to determine result
-      console.log("[GAME] 🎲 Calling server for dive result...");
+      const requestId = crypto.randomUUID();
+      console.log("[GAME] 🎲 Calling server for dive result...", {
+        requestId,
+        diveNumber: gameState.diveNumber,
+        sessionId: gameState.sessionId.substring(0, 12) + "...",
+      });
       // For first dive, use initialBet as the value to multiply; subsequent dives use accumulated treasure
       const valueToMultiply =
         gameState.currentTreasure === 0
@@ -346,6 +372,7 @@ export default function Home() {
       );
 
       console.log(`[GAME] 📊 Server response`, {
+        requestId,
         survived: result.survived,
         randomRoll: result.randomRoll,
         threshold: result.threshold,
@@ -540,8 +567,10 @@ export default function Home() {
 
         // Update wallet balance
         const walletInfo = await getWalletInfo(userId);
-        console.log("[GAME] 💰 Wallet after win", {
+        const profitOrLoss = result.profit >= 0 ? "profit" : "loss";
+        console.log(`[GAME] 💰 Wallet after cashout (${profitOrLoss})`, {
           newBalance: walletInfo.balance,
+          profitAmount: result.profit,
           totalWon: walletInfo.totalWon,
         });
 
@@ -751,8 +780,17 @@ export default function Home() {
               >
                 <div className="flex justify-between items-center">
                   <span style={{ fontSize: "10px" }}>BALANCE</span>
-                  <span style={{ fontSize: "16px", fontWeight: "bold" }}>
-                    ${gameState.walletBalance || 0}
+                  <span
+                    style={{ fontSize: "16px", fontWeight: "bold" }}
+                    onClick={() =>
+                      console.log("[UI] 💰 Balance clicked - gameState:", {
+                        walletBalance: gameState.walletBalance,
+                        userBalance,
+                        fullGameState: gameState,
+                      })
+                    }
+                  >
+                    {gameState.walletBalance || 0} SOL
                   </span>
                 </div>
               </div>
@@ -770,7 +808,7 @@ export default function Home() {
                     WAGER PER DIVE
                   </p>
                   <p style={{ fontSize: "24px", fontWeight: "bold" }}>
-                    ${betAmount}
+                    {betAmount} SOL
                   </p>
                 </div>
               </div>
@@ -785,14 +823,15 @@ export default function Home() {
                 className={`nes-btn ${betAmount > (gameState.walletBalance || 0) ? "is-disabled" : "is-success"} w-full mb-4`}
                 style={{ fontSize: "12px" }}
               >
-                START GAME (${betAmount})
+                START GAME ({betAmount} SOL)
               </button>
 
               {/* Error Message */}
               {betAmount > (gameState.walletBalance || 0) && (
                 <div className="nes-container is-rounded is-error mb-4">
                   <p style={{ fontSize: "8px", textAlign: "center" }}>
-                    Need ${betAmount}, have ${gameState.walletBalance || 0}
+                    Need {betAmount} SOL, have {gameState.walletBalance || 0}{" "}
+                    SOL
                   </p>
                 </div>
               )}
@@ -860,7 +899,7 @@ export default function Home() {
                       marginBottom: "4px",
                     }}
                   >
-                    ${gameState.currentTreasure}
+                    {gameState.currentTreasure} SOL
                   </p>
                   <p
                     style={{

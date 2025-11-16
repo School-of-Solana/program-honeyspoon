@@ -3,12 +3,13 @@
  */
 
 // Core game math (FIXED - provably fair)
+// CRITICAL: These values MUST match LocalGameChain.gameConfig
 export const GAME_CONFIG = {
-  HOUSE_EDGE: 0.15, // 15% house edge (FIXED FOREVER)
-  TARGET_EV: 0.85, // 0.85 EV every round
-  BASE_WIN_PROB: 0.7, // Start at 70% survival rate
-  DECAY_CONSTANT: 0.08, // Difficulty curve
-  MIN_WIN_PROB: 0.05, // Floor at 5% (always possible)
+  HOUSE_EDGE: 0.05, // 5% house edge (fair and sustainable)
+  TARGET_EV: 0.95, // 0.95 EV every round (player-friendly)
+  BASE_WIN_PROB: 0.7, // Start at 70% survival rate (challenging but fair)
+  DECAY_CONSTANT: 0.08, // Difficulty curve (gradual increase)
+  MIN_WIN_PROB: 0.05, // Floor at 5% (always a chance)
 
   // Betting limits
   MIN_BET: 10,
@@ -19,6 +20,9 @@ export const GAME_CONFIG = {
   STARTING_DEPTH: 0, // Surface level
   DEPTH_PER_DIVE: 50, // Meters deeper per round
   MAX_VISUAL_DEPTH: 2000, // Visual cap for rendering
+
+  // Session management
+  SESSION_TIMEOUT_MS: 30 * 60 * 1000, // 30 minutes (sessions expire after inactivity)
 } as const;
 
 // Depth zones with visual themes

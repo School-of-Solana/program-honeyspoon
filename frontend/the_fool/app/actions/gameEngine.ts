@@ -245,6 +245,28 @@ export async function startGameSession(
 }
 
 /**
+ * Validate session is not expired
+ * @throws {Error} if session is expired
+ */
+function validateSessionNotExpired(session: any): void {
+  if (!session.startTime) {
+    throw new Error("Session missing start time");
+  }
+
+  const now = Date.now();
+  const sessionAge = now - session.startTime;
+  const timeout = LIB_CONFIG.SESSION_TIMEOUT_MS;
+
+  if (sessionAge > timeout) {
+    const minutesOld = Math.floor(sessionAge / 60000);
+    const timeoutMinutes = Math.floor(timeout / 60000);
+    throw new Error(
+      `Session expired (${minutesOld} minutes old, timeout: ${timeoutMinutes} minutes). Please start a new game.`
+    );
+  }
+}
+
+/**
  * Execute a round (place bet and get result)
  *
  * REFACTORED: Now uses ON-CHAIN RNG via GameChainPort
@@ -313,6 +335,19 @@ export async function executeRound(
   if (!gameSession || gameSession.status !== "ACTIVE") {
     console.error(`[CHAIN] ❌ Local session missing or inactive: ${sessionId}`);
     throw new Error("Local session data missing");
+  }
+
+  // Validate session is not expired
+  try {
+    validateSessionNotExpired(gameSession);
+  } catch (error) {
+    // Mark session as expired and clean up
+    gameSession.isActive = false;
+    gameSession.status = "EXPIRED";
+    gameSession.endTime = Date.now();
+    setGameSession(gameSession);
+    deleteGameSession(sessionId);
+    throw error;
   }
 
   // SECURITY: Validate round number matches chain state
@@ -425,8 +460,7 @@ export async function executeRound(
       threshold: Math.floor(roundStats.winProbability * 100),
       winProbability: roundStats.winProbability,
       multiplier: roundStats.multiplier,
-      newValue:
-        lamportsToSol(chainResult.state.currentTreasure) - currentValue,
+      newValue: lamportsToSol(chainResult.state.currentTreasure) - currentValue,
       totalValue: lamportsToSol(chainResult.state.currentTreasure),
       roundNumber,
       timestamp: Date.now(),
@@ -479,6 +513,9 @@ export async function cashOut(
     throw new Error("Local session data missing");
   }
 
+  // Validate session is not expired
+  validateSessionNotExpired(gameSession);
+
   // SECURITY: Validate cash-out amount matches chain state
   const chainTreasure = lamportsToSol(sessionState.currentTreasure);
   if (Math.abs(finalValue - chainTreasure) > 0.01) {
@@ -501,9 +538,7 @@ export async function cashOut(
     recordWin(userId, profit);
 
     // Get balances for transaction record
-    const userBalanceBefore = lamportsToSol(
-      await chain.getUserBalance(userId)
-    );
+    const userBalanceBefore = lamportsToSol(await chain.getUserBalance(userId));
 
     // Record transaction
     addTransaction({

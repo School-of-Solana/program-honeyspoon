@@ -1,16 +1,16 @@
 /**
  * On-Chain RNG Simulation
- * 
+ *
  * Mimics the contract's VRF-based randomness system.
  * This is what the contract will do internally.
- * 
+ *
  * SECURITY MODEL:
  * - Contract gets seed from VRF oracle (Switchboard)
  * - Contract derives per-round rolls using: keccak256(seed || dive_number)
  * - Users CANNOT bias the outcome (seed is from VRF, not user input)
  */
 
-import { createHash } from 'crypto';
+import { createHash } from "crypto";
 
 /**
  * Game configuration matching contract
@@ -28,18 +28,18 @@ export interface GameCurveConfig {
  * In LocalGameChain: use crypto.randomBytes
  */
 export function generateVRFSeed(): Uint8Array {
-  if (typeof window !== 'undefined' && window.crypto) {
+  if (typeof window !== "undefined" && window.crypto) {
     // Browser
     return window.crypto.getRandomValues(new Uint8Array(32));
   } else {
     // Node.js
-    return require('crypto').randomBytes(32);
+    return require("crypto").randomBytes(32);
   }
 }
 
 /**
  * Derive a per-round random roll from VRF seed + dive number
- * 
+ *
  * This mimics the contract's logic:
  * ```rust
  * let mut seed_material = [0u8; 64];
@@ -49,7 +49,7 @@ export function generateVRFSeed(): Uint8Array {
  * let rand_u64 = u64::from_le_bytes(h[0..8]);
  * let roll_bps = rand_u64 % 1_000_000;
  * ```
- * 
+ *
  * @param seed - 32-byte VRF seed
  * @param diveNumber - Current dive number (1-indexed)
  * @param sessionPda - Session PDA for uniqueness (optional)
@@ -62,40 +62,40 @@ export function deriveRoundRoll(
 ): number {
   // Build seed material: seed || dive_number || session_pda
   const buffer = Buffer.alloc(64);
-  
+
   // First 32 bytes: VRF seed
   buffer.set(seed, 0);
-  
+
   // Next 8 bytes: dive number (little-endian u64)
   buffer.writeBigUInt64LE(BigInt(diveNumber), 32);
-  
+
   // Optionally mix in session PDA for extra uniqueness
   if (sessionPda) {
-    const pdaHash = createHash('sha256').update(sessionPda).digest();
+    const pdaHash = createHash("sha256").update(sessionPda).digest();
     for (let i = 0; i < 24; i++) {
       buffer[40 + i] ^= pdaHash[i];
     }
   }
-  
+
   // Hash with keccak256 (matching Solana's keccak)
-  const hash = createHash('sha256').update(buffer).digest(); // Note: using sha256 as keccak256 substitute
-  
+  const hash = createHash("sha256").update(buffer).digest(); // Note: using sha256 as keccak256 substitute
+
   // Extract first 8 bytes as u64
   const randU64 = hash.readBigUInt64LE(0);
-  
+
   // Modulo to get basis points [0, 1000000)
   const rollBps = Number(randU64 % BigInt(1_000_000));
-  
+
   return rollBps;
 }
 
 /**
  * Calculate survival probability for a given dive number
- * 
+ *
  * Formula: P(survive) = max(minP, baseP * e^(-decay * (dive - 1)))
- * 
+ *
  * Returns basis points [0, 1000000) for comparison with roll
- * 
+ *
  * @param diveNumber - Current dive (1-indexed)
  * @param config - Game curve configuration
  * @returns Survival threshold in basis points [0, 1000000)
@@ -107,21 +107,22 @@ export function survivalThresholdBps(
   // Exponential decay: P = baseP * e^(-decay * (n-1))
   const probability = Math.max(
     config.minWinProbability,
-    config.baseWinProbability * Math.exp(-config.decayConstant * (diveNumber - 1))
+    config.baseWinProbability *
+      Math.exp(-config.decayConstant * (diveNumber - 1))
   );
-  
+
   // Convert to basis points
   return Math.floor(probability * 1_000_000);
 }
 
 /**
  * Calculate treasure for a given round (deterministic payout curve)
- * 
+ *
  * This is the PURE ON-CHAIN FUNCTION that replaces client-computed treasures.
- * 
+ *
  * Formula: treasure(n) = bet * product(multiplier_i for i=1..n)
  * Where: multiplier_i = (1 - houseEdge) / P(survive at round i)
- * 
+ *
  * @param betAmount - Initial bet in lamports
  * @param diveNumber - Current dive number (1-indexed)
  * @param config - Game curve configuration
@@ -133,29 +134,44 @@ export function treasureForRound(
   config: GameCurveConfig
 ): bigint {
   if (diveNumber < 1) {
-    throw new Error('Dive number must be >= 1');
+    throw new Error("Dive number must be >= 1");
   }
-  
+
   // For round 1, treasure = bet (no multiplier yet)
   if (diveNumber === 1) {
     return betAmount;
   }
-  
+
   // Compute cumulative treasure by applying multipliers
   let treasure = Number(betAmount);
-  
+
   for (let round = 1; round < diveNumber; round++) {
     const survivalProb = survivalThresholdBps(round, config) / 1_000_000;
     const multiplier = (1 - config.houseEdge) / survivalProb;
+
+    // VALIDATION: Ensure multiplier is positive (player should win on successful dive)
+    if (multiplier < 1.0) {
+      console.error(`[RNG] ❌ CRITICAL: Negative expected value detected!`, {
+        round,
+        survivalProb,
+        houseEdge: config.houseEdge,
+        multiplier,
+        message: "Players lose money on wins! Check game config.",
+      });
+      throw new Error(
+        `Invalid game config: multiplier ${multiplier.toFixed(3)} < 1.0 at round ${round}`
+      );
+    }
+
     treasure *= multiplier;
   }
-  
+
   return BigInt(Math.floor(treasure));
 }
 
 /**
  * Calculate max potential payout (for reserve calculation)
- * 
+ *
  * @param betAmount - Initial bet in lamports
  * @param maxRounds - Maximum rounds allowed (e.g. 50)
  * @param config - Game curve configuration
@@ -171,7 +187,7 @@ export function maxPotentialPayout(
 
 /**
  * Simulate a round outcome (what the contract does internally)
- * 
+ *
  * @param seed - VRF seed
  * @param diveNumber - Current dive number
  * @param betAmount - Initial bet
@@ -195,19 +211,19 @@ export function simulateRoundOutcome(
 } {
   // Derive random roll from seed + dive number
   const randomRoll = deriveRoundRoll(seed, diveNumber, sessionPda);
-  
+
   // Get survival threshold
   const threshold = survivalThresholdBps(diveNumber, config);
   const survivalProbability = threshold / 1_000_000;
-  
+
   // Determine outcome
   const survived = randomRoll < threshold;
-  
+
   if (survived) {
     // Player survives: increment dive, compute new treasure
     const newDiveNumber = diveNumber + 1;
     const newTreasure = treasureForRound(betAmount, newDiveNumber, config);
-    
+
     return {
       survived: true,
       randomRoll,

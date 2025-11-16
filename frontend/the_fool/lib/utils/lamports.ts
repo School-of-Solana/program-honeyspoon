@@ -138,9 +138,41 @@ export function subtractLamports(a: bigint, b: bigint): bigint {
 
 /**
  * Multiply lamports by a scalar
+ *
+ * @throws {Error} if result overflows or multiplier is negative
  */
 export function multiplyLamports(lamports: bigint, multiplier: number): bigint {
+  // Validate multiplier
+  if (multiplier < 0) {
+    throw new Error("Multiplier cannot be negative");
+  }
+
+  if (!Number.isFinite(multiplier)) {
+    throw new Error("Multiplier must be finite");
+  }
+
   // Convert multiplier to handle decimals properly
   const scaledMultiplier = Math.floor(multiplier * 1e9);
-  return (lamports * BigInt(scaledMultiplier)) / BigInt(1_000_000_000);
+  const scaledBigInt = BigInt(scaledMultiplier);
+
+  // Check for overflow before multiplication
+  // Maximum safe value: 2^63 - 1 (bigint limit for compatibility)
+  const MAX_SAFE_LAMPORTS = BigInt("9223372036854775807");
+
+  if (lamports > 0 && scaledBigInt > 0) {
+    // Check: lamports * scaledBigInt <= MAX_SAFE_LAMPORTS
+    // Rearrange: lamports <= MAX_SAFE_LAMPORTS / scaledBigInt
+    if (lamports > MAX_SAFE_LAMPORTS / scaledBigInt) {
+      throw new Error("Lamports multiplication overflow");
+    }
+  }
+
+  const result = (lamports * scaledBigInt) / BigInt(1_000_000_000);
+
+  // Sanity check result
+  if (result < 0) {
+    throw new Error("Lamports multiplication resulted in negative value");
+  }
+
+  return result;
 }

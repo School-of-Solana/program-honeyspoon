@@ -66,11 +66,12 @@ export class LocalGameChain implements GameChainPort {
   private sessionCounter = 0; // For unique session nonces
 
   // Game configuration matching contract
+  // CRITICAL: Must import from constants to ensure consistency
   private gameConfig: GameCurveConfig = {
-    baseWinProbability: 0.95, // 95% survival at round 1
-    decayConstant: 0.15,
-    minWinProbability: 0.01, // 1% minimum
-    houseEdge: 0.15, // 15% house edge
+    baseWinProbability: 0.7, // 70% survival at round 1 (from lib/constants.ts)
+    decayConstant: 0.08, // Gradual difficulty increase (from lib/constants.ts)
+    minWinProbability: 0.05, // 5% minimum (from lib/constants.ts)
+    houseEdge: 0.05, // 5% house edge (from lib/constants.ts)
   };
 
   constructor(
@@ -582,10 +583,10 @@ export class LocalGameChain implements GameChainPort {
       throw GameError.invalidSessionStatus();
     }
 
-    // Mimic contract validation: current_treasure > bet_amount (must have profit)
-    // NOTE: Check with contract if this validation exists!
-    if (session.currentTreasure <= session.betAmount) {
-      throw GameError.treasureInvalid("no profit to cash out");
+    // Allow cashing out even at a loss (players should be able to cut losses)
+    // Only validate that treasure is positive (has some value to withdraw)
+    if (session.currentTreasure <= BigInt(0)) {
+      throw GameError.treasureInvalid("no value to cash out");
     }
 
     // Check vault has sufficient balance
