@@ -284,6 +284,16 @@ export const DECORATIONS = {
     { x: 0.6, y: 0.15, speed: 60 },
     { x: 0.1, y: 0.25, speed: 45 },
   ],
+  CRABS: [
+    { x: 0.55, y: 0.67, direction: 1, speed: 30 },
+    { x: 0.68, y: 0.73, direction: -1, speed: 25 },
+    { x: 0.85, y: 0.82, direction: 1, speed: 35 },
+  ],
+  STARFISH: [
+    { x: 0.58, y: 0.71, scale: 1.8 },
+    { x: 0.76, y: 0.77, scale: 1.5 },
+    { x: 0.90, y: 0.84, scale: 2.0 },
+  ],
 } as const;
 
 // ===== SPEED LINE SETTINGS =====

@@ -18,6 +18,9 @@ import { createTreasureParticles } from "./entities/particles";
 import { showTreasureChest } from "./entities/treasure";
 import { triggerDeathAnimation } from "./entities/death";
 import { createLayerPart } from "./entities/parallax";
+import { createCrab } from "./entities/crab";
+import { createStarfish } from "./entities/starfish";
+import { createPalmTree } from "./entities/palmtree";
 
 interface OceanSceneProps {
   depth: number;
@@ -268,32 +271,10 @@ export default function OceanScene({
 
       // === BEACH DECORATIONS (on diagonal beach) ===
 
-      // Palm tree on far right (on beach)
+      // Palm tree on far right (on beach) - NOW USING SPRITE!
       const palmX = k.width() * CONST.LAYOUT.PALM_X;
       const palmY = k.height() * CONST.LAYOUT.PALM_Y;
-
-      // Palm trunk
-      k.add([
-        k.rect(CONST.SCALES.PALM_TRUNK.width, CONST.SCALES.PALM_TRUNK.height),
-        k.pos(palmX, palmY),
-        k.anchor("top"),
-        k.color(...CONST.COLORS.PALM_TRUNK),
-        k.z(CONST.Z_LAYERS.LIGHT_RAYS),
-      ]);
-
-      // Palm leaves (6 leaves in circle)
-      const palmLeafCount = 6;
-      for (let i = 0; i < palmLeafCount; i++) {
-        const angle = (Math.PI * 2 * i) / palmLeafCount;
-        k.add([
-          k.rect(CONST.SCALES.PALM_LEAF.width, CONST.SCALES.PALM_LEAF.height),
-          k.pos(palmX + Math.cos(angle) * 20, palmY + Math.sin(angle) * 20),
-          k.anchor("center"),
-          k.rotate(angle * (180 / Math.PI)),
-          k.color(...CONST.COLORS.PALM_LEAF),
-          k.z(CONST.Z_LAYERS.LIGHT_RAYS),
-        ]);
-      }
+      createPalmTree(k, palmX, palmY, 4, CONST.Z_LAYERS.LIGHT_RAYS);
 
       // Rocks on beach (scattered on diagonal beach)
       CONST.DECORATIONS.ROCKS.forEach(rock => {
@@ -306,19 +287,14 @@ export default function OceanScene({
         ]);
       });
 
-      // Shells on beach (small decorative, on diagonal beach)
-      CONST.DECORATIONS.SHELLS.forEach(shell => {
+      // Shells on beach (small decorative, on diagonal beach) - NOW USING SPRITES!
+      CONST.DECORATIONS.SHELLS.forEach((shell, index) => {
         k.add([
-          k.polygon([
-            k.vec2(0, 0),
-            k.vec2(8, -3),
-            k.vec2(CONST.SCALES.SHELL_SIZE, 4),
-            k.vec2(5, 8),
-            k.vec2(0, 6),
-          ]),
+          k.sprite("shell", { frame: index % 3 }), // Rotate through 3 shell variations
           k.pos(k.width() * shell.x, k.height() * shell.y),
-          k.color(...CONST.COLORS.SHELL),
-          k.outline(1, k.rgb(...CONST.COLORS.OUTLINE_SHELL)),
+          k.anchor("center"),
+          k.scale(1.5),
+          k.rotate(Math.random() * 360), // Random rotation
           k.z(CONST.Z_LAYERS.SUN),
         ]);
       });
@@ -354,9 +330,19 @@ export default function OceanScene({
       // Flying seagulls
       // Seagull creation moved to entities/seagull.ts
 
-      // Spawn seagulls
+      // Spawn seagulls (now with sprite animation!)
       CONST.DECORATIONS.SEAGULLS.forEach(seagull => {
         createSeagull(k, k.width() * seagull.x, k.height() * seagull.y, seagull.speed);
+      });
+
+      // Spawn crabs on beach (NEW!)
+      CONST.DECORATIONS.CRABS.forEach(crab => {
+        createCrab(k, k.width() * crab.x, k.height() * crab.y, crab.direction, crab.speed, CONST.Z_LAYERS.SUN);
+      });
+
+      // Spawn starfish on beach (NEW!)
+      CONST.DECORATIONS.STARFISH.forEach(starfish => {
+        createStarfish(k, k.width() * starfish.x, k.height() * starfish.y, starfish.scale, CONST.Z_LAYERS.SUN);
       });
 
       // Create boat at water surface (LEFT SIDE - UI is on right)

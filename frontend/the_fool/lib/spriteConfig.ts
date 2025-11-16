@@ -189,6 +189,53 @@ export const SPRITE_CONFIGS: SpriteConfig[] = [
     frameSize: { w: 48, h: 64 },
     totalFrames: 1,
   },
+  // Beach entities
+  {
+    name: "palmtree",
+    file: "/sprites/palmtree.png",
+    sliceX: 1,
+    sliceY: 1,
+    frameSize: { w: 16, h: 32 },
+    totalFrames: 1,
+  },
+  {
+    name: "seagull",
+    file: "/sprites/seagull.png",
+    sliceX: 8,
+    sliceY: 1,
+    frameSize: { w: 16, h: 16 },
+    totalFrames: 8,
+    anims: {
+      fly: { from: 0, to: 7, loop: true, speed: 10 },
+    },
+  },
+  {
+    name: "crab",
+    file: "/sprites/crab.png",
+    sliceX: 8,
+    sliceY: 1,
+    frameSize: { w: 16, h: 16 },
+    totalFrames: 8,
+    anims: {
+      walk: { from: 0, to: 7, loop: true, speed: 8 },
+    },
+  },
+  {
+    name: "starfish",
+    file: "/sprites/starfish.png",
+    sliceX: 1,
+    sliceY: 1,
+    frameSize: { w: 16, h: 16 },
+    totalFrames: 1,
+  },
+  {
+    name: "shell",
+    file: "/sprites/shell.png",
+    sliceX: 3,
+    sliceY: 1,
+    frameSize: { w: 16, h: 16 },
+    totalFrames: 3,
+  },
 ];
 
 // Helper function to get sprite config by name
@@ -207,5 +254,12 @@ export function getCreatureSprites(): SpriteConfig[] {
 export function getEnvironmentSprites(): SpriteConfig[] {
   return SPRITE_CONFIGS.filter((s) =>
     ["seaweed", "corals", "tiles"].includes(s.name)
+  );
+}
+
+// Helper function to get all beach sprites (palm, seagull, crab, etc.)
+export function getBeachSprites(): SpriteConfig[] {
+  return SPRITE_CONFIGS.filter((s) =>
+    ["palmtree", "seagull", "crab", "starfish", "shell"].includes(s.name)
   );
 }

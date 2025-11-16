@@ -1,12 +1,13 @@
 /**
  * Seagull Entity - Creates flying seagulls for beach scene
+ * NOW USING ANIMATED SPRITES!
  */
 
 import type { KAPLAYCtx, GameObj } from "kaplay";
 import * as CONST from "../sceneConstants";
 
 /**
- * Create a flying seagull
+ * Create a flying seagull with animated sprite
  * @param k - Kaplay context
  * @param startX - Starting X position
  * @param startY - Starting Y position
@@ -15,17 +16,10 @@ import * as CONST from "../sceneConstants";
  */
 export function createSeagull(k: KAPLAYCtx, startX: number, startY: number, speed: number): GameObj {
   const seagull = k.add([
-    k.polygon([
-      k.vec2(0, 0),
-      k.vec2(-CONST.SEAGULL.WING_WIDTH, -CONST.SEAGULL.WING_HEIGHT),
-      k.vec2(-CONST.SEAGULL.BODY_WIDTH, 0),
-      k.vec2(0, -2),
-      k.vec2(CONST.SEAGULL.BODY_WIDTH, 0),
-      k.vec2(CONST.SEAGULL.WING_WIDTH, -CONST.SEAGULL.WING_HEIGHT),
-    ]),
+    k.sprite("seagull", { anim: "fly" }),
     k.pos(startX, startY),
-    k.color(...CONST.COLORS.SEAGULL),
-    k.outline(1, k.rgb(...CONST.COLORS.OUTLINE_CLOUD)),
+    k.anchor("center"),
+    k.scale(2), // Scale up the 16x16 sprite
     k.z(CONST.Z_LAYERS.SEAGULL),
   ]);
 
@@ -33,8 +27,14 @@ export function createSeagull(k: KAPLAYCtx, startX: number, startY: number, spee
     seagull.pos.x += speed * k.dt();
     seagull.pos.y += Math.sin(k.time() * CONST.SEAGULL.VERTICAL_WAVE_SPEED + startX) * CONST.SEAGULL.VERTICAL_WAVE_AMPLITUDE * k.dt();
 
+    // Flip sprite based on direction
+    seagull.flipX = speed < 0;
+
     if (seagull.pos.x > k.width() + CONST.SEAGULL.WRAP_OFFSET) {
       seagull.pos.x = -CONST.SEAGULL.WRAP_OFFSET;
+    }
+    if (seagull.pos.x < -CONST.SEAGULL.WRAP_OFFSET) {
+      seagull.pos.x = k.width() + CONST.SEAGULL.WRAP_OFFSET;
     }
   });
 
