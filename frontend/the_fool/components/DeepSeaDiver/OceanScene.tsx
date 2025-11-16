@@ -15,7 +15,6 @@ import { createJellyfish } from "./entities/jellyfish";
 import { createSeagull } from "./entities/seagull";
 import { createAmbientPredator } from "./entities/predator";
 import { createTreasureParticles } from "./entities/particles";
-import { showTreasureChest } from "./entities/treasure";
 import { triggerDeathAnimation } from "./entities/death";
 import { createLayerPart } from "./entities/parallax";
 import { createCrab } from "./entities/crab";
@@ -713,7 +712,6 @@ export default function OceanScene({
         }
       });
 
-      // Treasure chest creation moved to entities/treasure.ts
       // Death animation moved to entities/death.ts
 
       // ======= CENTRALIZED MAIN UPDATE LOOP =======
@@ -897,7 +895,7 @@ export default function OceanScene({
           animationType = AnimationType.TREASURE;
           treasurePulseTime = 0;
           createTreasureParticles(k, diver.pos.x, diver.pos.y);
-          showTreasureChest(k, diver.pos.x, diver.pos.y); // Show animated chest!
+          // Treasure chest animation removed - just showing particles
         } else if (survivedRef.current === false && !isAnimating && animationType === AnimationType.IDLE) {
           console.log('[CANVAS] 💀 Death triggered! Playing attack animation');
           triggerDeathAnimation(

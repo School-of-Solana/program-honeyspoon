@@ -157,19 +157,7 @@ export const SPRITE_CONFIGS: SpriteConfig[] = [
       pop: { from: 0, to: 9, loop: false, speed: 15 },
     },
   },
-  {
-    name: "chest",
-    file: "/sprites/chest.png",
-    sliceX: 3,
-    sliceY: 4,
-    frameSize: { w: 16, h: 16 },
-    totalFrames: 12,
-    anims: {
-      closed: { from: 0, to: 0, loop: false },
-      opening: { from: 0, to: 2, loop: false, speed: 5 },
-      open: { from: 3, to: 3, loop: false },
-    },
-  },
+  // Chest sprite removed - treasure animation no longer used
   {
     name: "coin",
     file: "/sprites/coin.png",
