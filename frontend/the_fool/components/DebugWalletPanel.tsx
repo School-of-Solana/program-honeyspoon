@@ -1,22 +1,28 @@
 "use client";
 
 /**
- * Debug Wallet Panel - Read-Only Wallet Information Display
+ * Debug Wallet Panel - Wallet Information Display with Debug Tools
  *
  * Shows current wallet balances from server (blockchain state).
- * SECURITY: No admin functions exposed (no top-up, no clear, etc.)
+ * In development mode, provides debug tools to top up wallets.
  *
- * For admin functions, use direct blockchain operations or create
- * separate admin panel with proper authentication.
+ * SECURITY: Top-up actions are server-side protected (only work when NODE_ENV !== 'production')
  */
 
 import { useState } from "react";
 import { useChainWalletStore } from "@/lib/chainWalletStore";
 import { GAME_COLORS } from "@/lib/gameColors";
+import {
+  debugTopUpUserWallet,
+  debugTopUpHouseVault,
+} from "@/app/actions/walletActions";
 
 export default function DebugWalletPanel() {
   // Toggle state
   const [isOpen, setIsOpen] = useState(false);
+  const [isTopping, setIsTopping] = useState(false);
+  const [topUpAmount, setTopUpAmount] = useState("100");
+  const [message, setMessage] = useState("");
 
   // Read-only state from Zustand (fetches from server)
   const userId = useChainWalletStore((state) => state.userId);
@@ -30,6 +36,74 @@ export default function DebugWalletPanel() {
   const refreshBalance = useChainWalletStore((state) => state.refreshBalance);
 
   const houseAvailable = houseBalance - houseReserved;
+
+  // Check if we're in development mode (client-side check for UI only)
+  const isDevelopment = process.env.NODE_ENV !== "production";
+
+  // Handle top-up user wallet
+  const handleTopUpUser = async () => {
+    if (!userId) return;
+    setIsTopping(true);
+    setMessage("");
+
+    try {
+      const amount = parseFloat(topUpAmount);
+      if (isNaN(amount) || amount <= 0) {
+        setMessage("❌ Invalid amount");
+        setIsTopping(false);
+        return;
+      }
+
+      const result = await debugTopUpUserWallet(userId, amount);
+
+      if (result.success) {
+        setMessage(`✅ Topped up ${amount} SOL!`);
+        // Refresh balance to show new value
+        await refreshBalance();
+      } else {
+        setMessage(`❌ Error: ${result.error}`);
+      }
+    } catch (error) {
+      setMessage(`❌ Failed: ${error}`);
+    } finally {
+      setIsTopping(false);
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(""), 3000);
+    }
+  };
+
+  // Handle top-up house vault (using mock PDA)
+  const handleTopUpHouse = async () => {
+    setIsTopping(true);
+    setMessage("");
+
+    try {
+      const amount = parseFloat(topUpAmount);
+      if (isNaN(amount) || amount <= 0) {
+        setMessage("❌ Invalid amount");
+        setIsTopping(false);
+        return;
+      }
+
+      // Mock house vault PDA (matches what gameEngine uses)
+      const vaultPda = "HOUSE_VAULT_PDA_house_authority_main";
+      const result = await debugTopUpHouseVault(vaultPda, amount);
+
+      if (result.success) {
+        setMessage(`✅ Topped up house ${amount} SOL!`);
+        // Refresh balance to show new value
+        await refreshBalance();
+      } else {
+        setMessage(`❌ Error: ${result.error}`);
+      }
+    } catch (error) {
+      setMessage(`❌ Failed: ${error}`);
+    } finally {
+      setIsTopping(false);
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(""), 3000);
+    }
+  };
 
   return (
     <div
@@ -64,7 +138,7 @@ export default function DebugWalletPanel() {
           }}
         >
           <p className="title" style={{ fontSize: "10px" }}>
-            💰 WALLET INFO (READ-ONLY)
+            💰 WALLET INFO {isDevelopment && "🔧"}
           </p>
 
           {/* Close Button */}
@@ -160,6 +234,85 @@ export default function DebugWalletPanel() {
             </div>
           </div>
 
+          {/* Debug Tools (Development Only) */}
+          {isDevelopment && (
+            <div
+              className="nes-container is-rounded"
+              style={{
+                marginBottom: "12px",
+                backgroundColor: "rgba(255, 165, 0, 0.1)",
+              }}
+            >
+              <div style={{ marginBottom: "8px" }}>
+                <strong>🔧 DEBUG TOOLS</strong>
+              </div>
+
+              {/* Amount Input */}
+              <div style={{ marginBottom: "8px" }}>
+                <label style={{ fontSize: "8px", opacity: 0.7 }}>
+                  Amount (SOL):
+                </label>
+                <input
+                  type="number"
+                  className="nes-input"
+                  value={topUpAmount}
+                  onChange={(e) => setTopUpAmount(e.target.value)}
+                  disabled={isTopping}
+                  style={{
+                    fontSize: "10px",
+                    padding: "4px",
+                    marginTop: "4px",
+                  }}
+                />
+              </div>
+
+              {/* Top-up Buttons */}
+              <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+                <button
+                  onClick={handleTopUpUser}
+                  disabled={isTopping || !userId}
+                  className={`nes-btn ${isTopping || !userId ? "is-disabled" : "is-warning"}`}
+                  style={{ fontSize: "7px", padding: "6px", flex: 1 }}
+                >
+                  {isTopping ? "..." : "💰 Top Up User"}
+                </button>
+                <button
+                  onClick={handleTopUpHouse}
+                  disabled={isTopping}
+                  className={`nes-btn ${isTopping ? "is-disabled" : "is-warning"}`}
+                  style={{ fontSize: "7px", padding: "6px", flex: 1 }}
+                >
+                  {isTopping ? "..." : "🏦 Top Up House"}
+                </button>
+              </div>
+
+              {/* Message */}
+              {message && (
+                <div
+                  style={{
+                    fontSize: "7px",
+                    textAlign: "center",
+                    padding: "4px",
+                    marginTop: "4px",
+                  }}
+                >
+                  {message}
+                </div>
+              )}
+
+              <div
+                style={{
+                  fontSize: "6px",
+                  opacity: 0.5,
+                  textAlign: "center",
+                  marginTop: "4px",
+                }}
+              >
+                Dev only - server-side protected
+              </div>
+            </div>
+          )}
+
           {/* Refresh Button */}
           <button
             onClick={() => refreshBalance()}
@@ -179,9 +332,13 @@ export default function DebugWalletPanel() {
               textAlign: "center",
             }}
           >
-            Balances are READ-ONLY. Only game actions can modify them.
-            <br />
-            Updates every 2 seconds automatically.
+            Balances update from server automatically every 5 seconds.
+            {!isDevelopment && (
+              <>
+                <br />
+                (Debug tools hidden in production)
+              </>
+            )}
           </div>
         </div>
       )}

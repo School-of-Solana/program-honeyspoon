@@ -424,7 +424,7 @@ export function createDivingScene(
           animation: state.animationType,
           isAnimating: state.isAnimating,
           depth: `${useGameStore.getState().depth}m`,
-          treasure: `$${useGameStore.getState().treasureValue}`,
+          treasure: `${useGameStore.getState().treasureValue} SOL`,
           divingSpeed: `${state.divingSpeed.toFixed(0)}px/s`,
         });
         lastLogTime = now;

@@ -74,6 +74,8 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
       debug: debugMode,
       stretch: true,
       letterbox: false,
+      // Enable cursor on canvas
+      pixelDensity: window.devicePixelRatio || 1,
     });
 
     console.log("[CANVAS] ✅ Kaplay initialized!");
@@ -176,5 +178,14 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
     }
   }, [kaplayDebug]);
 
-  return <canvas ref={canvasRef} className="w-full h-full" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="w-full h-full"
+      style={{
+        cursor: "default",
+        pointerEvents: "auto",
+      }}
+    />
+  );
 }

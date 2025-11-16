@@ -29,6 +29,18 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Ensure cursor is visible on all elements */
+*,
+*::before,
+*::after {
+  cursor: inherit;
+}
+
+/* Explicitly show cursor on canvas elements */
+canvas {
+  cursor: default !important;
+}
+
 @keyframes pulse {
   0%,
   100% {

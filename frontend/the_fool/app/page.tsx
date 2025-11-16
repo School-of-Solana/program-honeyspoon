@@ -158,7 +158,7 @@ export default function Home() {
     totalReceived: 0, // Not tracked yet
   };
 
-  // Initialize session on mount
+  // Initialize session on mount (only once when userId is set)
   useEffect(() => {
     const initializeSession = async () => {
       if (!userId) return; // Wait for userId to be set
@@ -180,7 +180,19 @@ export default function Home() {
     };
 
     initializeSession();
-  }, [userId, userBalance]);
+    // IMPORTANT: Only run when userId changes, NOT when userBalance changes!
+    // If userBalance is in deps, it regenerates session ID on every balance update,
+    // which overwrites the server's real session ID and breaks game flow.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // Sync wallet balance to game state (without regenerating session ID)
+  useEffect(() => {
+    setGameState((prev) => ({
+      ...prev,
+      walletBalance: userBalance,
+    }));
+  }, [userBalance]);
 
   // Sync initial sound state from manager on mount
   useEffect(() => {
@@ -615,7 +627,10 @@ export default function Home() {
     <GameErrorBoundary>
       <div className="fixed inset-0 w-screen h-screen overflow-hidden">
         {/* Full-screen Ocean Canvas */}
-        <div className="absolute inset-0 w-full h-full">
+        <div
+          className="absolute inset-0 w-full h-full"
+          style={{ pointerEvents: "auto" }}
+        >
           <OceanScene />
         </div>
 

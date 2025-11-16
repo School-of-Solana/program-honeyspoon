@@ -26,7 +26,7 @@ import {
   validateBetAmount,
 } from "@/lib/gameEngine";
 import { getGameChain, GameError, SessionStatus } from "@/lib/ports";
-import { dollarsToLamports, lamportsToDollars } from "@/lib/utils/lamports";
+import { solToLamports, lamportsToSol } from "@/lib/utils/lamports";
 import {
   addTransaction,
   deleteGameSession,
@@ -145,7 +145,7 @@ export async function startGameSession(
 
     // Get user balance from chain
     const userBalanceLamports = await chain.getUserBalance(userId);
-    const userBalance = lamportsToDollars(userBalanceLamports);
+    const userBalance = lamportsToSol(userBalanceLamports);
 
     // Get house vault state from chain
     const houseVault = await chain.getHouseVault(vaultPda);
@@ -153,16 +153,16 @@ export async function startGameSession(
       return { success: false, error: "House vault not initialized" };
     }
     const houseBalanceLamports = await chain.getVaultBalance(vaultPda);
-    const houseBalance = lamportsToDollars(houseBalanceLamports);
-    const houseReserved = lamportsToDollars(houseVault.totalReserved);
+    const houseBalance = lamportsToSol(houseBalanceLamports);
+    const houseReserved = lamportsToSol(houseVault.totalReserved);
     const houseAvailable = houseBalance - houseReserved;
 
     // Validate bet amount
     if (betAmount < GAME_CONFIG.minBet) {
-      return { success: false, error: `Minimum bet is $${GAME_CONFIG.minBet}` };
+      return { success: false, error: `Minimum bet is ${GAME_CONFIG.minBet}` };
     }
     if (betAmount > GAME_CONFIG.maxBet) {
-      return { success: false, error: `Maximum bet is $${GAME_CONFIG.maxBet}` };
+      return { success: false, error: `Maximum bet is ${GAME_CONFIG.maxBet}` };
     }
     if (betAmount > userBalance) {
       return { success: false, error: "Insufficient balance" };
@@ -184,8 +184,8 @@ export async function startGameSession(
     }
 
     // Convert to lamports
-    const betLamports = dollarsToLamports(betAmount);
-    const maxPayoutLamports = dollarsToLamports(maxPayout);
+    const betLamports = solToLamports(betAmount);
+    const maxPayoutLamports = solToLamports(maxPayout);
 
     // Start session on-chain (this handles the actual money transfer)
     const { sessionPda, state } = await chain.startSession({
@@ -203,7 +203,7 @@ export async function startGameSession(
       sessionId: sessionPda, // Use PDA as session ID
       userId,
       initialBet: betAmount,
-      currentTreasure: lamportsToDollars(state.currentTreasure),
+      currentTreasure: lamportsToSol(state.currentTreasure),
       diveNumber: state.diveNumber,
       isActive: true,
       status: "ACTIVE",
@@ -213,7 +213,7 @@ export async function startGameSession(
 
     // Get updated balance for transaction record
     const newUserBalanceLamports = await chain.getUserBalance(userId);
-    const newUserBalance = lamportsToDollars(newUserBalanceLamports);
+    const newUserBalance = lamportsToSol(newUserBalanceLamports);
 
     // Record transaction
     addTransaction({
@@ -290,8 +290,8 @@ export async function executeRound(
     status: sessionState?.status,
     diveNumber: sessionState?.diveNumber,
     treasureLamports: sessionState?.currentTreasure?.toString(),
-    treasureDollars: sessionState
-      ? lamportsToDollars(sessionState.currentTreasure)
+    treasureSol: sessionState
+      ? lamportsToSol(sessionState.currentTreasure)
       : "N/A",
   });
 
@@ -326,7 +326,7 @@ export async function executeRound(
   }
 
   // SECURITY: Validate currentValue matches chain state
-  const expectedValue = lamportsToDollars(sessionState.currentTreasure);
+  const expectedValue = lamportsToSol(sessionState.currentTreasure);
   const tolerance = 0.01; // Allow 1 cent difference due to rounding
 
   console.log(`[CHAIN] 🔍 Value validation:`, {
@@ -338,10 +338,10 @@ export async function executeRound(
 
   if (Math.abs(currentValue - expectedValue) > tolerance) {
     console.error(
-      `[CHAIN] ❌ Value mismatch: chain=$${expectedValue}, client=$${currentValue}, round=${roundNumber}`
+      `[CHAIN] ❌ Value mismatch: chain=${expectedValue}, client=${currentValue}, round=${roundNumber}`
     );
     throw new Error(
-      `Current value mismatch: chain has $${expectedValue.toFixed(2)}, client sent $${currentValue.toFixed(2)}. Data corruption detected.`
+      `Current value mismatch: chain has ${expectedValue.toFixed(2)}, client sent ${currentValue.toFixed(2)}. Data corruption detected.`
     );
   }
 
@@ -365,11 +365,11 @@ export async function executeRound(
       randomRoll: chainResult.randomRoll,
       newStatus: chainResult.state.status,
       newDiveNumber: chainResult.state.diveNumber,
-      newTreasure: lamportsToDollars(chainResult.state.currentTreasure),
+      newTreasure: lamportsToSol(chainResult.state.currentTreasure),
     });
 
     // Update local session with chain's outcome
-    gameSession.currentTreasure = lamportsToDollars(
+    gameSession.currentTreasure = lamportsToSol(
       chainResult.state.currentTreasure
     );
     gameSession.diveNumber = chainResult.state.diveNumber;
@@ -378,7 +378,7 @@ export async function executeRound(
       // Player survived
       setGameSession(gameSession);
       console.log(
-        `[CHAIN] ✅ Round ${roundNumber} survived: $${gameSession.currentTreasure}`
+        `[CHAIN] ✅ Round ${roundNumber} survived: ${gameSession.currentTreasure}`
       );
     } else {
       // Player lost (chain already updated status to Lost and released funds)
@@ -391,7 +391,7 @@ export async function executeRound(
       recordLoss(userId, gameSession.initialBet);
 
       // Get balances for transaction record
-      const userBalanceBefore = lamportsToDollars(
+      const userBalanceBefore = lamportsToSol(
         await chain.getUserBalance(userId)
       );
 
@@ -426,8 +426,8 @@ export async function executeRound(
       winProbability: roundStats.winProbability,
       multiplier: roundStats.multiplier,
       newValue:
-        lamportsToDollars(chainResult.state.currentTreasure) - currentValue,
-      totalValue: lamportsToDollars(chainResult.state.currentTreasure),
+        lamportsToSol(chainResult.state.currentTreasure) - currentValue,
+      totalValue: lamportsToSol(chainResult.state.currentTreasure),
       roundNumber,
       timestamp: Date.now(),
     };
@@ -480,10 +480,10 @@ export async function cashOut(
   }
 
   // SECURITY: Validate cash-out amount matches chain state
-  const chainTreasure = lamportsToDollars(sessionState.currentTreasure);
+  const chainTreasure = lamportsToSol(sessionState.currentTreasure);
   if (Math.abs(finalValue - chainTreasure) > 0.01) {
     throw new Error(
-      `Cash-out mismatch: Chain has $${chainTreasure}, attempting to cash out $${finalValue}. Please contact support.`
+      `Cash-out mismatch: Chain has ${chainTreasure}, attempting to cash out ${finalValue}. Please contact support.`
     );
   }
 
@@ -494,14 +494,14 @@ export async function cashOut(
       userPubkey: userId,
     });
 
-    const actualFinalAmount = lamportsToDollars(finalTreasureLamports);
+    const actualFinalAmount = lamportsToSol(finalTreasureLamports);
     const profit = actualFinalAmount - gameSession.initialBet;
 
     // Record win in statistics
     recordWin(userId, profit);
 
     // Get balances for transaction record
-    const userBalanceBefore = lamportsToDollars(
+    const userBalanceBefore = lamportsToSol(
       await chain.getUserBalance(userId)
     );
 
@@ -531,7 +531,7 @@ export async function cashOut(
     deleteGameSession(sessionId);
 
     console.log(
-      `[CHAIN] ✅ Cashed out: $${actualFinalAmount} (profit: $${profit})`
+      `[CHAIN] ✅ Cashed out: ${actualFinalAmount} (profit: ${profit})`
     );
 
     return {
@@ -583,7 +583,7 @@ export async function getWalletInfo(userId: string): Promise<{
 }> {
   // Get user balance from chain
   const userBalanceLamports = await chain.getUserBalance(userId);
-  const balance = lamportsToDollars(userBalanceLamports);
+  const balance = lamportsToSol(userBalanceLamports);
 
   // Get user statistics (NOT from chain - tracked separately)
   const stats = getUserStats(userId);
@@ -597,8 +597,8 @@ export async function getWalletInfo(userId: string): Promise<{
       const vaultState = await chain.getHouseVault(houseVaultPDA);
       if (vaultState) {
         const vaultBalanceLamports = await chain.getVaultBalance(houseVaultPDA);
-        houseBalance = lamportsToDollars(vaultBalanceLamports);
-        houseReserved = lamportsToDollars(vaultState.totalReserved);
+        houseBalance = lamportsToSol(vaultBalanceLamports);
+        houseReserved = lamportsToSol(vaultState.totalReserved);
       }
     }
   } catch (error) {
@@ -656,8 +656,8 @@ export async function getHouseStatus(): Promise<{
       const vaultState = await chain.getHouseVault(houseVaultPDA);
       if (vaultState) {
         const vaultBalanceLamports = await chain.getVaultBalance(houseVaultPDA);
-        balance = lamportsToDollars(vaultBalanceLamports);
-        reservedFunds = lamportsToDollars(vaultState.totalReserved);
+        balance = lamportsToSol(vaultBalanceLamports);
+        reservedFunds = lamportsToSol(vaultState.totalReserved);
         availableFunds = balance - reservedFunds;
       }
     }

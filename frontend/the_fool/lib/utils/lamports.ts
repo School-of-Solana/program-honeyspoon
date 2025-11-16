@@ -1,88 +1,108 @@
 /**
  * Lamports conversion utilities
- * 
+ *
  * 1 SOL = 1,000,000,000 lamports (1e9)
- * For game purposes, we use a virtual dollar:lamport ratio
- * 
- * In the actual game, dollars are just a UI convention.
- * The blockchain only knows lamports.
+ * This is the standard Solana conversion ratio.
+ *
+ * All amounts in the game are stored as lamports on-chain.
+ * SOL is just the UI-friendly representation.
  */
 
-/** Conversion ratio: dollars to lamports */
-export const LAMPORTS_PER_DOLLAR = BigInt(1_000_000_000); // 1 billion lamports = $1 (for game purposes)
+/** Conversion ratio: SOL to lamports (standard Solana ratio) */
+export const LAMPORTS_PER_SOL = BigInt(1_000_000_000); // 1 billion lamports = 1 SOL
 
 /**
- * Convert dollars to lamports
- * 
- * @param dollars - Dollar amount (can be fractional)
+ * Convert SOL to lamports
+ *
+ * @param sol - SOL amount (can be fractional)
  * @returns Lamports as bigint
- * 
+ *
  * @example
- * dollarsToLamports(10) // BigInt(10_000_000_000)
- * dollarsToLamports(0.5) // BigInt(500_000_000)
+ * solToLamports(10) // BigInt(10_000_000_000)
+ * solToLamports(0.5) // BigInt(500_000_000)
  */
-export function dollarsToLamports(dollars: number): bigint {
+export function solToLamports(sol: number): bigint {
   // Multiply by conversion ratio, handling decimals
-  const lamports = Math.floor(dollars * Number(LAMPORTS_PER_DOLLAR));
+  const lamports = Math.floor(sol * Number(LAMPORTS_PER_SOL));
   return BigInt(lamports);
 }
 
 /**
- * Convert lamports to dollars
- * 
- * @param lamports - Lamports amount (bigint)
- * @returns Dollar amount as number
- * 
- * @example
- * lamportsToDollars(BigInt(10_000_000_000)) // 10
- * lamportsToDollars(BigInt(500_000_000)) // 0.5
+ * @deprecated Use solToLamports instead
  */
-export function lamportsToDollars(lamports: bigint): number {
+export const dollarsToLamports = solToLamports;
+
+/**
+ * Convert lamports to SOL
+ *
+ * @param lamports - Lamports amount (bigint)
+ * @returns SOL amount as number
+ *
+ * @example
+ * lamportsToSol(BigInt(10_000_000_000)) // 10
+ * lamportsToSol(BigInt(500_000_000)) // 0.5
+ */
+export function lamportsToSol(lamports: bigint): number {
   // Convert to number with division
-  return Number(lamports) / Number(LAMPORTS_PER_DOLLAR);
+  return Number(lamports) / Number(LAMPORTS_PER_SOL);
 }
 
 /**
- * Format lamports as dollar string
- * 
+ * @deprecated Use lamportsToSol instead
+ */
+export const lamportsToDollars = lamportsToSol;
+
+/**
+ * Format lamports as SOL string
+ *
  * @param lamports - Lamports amount
  * @param decimals - Number of decimal places (default 2)
- * @returns Formatted dollar string
- * 
+ * @returns Formatted SOL string
+ *
  * @example
- * formatDollars(BigInt(10_000_000_000)) // "$10.00"
- * formatDollars(BigInt(1_500_000_000), 2) // "$1.50"
+ * formatSol(BigInt(10_000_000_000)) // "10.00 SOL"
+ * formatSol(BigInt(1_500_000_000), 2) // "1.50 SOL"
  */
-export function formatDollars(lamports: bigint, decimals: number = 2): string {
-  const dollars = lamportsToDollars(lamports);
-  return `$${dollars.toFixed(decimals)}`;
+export function formatSol(lamports: bigint, decimals: number = 2): string {
+  const sol = lamportsToSol(lamports);
+  return `${sol.toFixed(decimals)} SOL`;
 }
 
 /**
- * Parse dollar string to lamports
- * Handles various formats: "$10", "10.50", "10"
- * 
- * @param dollarString - Dollar string to parse
+ * @deprecated Use formatSol instead
+ */
+export const formatDollars = formatSol;
+
+/**
+ * Parse SOL string to lamports
+ * Handles various formats: "10 SOL", "10.50", "10"
+ *
+ * @param solString - SOL string to parse
  * @returns Lamports as bigint
  * @throws {Error} if string is invalid
- * 
+ *
  * @example
- * parseDollarString("$10") // BigInt(10_000_000_000)
- * parseDollarString("10.50") // BigInt(10_500_000_000)
+ * parseSolString("10 SOL") // BigInt(10_000_000_000)
+ * parseSolString("10.50") // BigInt(10_500_000_000)
  */
-export function parseDollarString(dollarString: string): bigint {
-  // Remove $ and whitespace
-  const cleaned = dollarString.replace(/[$\s]/g, '');
-  
+export function parseSolString(solString: string): bigint {
+  // Remove SOL, $, and whitespace
+  const cleaned = solString.replace(/[SOL$\s]/gi, "");
+
   // Parse as float
-  const dollars = parseFloat(cleaned);
-  
-  if (isNaN(dollars)) {
-    throw new Error(`Invalid dollar string: ${dollarString}`);
+  const sol = parseFloat(cleaned);
+
+  if (isNaN(sol)) {
+    throw new Error(`Invalid SOL string: ${solString}`);
   }
-  
-  return dollarsToLamports(dollars);
+
+  return solToLamports(sol);
 }
+
+/**
+ * @deprecated Use parseSolString instead
+ */
+export const parseDollarString = parseSolString;
 
 /**
  * Check if lamports amount is valid (non-negative)
@@ -93,7 +113,7 @@ export function isValidLamports(lamports: bigint): boolean {
 
 /**
  * Add two lamport amounts safely
- * 
+ *
  * @throws {Error} if result overflows
  */
 export function addLamports(a: bigint, b: bigint): bigint {
@@ -106,7 +126,7 @@ export function addLamports(a: bigint, b: bigint): bigint {
 
 /**
  * Subtract lamports safely
- * 
+ *
  * @throws {Error} if result underflows
  */
 export function subtractLamports(a: bigint, b: bigint): bigint {
