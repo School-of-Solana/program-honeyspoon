@@ -49,7 +49,10 @@ export function createDivingScene(
   k.scene("diving", () => {
     console.log("[CANVAS] 🤿 Diving scene created!");
 
-    // ✅ FIX: Reset animation state for new scene instance
+    // ✅ CANVAS STATE RESET (Owner: DivingScene)
+    // Reset animation state every time scene is created
+    // This state object persists across scene transitions, so we must reset it
+    // Called: Every time k.go("diving") is executed (new dives, new games)
     state.isAnimating = false;
     state.animationType = AnimationType.IDLE;
     state.divingSpeed = 0;

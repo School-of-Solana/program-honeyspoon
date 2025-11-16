@@ -77,12 +77,13 @@ interface GameState extends CanvasState, GameLogicState, UIState {
   setAnimationMessage: (message: string) => void;
   triggerSurfacing: () => void;
   returnToBeach: () => void;
+  resetForNewGame: () => void;
 
   // Game Logic Actions
   initializeSession: (
     userId: string,
     sessionId: string,
-    balance: number,
+    balance: number
   ) => void;
   startGame: (betAmount: number) => void;
   completeDive: (result: {
@@ -232,7 +233,8 @@ export const useGameStore = create<GameState>((set) => ({
 
   /**
    * Return to beach (called by surfacing/death scenes)
-   * Resets all canvas state
+   * Resets flow state when returning from ocean to beach
+   * Used: After surfacing complete, after death animation
    */
   returnToBeach: () => {
     console.log("[STORE] 🏖️ Returning to beach");
@@ -242,6 +244,26 @@ export const useGameStore = create<GameState>((set) => ({
       shouldSurface: false,
       survived: undefined,
       depth: 0,
+      animationMessage: "",
+    });
+  },
+
+  /**
+   * Reset for new game (called when starting a new game session)
+   * Clears all flow and visual state for a fresh start
+   * Used: When user clicks "START GAME" button
+   */
+  resetForNewGame: () => {
+    console.log("[STORE] 🎮 Resetting for new game");
+    set({
+      isDiving: false,
+      isInOcean: false,
+      shouldSurface: false,
+      survived: undefined,
+      depth: 0,
+      treasureValue: 0,
+      oxygenLevel: 100,
+      lastShipwreck: undefined,
       animationMessage: "",
     });
   },

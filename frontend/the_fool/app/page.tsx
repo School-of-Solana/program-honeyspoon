@@ -17,6 +17,13 @@ import { GAME_CONFIG } from "@/lib/constants";
 import { GAME_COLORS } from "@/lib/gameColors";
 import { playSound, getSoundManager } from "@/lib/soundManager";
 import { useGameStore } from "@/lib/gameStore";
+import {
+  parseServerError,
+  getErrorAction,
+  ErrorCategory,
+  isErrorCategory,
+  type GameError,
+} from "@/lib/errorTypes";
 
 export default function Home() {
   // Generate a fixed userId for this session (in production, would come from auth)
@@ -60,7 +67,7 @@ export default function Home() {
   const triggerSurfacing = useGameStore((state) => state.triggerSurfacing);
   const setDepth = useGameStore((state) => state.setDepth);
   const setTreasure = useGameStore((state) => state.setTreasure);
-  const returnToBeach = useGameStore((state) => state.returnToBeach);
+  const resetForNewGame = useGameStore((state) => state.resetForNewGame);
 
   // Read animation message from store for display
   const animationMessage = useGameStore((state) => state.animationMessage);
@@ -192,9 +199,8 @@ export default function Home() {
 
       // Wait for card to fade, then start game and show HUD
       setTimeout(() => {
-        // ✅ FIX: Ensure we're starting from a clean slate
-        // Reset all canvas/animation flags before starting new game
-        returnToBeach();
+        // ✅ Reset all flow state for new game
+        resetForNewGame();
 
         setGameState({
           isPlaying: true,
@@ -367,8 +373,8 @@ export default function Home() {
           sessionId: newSessionId, // ✅ NEW SESSION ID
         }));
 
-        // ✅ FIX: Explicitly reset all canvas flags for next game
-        returnToBeach();
+        // Canvas state will be reset by returnToBeach() from death animation
+        // React just needs to clean up its own state
         setLastShipwreck(undefined);
         setSurvived(undefined);
 
@@ -376,11 +382,16 @@ export default function Home() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      
+      // ✅ NEW: Use typed error parsing instead of string matching
+      const gameError = parseServerError(message);
+      const action = getErrorAction(gameError);
 
-      // Check for session errors
-      if (message.includes("session") || message.includes("inactive")) {
+      // Handle based on error category
+      if (isErrorCategory(gameError, ErrorCategory.SESSION)) {
+        // Session expired - reset to new game
         showError(
-          "Game session expired. Starting new game...",
+          gameError.message,
           "warning",
           async () => {
             const newSessionId = await generateSessionId();
@@ -393,10 +404,19 @@ export default function Home() {
             setShowBettingCard(true);
             dismissError();
           },
-          "Reset Game"
+          action.primaryLabel
+        );
+      } else if (isErrorCategory(gameError, ErrorCategory.VALIDATION)) {
+        // Data corruption - recommend support contact
+        showError(
+          gameError.message,
+          "error",
+          () => window.location.reload(),
+          action.primaryLabel
         );
       } else {
-        showError(`Dive failed: ${message}`, "error");
+        // Other errors - show generic message
+        showError(`Dive failed: ${gameError.message}`, "error");
       }
     } finally {
       setIsProcessing(false);
@@ -478,9 +498,8 @@ export default function Home() {
           sessionId: newSessionId, // ✅ NEW SESSION ID
         }));
 
-        // Reset store state
-        // ✅ FIX: Explicitly reset all canvas flags for next game
-        returnToBeach();
+        // Canvas state will be reset by returnToBeach() from surfacing scene
+        // React just needs to clean up its own state
         setLastShipwreck(undefined);
         setSurvived(undefined);
         setDepth(0);
@@ -490,17 +509,41 @@ export default function Home() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      
+      // ✅ NEW: Use typed error parsing instead of string matching
+      const gameError = parseServerError(message);
+      const action = getErrorAction(gameError);
 
-      // Handle treasure mismatch specifically
-      if (message.includes("treasure")) {
+      // Handle based on error category
+      if (isErrorCategory(gameError, ErrorCategory.VALIDATION)) {
+        // Data corruption - recommend support contact
         showError(
-          "Treasure amount mismatch. Please contact support.",
+          gameError.message,
           "error",
           () => window.location.reload(),
-          "Reload"
+          action.primaryLabel
+        );
+      } else if (isErrorCategory(gameError, ErrorCategory.SESSION)) {
+        // Session expired - reset to new game
+        showError(
+          gameError.message,
+          "warning",
+          async () => {
+            const newSessionId = await generateSessionId();
+            setGameState((prev) => ({
+              ...prev,
+              sessionId: newSessionId,
+              isPlaying: false,
+            }));
+            setShowHUD(false);
+            setShowBettingCard(true);
+            dismissError();
+          },
+          action.primaryLabel
         );
       } else {
-        showError(`Surface failed: ${message}`, "error");
+        // Other errors - show generic message
+        showError(`Surface failed: ${gameError.message}`, "error");
       }
     } finally {
       setIsProcessing(false);

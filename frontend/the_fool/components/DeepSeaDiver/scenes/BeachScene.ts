@@ -114,7 +114,7 @@ export function createBeachScene(config: SceneConfig) {
         k.width() * palm.x,
         k.height() * palm.y,
         palm.scale,
-        CONST.Z_LAYERS.LIGHT_RAYS,
+        CONST.Z_LAYERS.LIGHT_RAYS
       );
     });
 
@@ -188,7 +188,7 @@ export function createBeachScene(config: SceneConfig) {
         k,
         k.width() * seagull.x,
         k.height() * seagull.y,
-        seagull.speed,
+        seagull.speed
       );
     });
 
@@ -200,7 +200,7 @@ export function createBeachScene(config: SceneConfig) {
         k.height() * crab.y,
         crab.direction,
         crab.speed,
-        CONST.Z_LAYERS.SUN,
+        CONST.Z_LAYERS.SUN
       );
     });
 
@@ -211,7 +211,7 @@ export function createBeachScene(config: SceneConfig) {
         k.width() * starfish.x,
         k.height() * starfish.y,
         starfish.scale,
-        CONST.Z_LAYERS.SUN,
+        CONST.Z_LAYERS.SUN
       );
     });
 
@@ -247,18 +247,15 @@ export function createBeachScene(config: SceneConfig) {
           CONST.MOTION.BOAT_BOB_AMPLITUDE;
     });
 
-    // Reset store state when returning to beach
-    const store = useGameStore.getState();
-    store.setDepth(0);
-    store.setSurvived(undefined);
-
     // Monitor for dive start - transition to diving scene
+    // Note: State reset is handled by returnToBeach() or resetForNewGame()
+    // No need for duplicate resets here
     k.onUpdate(() => {
       const { isDiving, isInOcean } = useGameStore.getState();
 
       if (isDiving && !isInOcean) {
         console.log(
-          "[CANVAS] 🏖️ → 🤿 Dive started! Transitioning to diving scene...",
+          "[CANVAS] 🏖️ → 🤿 Dive started! Transitioning to diving scene..."
         );
         useGameStore.getState().enterOcean(); // Mark that we're now in the ocean
         k.go("diving");
