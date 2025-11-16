@@ -253,12 +253,13 @@ describe("Advanced Edge Cases - Cumulative EV", () => {
 
   it("should approach zero for large N", () => {
     const ev100 = calculateCumulativeEV(100);
-    assert.ok(ev100 < 0.0001);
+    // With 5% house edge: 0.95^100 ≈ 0.0059 (much higher than with 15% edge)
+    assert.ok(ev100 < 0.01, "EV after 100 dives should be < 0.01");
   });
 
   it("should handle negative dives gracefully", () => {
     const ev = calculateCumulativeEV(-5);
-    // 0.85^-5 should be > 1
+    // 0.95^-5 should be > 1
     assert.ok(ev > 1);
   });
 
@@ -395,8 +396,9 @@ describe("Advanced Edge Cases - Multiplier Behavior", () => {
     const growth1 = d10.multiplier / d5.multiplier;
     const growth2 = d15.multiplier / d10.multiplier;
 
-    // Growth rate should increase
-    assert.ok(growth2 >= growth1);
+    // With 0.08 decay, growth is more gradual but still exponential
+    // growth2 should be close to growth1 (within 10%)
+    assert.ok(growth2 > growth1 * 0.9, "Multiplier should grow exponentially");
   });
 
   it("should maintain inverse relationship with probability", () => {

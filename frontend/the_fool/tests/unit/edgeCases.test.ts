@@ -108,8 +108,8 @@ describe("Edge Cases - Numeric Boundaries", () => {
   it("should handle massive multiplier chain", () => {
     let treasure = 1;
 
-    // 100 dives (absurd but possible)
-    for (let i = 1; i <= 100; i++) {
+    // 50 dives (maximum allowed)
+    for (let i = 1; i <= 50; i++) {
       const stats = calculateDiveStats(i);
       treasure *= stats.multiplier;
     }
@@ -117,7 +117,7 @@ describe("Edge Cases - Numeric Boundaries", () => {
     assert.ok(treasure > 1, "Treasure should grow");
     assert.ok(isFinite(treasure), "Should not overflow to Infinity");
 
-    console.log(`✓ 100 dive treasure: $${treasure.toFixed(2)}`);
+    console.log(`✓ 50 dive treasure: $${treasure.toFixed(2)}`);
   });
 
   it("should handle integer overflow in cumulative stats", () => {
@@ -136,22 +136,22 @@ describe("Edge Cases - Numeric Boundaries", () => {
   });
 
   it("should handle precision loss in EV calculations", () => {
-    // After many dives, EV becomes very small
-    const stats1000 = calculateDiveStats(1000);
+    // After many dives, EV becomes very small (test at max rounds)
+    const stats50 = calculateDiveStats(50);
 
     assert.ok(
-      stats1000.survivalProbability > 0,
+      stats50.survivalProbability > 0,
       "Should maintain positive probability"
     );
-    assert.ok(stats1000.multiplier > 0, "Should maintain positive multiplier");
+    assert.ok(stats50.multiplier > 0, "Should maintain positive multiplier");
     assert.strictEqual(
-      stats1000.expectedValue,
-      0.85,
-      "EV should remain constant"
+      stats50.expectedValue,
+      0.95,
+      "EV should remain constant (5% house edge)"
     );
 
     console.log(
-      `✓ Dive 1000: ${(stats1000.survivalProbability * 100).toFixed(6)}% survival`
+      `✓ Dive 50: ${(stats50.survivalProbability * 100).toFixed(6)}% survival`
     );
   });
 });
@@ -300,7 +300,7 @@ describe("Edge Cases - Concurrent Operations", () => {
         currentTreasure: 50,
         diveNumber: 1,
         isActive: true,
-      status: "ACTIVE" as const,
+        status: "ACTIVE" as const,
         reservedPayout: 5000,
         startTime: Date.now(),
       });
@@ -537,15 +537,22 @@ describe("Edge Cases - Boundary Conditions", () => {
   });
 
   it("should handle survival probability at minimum", () => {
-    // Very deep dive should hit minimum
-    const stats = calculateDiveStats(10000);
+    // Very deep dive should hit minimum (test at max rounds)
+    const stats = calculateDiveStats(50);
 
-    // Minimum survival probability from GAME_CONFIG
-    assert.ok(stats.survivalProbability <= 0.1, "Should be at or below 10%");
+    // At round 50, probability should be close to minimum (5%)
+    assert.ok(
+      stats.survivalProbability <= 0.2,
+      "Should be low probability at round 50"
+    );
     assert.ok(stats.survivalProbability > 0, "Should be positive");
+    assert.ok(
+      stats.survivalProbability >= 0.05,
+      "Should be at or above 5% minimum"
+    );
 
     console.log(
-      `✓ Min survival probability: ${(stats.survivalProbability * 100).toFixed(2)}%`
+      `✓ Round 50 survival probability: ${(stats.survivalProbability * 100).toFixed(2)}%`
     );
   });
 
@@ -702,7 +709,7 @@ describe("Edge Cases - Performance & Scale", () => {
         currentTreasure: 50,
         diveNumber: 1,
         isActive: true,
-      status: "ACTIVE" as const,
+        status: "ACTIVE" as const,
         reservedPayout: 5000,
         startTime: Date.now(),
       });
@@ -722,14 +729,19 @@ describe("Edge Cases - Performance & Scale", () => {
   it("should handle deep calculation nesting", () => {
     const start = Date.now();
 
-    // Calculate stats for 1000 dives
-    for (let i = 1; i <= 1000; i++) {
-      calculateDiveStats(i);
+    // Calculate stats for max rounds (50) multiple times
+    for (let round = 0; round < 20; round++) {
+      for (let i = 1; i <= 50; i++) {
+        calculateDiveStats(i);
+      }
     }
 
     const duration = Date.now() - start;
 
-    assert.ok(duration < 500, "Should calculate 1000 dive stats in < 500ms");
+    assert.ok(
+      duration < 500,
+      "Should calculate 1000 dive stats (20x50) in < 500ms"
+    );
 
     console.log(`✓ 1000 dive calculations in ${duration}ms`);
   });
