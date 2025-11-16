@@ -41,17 +41,18 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showBettingCard, setShowBettingCard] = useState(true);
   const [showHUD, setShowHUD] = useState(false);
-  
+
   // Use Zustand store for canvas/scene state
   const startDiveAnimation = useGameStore((state) => state.startDiveAnimation);
-  const endDiveAnimation = useGameStore((state) => state.endDiveAnimation);
   const setSurvived = useGameStore((state) => state.setSurvived);
   const setLastShipwreck = useGameStore((state) => state.setLastShipwreck);
-  const setAnimationMessage = useGameStore((state) => state.setAnimationMessage);
+  const setAnimationMessage = useGameStore(
+    (state) => state.setAnimationMessage
+  );
   const triggerSurfacing = useGameStore((state) => state.triggerSurfacing);
   const setDepth = useGameStore((state) => state.setDepth);
   const setTreasure = useGameStore((state) => state.setTreasure);
-  
+
   // Read animation message from store for display
   const animationMessage = useGameStore((state) => state.animationMessage);
 
@@ -213,9 +214,8 @@ export default function Home() {
       setTimeout(() => playSound("BUBBLES"), 200); // Bubbles shortly after
       console.log("[GAME] 🎬 Starting diving animation (2.5s)...");
 
-      // Wait for diving animation (2.5 seconds as defined in OceanScene)
+      // Wait for diving animation (2.5 seconds for scene transition + animation)
       await new Promise((resolve) => setTimeout(resolve, 2500));
-      endDiveAnimation();
 
       // STEP 2: Call server to determine result
       console.log("[GAME] 🎲 Calling server for dive result...");
@@ -413,7 +413,7 @@ export default function Home() {
           walletBalance: walletInfo.balance,
           sessionId: newSessionId, // ✅ NEW SESSION ID
         }));
-        
+
         // Reset store state
         setLastShipwreck(undefined);
         setSurvived(undefined);

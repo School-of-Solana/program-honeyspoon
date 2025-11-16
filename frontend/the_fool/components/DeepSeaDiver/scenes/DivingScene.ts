@@ -438,6 +438,7 @@ export function createDivingScene(
           state.isAnimating = false;
           state.divingSpeed = 0;
           state.divingElapsed = 0;
+          useGameStore.getState().endDiveAnimation(); // Clear isDiving flag
           console.log("[CANVAS] ✅ Diving animation complete");
         }
       }
@@ -451,6 +452,8 @@ export function createDivingScene(
         console.log(
           "[CANVAS] 🌊 Player cashed out! Transitioning to surfacing..."
         );
+        // Immediately set to animating to prevent duplicate triggers
+        state.isAnimating = true;
         k.go("surfacing", { treasure: useGameStore.getState().treasureValue });
       } else if (
         useGameStore.getState().isDiving &&
@@ -481,13 +484,16 @@ export function createDivingScene(
         state.animationType === AnimationType.IDLE
       ) {
         console.log("[CANVAS] 💀 Death triggered! Playing attack animation");
+        // Immediately set to animating to prevent duplicate triggers
+        state.isAnimating = true;
+        state.animationType = AnimationType.DEATH;
         triggerDeathAnimation(
           k,
           diver,
           useGameStore.getState().depth,
           {
-            isAnimating: state.isAnimating,
-            animationType: state.animationType,
+            isAnimating: true,
+            animationType: AnimationType.DEATH,
             divingSpeed: state.divingSpeed,
           },
           () => {

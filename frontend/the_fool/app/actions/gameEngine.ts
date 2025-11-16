@@ -88,7 +88,11 @@ export async function startGameSession(
 
   // Calculate max potential payout and reserve house funds
   // CRITICAL: Must reserve for maxRounds (50) to prevent overpayment on long winning streaks
-  const maxPayout = calculateMaxPotentialPayout(betAmount, GAME_CONFIG.maxRounds, GAME_CONFIG);
+  const maxPayout = calculateMaxPotentialPayout(
+    betAmount,
+    GAME_CONFIG.maxRounds,
+    GAME_CONFIG
+  );
 
   // Process bet: deduct from user, add to house, reserve funds
   const updatedUser = processBet(userWallet, betAmount);
@@ -178,10 +182,9 @@ export async function executeRound(
 
   // SECURITY: Validate currentValue matches server's session state
   // This prevents clients from inflating their treasure value
-  const expectedValue = roundNumber === 1 
-    ? gameSession.initialBet 
-    : gameSession.currentTreasure;
-    
+  const expectedValue =
+    roundNumber === 1 ? gameSession.initialBet : gameSession.currentTreasure;
+
   if (currentValue !== expectedValue) {
     throw new Error(
       `Current value mismatch: client sent ${currentValue}, server has ${expectedValue} (round ${roundNumber})`

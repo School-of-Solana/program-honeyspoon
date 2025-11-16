@@ -1,23 +1,20 @@
 /**
  * Security Blindspot Tests
- * 
+ *
  * Tests for critical security vulnerabilities that could allow
  * clients to manipulate game state or extract money from the house.
- * 
+ *
  * Run with: npm test
  */
 
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { 
-  startGameSession, 
+import {
+  startGameSession,
   executeRound,
-  cashOut
+  cashOut,
 } from "../../app/actions/gameEngine";
-import { 
-  getGameSession, 
-  setGameSession 
-} from "../../lib/walletStore";
+import { getGameSession, setGameSession } from "../../lib/walletStore";
 
 describe("Security Blindspot #1: Round Number Validation", () => {
   it("should reject when client replays an old round number", async () => {
@@ -84,11 +81,23 @@ describe("Security Blindspot #1: Round Number Validation", () => {
     assert.equal(round1.survived, true);
 
     // Round 2
-    const round2 = await executeRound(2, round1.totalValue, sessionId, userId, "50");
+    const round2 = await executeRound(
+      2,
+      round1.totalValue,
+      sessionId,
+      userId,
+      "50"
+    );
     assert.equal(round2.survived, true);
 
     // Round 3
-    const round3 = await executeRound(3, round2.totalValue, sessionId, userId, "50");
+    const round3 = await executeRound(
+      3,
+      round2.totalValue,
+      sessionId,
+      userId,
+      "50"
+    );
     assert.equal(round3.survived, true);
 
     // All should succeed because they match server expectations
@@ -162,7 +171,13 @@ describe("Security Blindspot #2: Current Value Validation", () => {
     assert.equal(round1.survived, true);
 
     // Round 2 with correct value from round 1
-    const round2 = await executeRound(2, round1.totalValue, sessionId, userId, "50");
+    const round2 = await executeRound(
+      2,
+      round1.totalValue,
+      sessionId,
+      userId,
+      "50"
+    );
     assert.equal(round2.survived, true);
 
     // Both should succeed
@@ -251,8 +266,8 @@ describe("Combined Attack Scenarios", () => {
     );
 
     // Both wrong - should fail on first check (round number)
-    await assert.rejects(
-      () => executeRound(invalidRound, invalidValue, sessionId, userId, "50")
+    await assert.rejects(() =>
+      executeRound(invalidRound, invalidValue, sessionId, userId, "50")
     );
   });
 });
@@ -334,8 +349,6 @@ describe("Security Blindspot #4: Cash Out with Zero Server Treasure", () => {
     session.currentTreasure = -50;
     setGameSession(session);
 
-    await assert.rejects(
-      () => cashOut(50, sessionId, userId)
-    );
+    await assert.rejects(() => cashOut(50, sessionId, userId));
   });
 });

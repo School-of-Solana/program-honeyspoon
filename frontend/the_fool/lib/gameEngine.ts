@@ -100,7 +100,7 @@ export function calculateRoundStats(
 ): RoundStats {
   // Validate config
   validateGameConfig(config);
-  
+
   // Validate round number
   if (roundNumber < 1) {
     throw new Error("Round number must be >= 1");
