@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::keccak;
+use solana_program::hash::hashv;
 
 /// Random Number Generation using Slot Hashes
 ///
@@ -27,8 +27,8 @@ pub fn generate_seed(recent_slot_hash: &[u8; 32], session_pda: &Pubkey) -> [u8; 
     seed_material.extend_from_slice(recent_slot_hash);
     seed_material.extend_from_slice(session_pda.as_ref());
 
-    let hash = keccak::hash(&seed_material);
-    hash.0
+    let hash = hashv(&[&seed_material]);
+    hash.to_bytes()
 }
 
 /// Generate a random roll for a specific round
@@ -47,11 +47,11 @@ pub fn random_roll_bps(seed: &[u8; 32], dive_number: u16) -> u32 {
     seed_material.extend_from_slice(seed);
     seed_material.extend_from_slice(&dive_number.to_le_bytes());
 
-    let hash = keccak::hash(&seed_material);
+    let hash = hashv(&[&seed_material]);
 
     // Take first 8 bytes and convert to u64
     let mut buf = [0u8; 8];
-    buf.copy_from_slice(&hash.0[0..8]);
+    buf.copy_from_slice(&hash.to_bytes()[0..8]);
     let rand_u64 = u64::from_le_bytes(buf);
 
     // Map to [0, 1_000_000)

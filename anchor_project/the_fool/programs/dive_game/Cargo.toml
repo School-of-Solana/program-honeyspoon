@@ -6,8 +6,8 @@ edition = "2021"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(feature, values("anchor-debug", "custom-panic", "custom-heap"))',
-    'cfg(target_os, values("solana"))',
+  'cfg(feature, values("anchor-debug", "custom-panic", "custom-heap"))',
+  'cfg(target_os, values("solana"))',
 ] }
 # Allow deprecation warnings from Anchor's internal macro expansions
 deprecated = "allow"
@@ -25,7 +25,8 @@ no-log-ix-name = []
 idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
-anchor-lang = "0.31.1"
+anchor-lang = "0.32.1"
+solana-program = "3.0"
 
 [dev-dependencies]
-rstest = "0.18"
+rstest = "0.26"

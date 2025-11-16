@@ -1,8 +1,26 @@
 {
+  "name": "dive-game",
+  "version": "1.0.0",
+  "description": "Dive game smart contract for Solana",
   "license": "ISC",
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "test": "anchor test",
+    "test:unit": "cargo test --package dive_game --lib",
+    "test:integration": "anchor test --skip-build",
+    "test:all": "npm run test:unit && npm run test",
+    "build": "anchor build",
+    "build:verifiable": "anchor build --verifiable",
+    "deploy:localnet": "anchor deploy",
+    "deploy:devnet": "anchor deploy --provider.cluster devnet",
+    "deploy:mainnet": "anchor deploy --provider.cluster mainnet",
+    "clean": "anchor clean && cargo clean",
+    "verify": "npm run lint && npm run test:unit",
+    "idl:build": "anchor build --idl idl",
+    "keys:generate": "anchor keys list",
+    "localnet": "solana-test-validator",
+    "logs": "solana logs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1"
