@@ -488,7 +488,7 @@ describe("dive-game (Secure Implementation)", () => {
       const [, configBump] = TestUtils.getConfigPDA(program.programId);
       fixture.configBump = configBump;
       await fixture.setupHouse(false);
-      await fixture.fundHouse(TEST_AMOUNTS.HUGE * 2); // Extra funding for multiple sessions
+      await fixture.fundHouse(TEST_AMOUNTS.HUGE * 20); // Increased for large concurrent bets
     });
 
     it("Should handle multiple users with independent sessions", async () => {
