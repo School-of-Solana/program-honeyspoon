@@ -262,10 +262,28 @@ export const BOUNDARIES = {
 // ===== DECORATIVE ELEMENTS POSITIONS =====
 export const DECORATIONS = {
   ROCKS: [
-    { x: 0.50, y: 0.68, size: 20 },
-    { x: 0.62, y: 0.75, size: 15 },
-    { x: 0.75, y: 0.78, size: 18 },
-    { x: 0.88, y: 0.82, size: 12 },
+    { x: 0.50, y: 0.68, scale: 2.5 },
+    { x: 0.62, y: 0.75, scale: 2.0 },
+    { x: 0.75, y: 0.78, scale: 2.3 },
+    { x: 0.88, y: 0.82, scale: 1.8 },
+    { x: 0.56, y: 0.72, scale: 2.2 },
+    { x: 0.70, y: 0.79, scale: 1.9 },
+  ],
+  PEBBLES: [
+    { x: 0.53, y: 0.66 },
+    { x: 0.59, y: 0.69 },
+    { x: 0.66, y: 0.74 },
+    { x: 0.73, y: 0.77 },
+    { x: 0.82, y: 0.81 },
+    { x: 0.90, y: 0.83 },
+    { x: 0.95, y: 0.86 },
+  ],
+  PALM_TREES: [
+    { x: 0.88, y: 0.70, scale: 4 },      // Main palm (far right)
+    { x: 0.70, y: 0.68, scale: 3.5 },    // Medium palm
+    { x: 0.55, y: 0.65, scale: 3.2 },    // Smaller palm
+    { x: 0.82, y: 0.73, scale: 3.8 },    // Another palm
+    { x: 0.95, y: 0.75, scale: 3.0 },    // Small palm far right
   ],
   SHELLS: [
     { x: 0.52, y: 0.65 },

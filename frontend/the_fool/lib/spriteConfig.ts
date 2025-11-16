@@ -236,6 +236,22 @@ export const SPRITE_CONFIGS: SpriteConfig[] = [
     frameSize: { w: 16, h: 16 },
     totalFrames: 3,
   },
+  {
+    name: "beachrock",
+    file: "/sprites/beachrock.png",
+    sliceX: 4,
+    sliceY: 1,
+    frameSize: { w: 16, h: 16 },
+    totalFrames: 4,
+  },
+  {
+    name: "pebbles",
+    file: "/sprites/pebbles.png",
+    sliceX: 6,
+    sliceY: 1,
+    frameSize: { w: 8, h: 8 },
+    totalFrames: 6,
+  },
 ];
 
 // Helper function to get sprite config by name

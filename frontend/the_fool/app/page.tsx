@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import OceanScene from "@/components/DeepSeaDiver/OceanScene";
+import { GameErrorBoundary } from "@/components/DeepSeaDiver/GameErrorBoundary";
 import { calculateDiveStats } from "@/lib/gameLogic";
 import { 
   performDive, 
@@ -414,6 +415,7 @@ export default function Home() {
     : null;
 
   return (
+    <GameErrorBoundary>
     <div className="fixed inset-0 w-screen h-screen overflow-hidden">
       {/* Full-screen Ocean Canvas */}
       <div className="absolute inset-0 w-full h-full">
@@ -694,5 +696,6 @@ export default function Home() {
 
 
     </div>
+    </GameErrorBoundary>
   );
 }

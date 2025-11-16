@@ -184,16 +184,8 @@ export default function OceanScene({
         });
       }
 
-      // Water surface line (matches beach top edge)
-      const waterSurfaceY = k.height() * CONST.LAYOUT.WATER_SURFACE_Y;
-      k.add([
-        k.rect(k.width(), CONST.SCALES.WATER_LINE_HEIGHT),
-        k.pos(0, waterSurfaceY),
-        k.color(...CONST.COLORS.WATER_SURFACE),
-        k.z(CONST.Z_LAYERS.WATER_SURFACE),
-      ]);
-
       // Beach/sand - DIAGONAL with WAVY LEFT EDGE
+      const waterSurfaceY = k.height() * CONST.LAYOUT.WATER_SURFACE_Y;
       const beachPoints: any[] = [];
       const waveAmplitude = CONST.SCALES.WAVE_AMPLITUDE;
       const waveFrequency = CONST.SCALES.WAVE_FREQUENCY;
@@ -271,18 +263,30 @@ export default function OceanScene({
 
       // === BEACH DECORATIONS (on diagonal beach) ===
 
-      // Palm tree on far right (on beach) - NOW USING SPRITE!
-      const palmX = k.width() * CONST.LAYOUT.PALM_X;
-      const palmY = k.height() * CONST.LAYOUT.PALM_Y;
-      createPalmTree(k, palmX, palmY, 4, CONST.Z_LAYERS.LIGHT_RAYS);
+      // Multiple palm trees across the beach - NOW USING SPRITES!
+      CONST.DECORATIONS.PALM_TREES.forEach((palm: any) => {
+        createPalmTree(k, k.width() * palm.x, k.height() * palm.y, palm.scale, CONST.Z_LAYERS.LIGHT_RAYS);
+      });
 
-      // Rocks on beach (scattered on diagonal beach)
-      CONST.DECORATIONS.ROCKS.forEach(rock => {
+      // Rocks on beach (scattered on diagonal beach) - NOW USING SPRITES!
+      CONST.DECORATIONS.ROCKS.forEach((rock, index) => {
         k.add([
-          k.circle(rock.size),
+          k.sprite("beachrock", { frame: index % 4 }), // Rotate through 4 rock variations
           k.pos(k.width() * rock.x, k.height() * rock.y),
-          k.color(...CONST.COLORS.ROCK),
-          k.outline(2, k.rgb(...CONST.COLORS.OUTLINE_ROCK)),
+          k.anchor("center"),
+          k.scale(rock.scale),
+          k.rotate(Math.random() * 360), // Random rotation for variety
+          k.z(CONST.Z_LAYERS.SUN),
+        ]);
+      });
+
+      // Add pebbles for extra detail
+      CONST.DECORATIONS.PEBBLES.forEach((pebble: any, index: number) => {
+        k.add([
+          k.sprite("pebbles", { frame: index % 6 }),
+          k.pos(k.width() * pebble.x, k.height() * pebble.y),
+          k.anchor("center"),
+          k.scale(1.5),
           k.z(CONST.Z_LAYERS.SUN),
         ]);
       });
