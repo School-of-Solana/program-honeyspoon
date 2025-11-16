@@ -1,29 +1,19 @@
 /**
  * Scene Type Definitions
  * Shared interfaces for all game scenes
+ *
+ * With Zustand, we no longer need refs!
+ * Scenes read directly from the store
  */
 
 import type { KAPLAYCtx } from "kaplay";
-import type { RefObject } from "react";
-
-/**
- * Shared refs that all scenes need access to
- */
-export interface SceneRefs {
-  isDivingRef: RefObject<boolean>;
-  survivedRef: RefObject<boolean | undefined>;
-  shouldSurfaceRef: RefObject<boolean>;
-  depthRef: RefObject<number>;
-  treasureRef: RefObject<number>;
-  isInOceanRef: RefObject<boolean>;
-}
 
 /**
  * Scene configuration
+ * No more refs - scenes use useGameStore directly!
  */
 export interface SceneConfig {
   k: KAPLAYCtx;
-  refs: SceneRefs;
   hexToRgb: (hex: string) => { r: number; g: number; b: number };
 }
 

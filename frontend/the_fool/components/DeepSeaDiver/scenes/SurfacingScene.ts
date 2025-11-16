@@ -7,14 +7,14 @@ import { getDepthZone } from "@/lib/gameLogic";
 import * as CONST from "../sceneConstants";
 import { createBoat } from "../entities/boat";
 import type { SceneConfig, SurfacingSceneData } from "./sceneTypes";
+import { useGameStore } from "@/lib/gameStore";
 
 /**
  * Create surfacing scene
  * Shows diver rising from depth back to surface with transition
  */
 export function createSurfacingScene(config: SceneConfig) {
-  const { k, refs, hexToRgb } = config;
-  const { depthRef, isInOceanRef } = refs;
+  const { k, hexToRgb } = config;
 
   k.scene("surfacing", (data: SurfacingSceneData = {}) => {
     console.log(
@@ -26,7 +26,9 @@ export function createSurfacingScene(config: SceneConfig) {
     const surfacingDuration = 3.0; // 3 seconds to surface
 
     // Start with underwater colors, transition to surface
-    const underwaterColor = hexToRgb(getDepthZone(depthRef.current!).color);
+    const underwaterColor = hexToRgb(
+      getDepthZone(useGameStore.getState().depth).color
+    );
     const surfaceColor = { r: 135, g: 206, b: 250 };
 
     const bg = k.add([
@@ -172,7 +174,7 @@ export function createSurfacingScene(config: SceneConfig) {
       // Complete surfacing
       if (surfacingProgress >= 1) {
         console.log("[CANVAS] ✅ Surfacing complete! Returning to beach...");
-        isInOceanRef.current = false; // Reset ocean flag so we can dive again
+        useGameStore.getState().returnToBeach(); // Reset ocean flag so we can dive again
         k.go("beach");
       }
     });

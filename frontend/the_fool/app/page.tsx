@@ -429,17 +429,7 @@ export default function Home() {
       <div className="fixed inset-0 w-screen h-screen overflow-hidden">
         {/* Full-screen Ocean Canvas */}
         <div className="absolute inset-0 w-full h-full">
-          <OceanScene
-            depth={gameState.depth}
-            treasureValue={gameState.currentTreasure}
-            oxygenLevel={gameState.oxygenLevel}
-            isDiving={isDiving}
-            survived={survived}
-            shouldSurface={shouldSurface}
-            lastShipwreck={lastShipwreck}
-            debugMode={kaplayDebug}
-            isInOcean={isInOcean}
-          />
+          <OceanScene />
         </div>
 
         {/* Animation Message Overlay (NES Style) */}

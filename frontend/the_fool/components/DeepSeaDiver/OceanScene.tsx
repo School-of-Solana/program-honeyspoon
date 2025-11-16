@@ -3,81 +3,31 @@
 import { useEffect, useRef } from "react";
 import kaplay from "kaplay";
 import type { KAPLAYCtx } from "kaplay";
-import { AnimationType, type Shipwreck } from "@/lib/types";
+import { AnimationType } from "@/lib/types";
 import { SPRITE_CONFIGS } from "@/lib/spriteConfig";
 import { GAME_COLORS } from "@/lib/gameColors";
 import * as CONST from "./sceneConstants";
 import { createSurfacingScene } from "./scenes/SurfacingScene";
 import { createBeachScene } from "./scenes/BeachScene";
 import { createDivingScene, type DivingSceneState } from "./scenes/DivingScene";
+import { useGameStore } from "@/lib/gameStore";
 
 interface OceanSceneProps {
-  depth: number;
-  treasureValue: number;
-  oxygenLevel: number;
-  isDiving: boolean;
-  survived?: boolean;
-  shouldSurface?: boolean;
-  lastShipwreck?: Shipwreck;
-  onAnimationComplete?: () => void;
+  // No more state props! Just config options
   debugMode?: boolean;
-  animationMessage?: string; // NEW: Pass messages from React instead of Kaplay text
-  isInOcean?: boolean; // Track if we're in the ocean scene (not on beach)
 }
 
-export default function OceanScene({
-  depth,
-  treasureValue,
-  isDiving,
-  survived,
-  shouldSurface = false,
-  debugMode = true,
-  isInOcean = false,
-}: OceanSceneProps) {
+export default function OceanScene({ debugMode = true }: OceanSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const kRef = useRef<KAPLAYCtx | null>(null);
   const initializedRef = useRef<boolean>(false);
 
-  // Use refs to track prop changes inside Kaplay closures
-  const isDivingRef = useRef(isDiving);
-  const survivedRef = useRef(survived);
-  const shouldSurfaceRef = useRef(shouldSurface);
-  const depthRef = useRef(depth);
-  const treasureRef = useRef(treasureValue);
-  const isInOceanRef = useRef(isInOcean);
-
-  // Update refs when props change
-  useEffect(() => {
-    const changes = [];
-    if (isDivingRef.current !== isDiving)
-      changes.push(`isDiving: ${isDivingRef.current} → ${isDiving}`);
-    if (survivedRef.current !== survived)
-      changes.push(`survived: ${survivedRef.current} → ${survived}`);
-    if (shouldSurfaceRef.current !== shouldSurface)
-      changes.push(
-        `shouldSurface: ${shouldSurfaceRef.current} → ${shouldSurface}`
-      );
-    if (depthRef.current !== depth)
-      changes.push(`depth: ${depthRef.current}m → ${depth}m`);
-    if (treasureRef.current !== treasureValue)
-      changes.push(`treasure: $${treasureRef.current} → $${treasureValue}`);
-    if (isInOceanRef.current !== isInOcean)
-      changes.push(`isInOcean: ${isInOceanRef.current} → ${isInOcean}`);
-
-    if (changes.length > 0) {
-      console.log("[CANVAS] 📊 Props changed:", changes.join(", "));
-    }
-
-    isDivingRef.current = isDiving;
-    survivedRef.current = survived;
-    shouldSurfaceRef.current = shouldSurface;
-    depthRef.current = depth;
-    treasureRef.current = treasureValue;
-    isInOceanRef.current = isInOcean;
-  }, [isDiving, survived, shouldSurface, depth, treasureValue, isInOcean]);
+  // Subscribe to only the Kaplay debug setting from store
+  const kaplayDebug = useGameStore((state) => state.kaplayDebug);
 
   useEffect(() => {
     console.log("[CANVAS] 🎬 OceanScene useEffect triggered");
+    console.log("[CANVAS] ✅ Using Zustand store - no more refs!");
 
     if (!canvasRef.current) {
       console.log("[CANVAS] ❌ No canvas ref!");
@@ -127,7 +77,6 @@ export default function OceanScene({
         sliceY: sprite.sliceY,
         anims: sprite.anims,
       });
-      // console.log(`[CANVAS] ✅ Loaded ${sprite.name} (${sprite.sliceX}×${sprite.sliceY} = ${sprite.totalFrames} frames)`);
     });
 
     console.log("[CANVAS] ✅ All sprites loaded!");
@@ -146,33 +95,16 @@ export default function OceanScene({
     // Treasure animation timing
     const treasurePulseTime = 0;
 
-    // Boat creation moved to entities/boat.ts
-
     // ===== BEACH/SURFACE SCENE ===== (Extracted to scenes/BeachScene.ts)
+    // No more refs! Scenes read directly from the store
     createBeachScene({
       k,
-      refs: {
-        isDivingRef,
-        survivedRef,
-        shouldSurfaceRef,
-        depthRef,
-        treasureRef,
-        isInOceanRef,
-      },
       hexToRgb,
     });
 
     // ===== SURFACING SCENE ===== (Extracted to scenes/SurfacingScene.ts)
     createSurfacingScene({
       k,
-      refs: {
-        isDivingRef,
-        survivedRef,
-        shouldSurfaceRef,
-        depthRef,
-        treasureRef,
-        isInOceanRef,
-      },
       hexToRgb,
     });
 
@@ -192,18 +124,9 @@ export default function OceanScene({
     createDivingScene(
       {
         k,
-        refs: {
-          isDivingRef,
-          survivedRef,
-          shouldSurfaceRef,
-          depthRef,
-          treasureRef,
-          isInOceanRef,
-        },
         hexToRgb,
       },
-      divingState,
-      depth
+      divingState
     );
 
     // Start at beach scene
@@ -223,26 +146,21 @@ export default function OceanScene({
         initializedRef.current = false;
       }
     };
-  }, []);
+  }, [debugMode]);
 
   // Toggle Kaplay debug mode
   useEffect(() => {
     if (!kRef.current) return;
 
     // Kaplay's debug mode can be toggled via debug.inspect
-    if (debugMode) {
-      console.log("[CANVAS] 🔧 Debug mode enabled");
+    if (kaplayDebug) {
+      console.log("[CANVAS] 🔧 Kaplay debug mode enabled");
       (kRef.current as any).debug.inspect = true;
     } else {
-      console.log("[CANVAS] 🔧 Debug mode disabled");
+      console.log("[CANVAS] 🔧 Kaplay debug mode disabled");
       (kRef.current as any).debug.inspect = false;
     }
-  }, [debugMode]);
-
-  // Trigger animations when props change
-  useEffect(() => {
-    if (!kRef.current) return;
-  }, [depth, treasureValue, isDiving, survived]);
+  }, [kaplayDebug]);
 
   // Helper function
   function hexToRgb(hex: string) {

@@ -1,6 +1,8 @@
 /**
  * Beach Scene
  * The starting scene with beach, sky, boat, and decorations
+ *
+ * Refactored to use Zustand store - no more refs!
  */
 
 import * as CONST from "../sceneConstants";
@@ -10,10 +12,10 @@ import { createSeagull } from "../entities/seagull";
 import { createCrab } from "../entities/crab";
 import { createStarfish } from "../entities/starfish";
 import type { SceneConfig } from "./sceneTypes";
+import { useGameStore } from "@/lib/gameStore";
 
 export function createBeachScene(config: SceneConfig) {
-  const { k, refs } = config;
-  const { isInOceanRef, isDivingRef } = refs;
+  const { k } = config;
 
   k.scene("beach", () => {
     console.log("[CANVAS] 🏖️ Beach scene created!");
@@ -242,17 +244,20 @@ export function createBeachScene(config: SceneConfig) {
           CONST.MOTION.BOAT_BOB_AMPLITUDE;
     });
 
-    // Reset refs on beach scene
-    refs.depthRef.current = 0;
-    refs.survivedRef.current = undefined;
+    // Reset store state when returning to beach
+    const store = useGameStore.getState();
+    store.setDepth(0);
+    store.setSurvived(undefined);
 
     // Monitor for dive start - transition to diving scene
     k.onUpdate(() => {
-      if (isDivingRef.current && !isInOceanRef.current) {
+      const { isDiving, isInOcean } = useGameStore.getState();
+
+      if (isDiving && !isInOcean) {
         console.log(
           "[CANVAS] 🏖️ → 🤿 Dive started! Transitioning to diving scene..."
         );
-        isInOceanRef.current = true; // Mark that we're now in the ocean
+        useGameStore.getState().enterOcean(); // Mark that we're now in the ocean
         k.go("diving");
       }
     });

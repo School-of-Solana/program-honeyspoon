@@ -1,6 +1,8 @@
 /**
  * Diving Scene
  * The main underwater gameplay scene with parallax scrolling and creature spawning
+ *
+ * Refactored to use Zustand store - no more refs!
  */
 
 import { getDepthZone } from "@/lib/gameLogic";
@@ -14,6 +16,7 @@ import { createTreasureParticles } from "../entities/particles";
 import { triggerDeathAnimation } from "../entities/death";
 import { createLayerPart } from "../entities/parallax";
 import type { SceneConfig } from "./sceneTypes";
+import { useGameStore } from "@/lib/gameStore";
 
 /**
  * Shared animation state for diving scene
@@ -34,17 +37,15 @@ export interface DivingSceneState {
  */
 export function createDivingScene(
   config: SceneConfig,
-  state: DivingSceneState,
-  depth: number
+  state: DivingSceneState
 ) {
-  const { k, refs, hexToRgb } = config;
-  const { depthRef, survivedRef, treasureRef } = refs;
+  const { k, hexToRgb } = config;
 
   k.scene("diving", () => {
     console.log("[CANVAS] 🤿 Diving scene created!");
 
     // Get depth zone for colors
-    let currentZone = getDepthZone(depth);
+    let currentZone = getDepthZone(useGameStore.getState().depth);
     let bgColor = hexToRgb(currentZone.color);
     let lightLevel = currentZone.light;
 
@@ -119,7 +120,7 @@ export function createDivingScene(
       k.rect(k.width(), k.height()),
       k.pos(0, 0),
       k.color(...CONST.COLORS.FADE_BLACK),
-      k.opacity(Math.min(depth / 500, 0.6)),
+      k.opacity(Math.min(useGameStore.getState().depth / 500, 0.6)),
       k.z(1),
     ]);
 
@@ -323,8 +324,8 @@ export function createDivingScene(
 
     // Spawn predators
     k.loop(6, () => {
-      if (depthRef.current! > 100 && Math.random() > 0.6) {
-        createAmbientPredator(k, depthRef.current!, lightLevel);
+      if (useGameStore.getState().depth > 100 && Math.random() > 0.6) {
+        createAmbientPredator(k, useGameStore.getState().depth, lightLevel);
       }
     });
 
@@ -339,15 +340,15 @@ export function createDivingScene(
         console.log("[CANVAS] 🎮 State update", {
           animation: state.animationType,
           isAnimating: state.isAnimating,
-          depth: `${depthRef.current}m`,
-          treasure: `$${treasureRef.current}`,
+          depth: `${useGameStore.getState().depth}m`,
+          treasure: `$${useGameStore.getState().treasureValue}`,
           divingSpeed: `${state.divingSpeed.toFixed(0)}px/s`,
         });
         lastLogTime = now;
       }
 
       // Update background
-      currentZone = getDepthZone(depthRef.current!);
+      currentZone = getDepthZone(useGameStore.getState().depth);
       bgColor = hexToRgb(currentZone.color);
       lightLevel = currentZone.light;
 
@@ -358,7 +359,7 @@ export function createDivingScene(
       );
 
       darknessOverlay.opacity = Math.min(
-        0.1 + (depthRef.current! / 1000) * 0.7,
+        0.1 + (useGameStore.getState().depth / 1000) * 0.7,
         0.8
       );
 
@@ -443,16 +444,16 @@ export function createDivingScene(
 
       // Check for surfacing request (player cashed out)
       if (
-        refs.shouldSurfaceRef.current &&
+        useGameStore.getState().shouldSurface &&
         !state.isAnimating &&
         state.animationType === AnimationType.IDLE
       ) {
         console.log(
           "[CANVAS] 🌊 Player cashed out! Transitioning to surfacing..."
         );
-        k.go("surfacing", { treasure: treasureRef.current });
+        k.go("surfacing", { treasure: useGameStore.getState().treasureValue });
       } else if (
-        refs.isDivingRef.current &&
+        useGameStore.getState().isDiving &&
         !state.isAnimating &&
         state.animationType === AnimationType.IDLE
       ) {
@@ -464,7 +465,7 @@ export function createDivingScene(
 
       // Treasure collection animation
       if (
-        survivedRef.current === true &&
+        useGameStore.getState().survived === true &&
         !state.isAnimating &&
         state.animationType === AnimationType.IDLE
       ) {
@@ -475,7 +476,7 @@ export function createDivingScene(
         createTreasureParticles(k, diver.pos.x, diver.pos.y);
         // Treasure chest animation removed - just showing particles
       } else if (
-        survivedRef.current === false &&
+        useGameStore.getState().survived === false &&
         !state.isAnimating &&
         state.animationType === AnimationType.IDLE
       ) {
@@ -483,14 +484,14 @@ export function createDivingScene(
         triggerDeathAnimation(
           k,
           diver,
-          depthRef.current!,
+          useGameStore.getState().depth,
           {
             isAnimating: state.isAnimating,
             animationType: state.animationType,
             divingSpeed: state.divingSpeed,
           },
           () => {
-            refs.isInOceanRef.current = false; // Reset ocean flag so we can dive again
+            useGameStore.getState().returnToBeach(); // Reset ocean flag so we can dive again
             k.go("beach");
           }
         );
