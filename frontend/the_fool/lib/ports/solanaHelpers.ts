@@ -15,7 +15,7 @@ import BN from "bn.js";
  * MUST match the program ID in Anchor.toml and the deployed program
  */
 export const PROGRAM_ID = new PublicKey(
-  "GmX4wpAD8z3TpuGc6AQtdq9KD3b6a2JfNjdQgPLEEdnP"
+  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
 );
 
 /**
