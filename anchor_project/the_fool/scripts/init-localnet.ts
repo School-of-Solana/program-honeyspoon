@@ -22,7 +22,7 @@ import * as os from "os";
 import * as path from "path";
 
 // Program ID (must match deployed program)
-const PROGRAM_ID = new PublicKey("GmX4wpAD8z3TpuGc6AQtdq9KD3b6a2JfNjdQgPLEEdnP");
+const PROGRAM_ID = new PublicKey("9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7");
 
 // Seeds
 const GAME_CONFIG_SEED = "game_config";

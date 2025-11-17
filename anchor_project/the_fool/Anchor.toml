@@ -7,7 +7,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-dive_game = "GmX4wpAD8z3TpuGc6AQtdq9KD3b6a2JfNjdQgPLEEdnP"
+dive_game = "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
 
 [registry]
 url = "https://api.apr.dev"

@@ -21,7 +21,10 @@
     "idl:build": "anchor build --idl idl",
     "keys:generate": "anchor keys list",
     "localnet": "solana-test-validator",
-    "logs": "solana logs"
+    "logs": "solana logs",
+    "init-localnet": "ts-node scripts/init-localnet.ts",
+    "setup:localnet": "anchor build && anchor deploy && npm run init-localnet",
+    "dev:full": "npm run setup:localnet"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1"
@@ -31,6 +34,7 @@
     "@types/chai": "^4.3.0",
     "@types/mocha": "^9.0.0",
     "@types/mocha-each": "^2.0.4",
+    "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
     "chai": "^4.3.4",
@@ -41,6 +45,7 @@
     "mocha-each": "^2.0.1",
     "prettier": "^2.6.2",
     "ts-mocha": "^10.0.0",
-    "typescript": "^5.7.3"
+    "ts-node": "^7.0.1",
+    "typescript": "^5.9.3"
   }
 }
