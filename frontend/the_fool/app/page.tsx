@@ -6,6 +6,7 @@ import DebugPanel from "@/components/DebugWalletPanel";
 import { GameErrorBoundary } from "@/components/DeepSeaDiver/GameErrorBoundary";
 import { WalletMultiButton } from "@/components/WalletMultiButton";
 import { SolanaModeIndicator } from "@/components/SolanaModeIndicator";
+import { SolanaAirdropPanel } from "@/components/SolanaAirdropPanel";
 import { calculateDiveStats } from "@/lib/gameLogic";
 import {
   performDive,
@@ -997,8 +998,11 @@ export default function Home() {
           </div>
         )}
 
-        {/* Unified Debug Panel (only in development) */}
+        {/* Unified Debug Panel (only in development, Local mode only) */}
         {process.env.NODE_ENV === "development" && <DebugPanel />}
+
+        {/* Solana Airdrop Panel (only when using Solana mode) */}
+        <SolanaAirdropPanel />
       </div>
     </GameErrorBoundary>
   );
