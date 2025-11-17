@@ -6,7 +6,15 @@ import {
   WalletProvider as SolanaWalletProvider 
 } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { 
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  BackpackWalletAdapter,
+  TrustWalletAdapter,
+  CoinbaseWalletAdapter,
+  LedgerWalletAdapter,
+  TorusWalletAdapter,
+} from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 
 // Import wallet adapter CSS
@@ -21,9 +29,18 @@ interface WalletProviderProps {
  * 
  * Features:
  * - Connects to RPC endpoint from env vars
- * - Supports Phantom wallet (add more as needed)
+ * - Supports multiple wallets (Phantom, Solflare, Backpack, etc.)
  * - Auto-connects to previously used wallet
  * - Provides wallet modal for connection UI
+ * 
+ * Supported Wallets:
+ * - Phantom (most popular)
+ * - Solflare
+ * - Backpack
+ * - Trust Wallet
+ * - Coinbase Wallet
+ * - Ledger
+ * - Torus
  * 
  * Usage in layout.tsx:
  * ```tsx
@@ -55,10 +72,18 @@ export function WalletProvider({ children }: WalletProviderProps) {
   // Initialize wallet adapters
   const wallets = useMemo(
     () => [
+      // Most popular wallets first
       new PhantomWalletAdapter(),
-      // Add more wallets as needed:
-      // new SolflareWalletAdapter(),
-      // new BackpackWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new BackpackWalletAdapter(),
+      new TrustWalletAdapter(),
+      new CoinbaseWalletAdapter(),
+      new LedgerWalletAdapter(),
+      new TorusWalletAdapter({
+        params: {
+          network: network === WalletAdapterNetwork.Mainnet ? 'mainnet' : 'testnet',
+        },
+      }),
     ],
     [network]
   );
