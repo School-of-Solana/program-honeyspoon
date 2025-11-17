@@ -15,7 +15,7 @@ import BN from "bn.js";
 // ============================================================================
 
 export const PROGRAM_ID = new PublicKey(
-  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
+  "7f56Kmapmckgg8avSnqJvCUjtfDKVovENtzfvhSTEQ6h"
 );
 
 export const HOUSE_VAULT_SEED = "house_vault";

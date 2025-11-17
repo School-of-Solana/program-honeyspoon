@@ -122,7 +122,7 @@ function logAccountStates(
 // ============================================================================
 
 const PROGRAM_ID = new PublicKey(
-  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
+  "7f56Kmapmckgg8avSnqJvCUjtfDKVovENtzfvhSTEQ6h"
 );
 
 const HOUSE_VAULT_SEED = "house_vault";
