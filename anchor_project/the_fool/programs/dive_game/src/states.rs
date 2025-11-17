@@ -97,17 +97,19 @@ pub struct GameConfig {
 
 impl GameConfig {
     /// Default configuration for production
+    /// MATCHED TO FRONTEND: 70% base survival, 5% house edge
+    /// See frontend/the_fool/lib/constants.ts GAME_CONFIG
     pub fn default_config() -> (u32, u32, u32, u16, u16, u16, u16, u64, u64) {
         (
-            990_000, // base_survival_ppm: 99% at dive 1
-            5_000,   // decay_per_dive_ppm: -0.5% per dive
-            100_000, // min_survival_ppm: 10% floor
-            11,      // treasure_multiplier_num: 1.1x numerator
-            10,      // treasure_multiplier_den: 1.1x denominator
+            700_000, // base_survival_ppm: 70% at dive 1 (was 99%, now matches frontend)
+            8_000,   // decay_per_dive_ppm: -0.8% per dive (exponential decay ~0.08 constant)
+            50_000,  // min_survival_ppm: 5% floor (matches frontend MIN_WIN_PROB)
+            19,      // treasure_multiplier_num: 1.9x numerator (for 5% house edge)
+            10,      // treasure_multiplier_den: 1.9x denominator
             100,     // max_payout_multiplier: 100x bet
-            200,     // max_dives: 200 rounds max
-            1,       // min_bet: 1 lamport
-            0,       // max_bet: no limit
+            50,      // max_dives: 50 rounds max (matches frontend)
+            10_000_000, // min_bet: 0.01 SOL = 10M lamports (10 in SOL terms, matches frontend)
+            500_000_000, // max_bet: 0.5 SOL = 500M lamports (500 in SOL terms, matches frontend)
         )
     }
 }
