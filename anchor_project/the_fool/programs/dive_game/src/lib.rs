@@ -10,7 +10,7 @@ pub mod states;
 use instructions::init_config::GameConfigParams;
 use instructions::*;
 
-declare_id!("5f9Gn6yLcMPqZfFPM9pBYQV1f1h6EBDCSs8jynjfoEQ3");
+declare_id!("GmX4wpAD8z3TpuGc6AQtdq9KD3b6a2JfNjdQgPLEEdnP");
 
 #[program]
 pub mod dive_game {

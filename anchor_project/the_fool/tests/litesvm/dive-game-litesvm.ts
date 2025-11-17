@@ -2395,8 +2395,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(playerA.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
       svm.airdrop(playerB.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      // Player A: 1 SOL bet = 100 SOL reserved
-      const betA = lamports(TEST_AMOUNTS.MEDIUM);
+      // Player A: 0.3 SOL bet (within new 0.01-0.5 SOL limits)
+      const betA = lamports(0.3);
       const [sessionA] = getSessionPDA(playerA.publicKey, new BN(0));
       const startAData = buildStartSessionData(betA, new BN(0));
       const startAIx = new TransactionInstruction({
@@ -2422,8 +2422,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       txA.sign(playerA);
       svm.sendTransaction(txA);
 
-      // Player B: 0.5 SOL bet = 50 SOL reserved
-      const betB = lamports(TEST_AMOUNTS.SMALL / 2);
+      // Player B: 0.2 SOL bet (within new 0.01-0.5 SOL limits)
+      const betB = lamports(0.2);
       const [sessionB] = getSessionPDA(playerB.publicKey, new BN(0));
       const startBData = buildStartSessionData(betB, new BN(0));
       const startBIx = new TransactionInstruction({
@@ -4036,7 +4036,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should release reserved funds on lose_session", () => {
-      const betAmount = lamports(TEST_AMOUNTS.MEDIUM);
+      const betAmount = lamports(0.3); // 0.3 SOL - within new limits
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -4702,8 +4702,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(playerA.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
       svm.airdrop(playerB.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      // Player A: 1 SOL bet = 100 SOL reserved
-      const betA = lamports(1);
+      // Player A: 0.3 SOL bet (within new 0.01-0.5 SOL limits)
+      const betA = lamports(0.3);
       const maxPayoutA = betA.muln(100);
       const [sessionA] = getSessionPDA(playerA.publicKey, new BN(0));
 
@@ -4731,8 +4731,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       txA.sign(playerA);
       svm.sendTransaction(txA);
 
-      // Player B: 0.5 SOL bet = 50 SOL reserved
-      const betB = lamports(0.5);
+      // Player B: 0.2 SOL bet (within new 0.01-0.5 SOL limits)
+      const betB = lamports(0.2);
       const maxPayoutB = betB.muln(100);
       const [sessionB] = getSessionPDA(playerB.publicKey, new BN(0));
 
@@ -4830,8 +4830,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = lamports(1); // 1 SOL
-      const maxPayout = betAmount.muln(100); // 100 SOL
+      const betAmount = lamports(0.3); // 0.3 SOL - within new limits
+      const maxPayout = betAmount.muln(100); // 30 SOL max payout
 
       // Record initial balances
       const initialPlayerBalance = svm.getBalance(player.publicKey);
