@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import OceanScene from "@/components/DeepSeaDiver/OceanScene";
 import DebugPanel from "@/components/DebugWalletPanel";
 import { GameErrorBoundary } from "@/components/DeepSeaDiver/GameErrorBoundary";
+import { WalletMultiButton } from "@/components/WalletMultiButton";
+import { SolanaModeIndicator } from "@/components/SolanaModeIndicator";
 import { calculateDiveStats } from "@/lib/gameLogic";
 import {
   performDive,
@@ -666,6 +668,14 @@ export default function Home() {
   return (
     <GameErrorBoundary>
       <div className="fixed inset-0 w-screen h-screen overflow-hidden">
+        {/* Wallet Connection Button - Top Right */}
+        <div className="absolute top-4 right-4 z-[100]">
+          <WalletMultiButton />
+        </div>
+
+        {/* Mode Indicator - Top Left (Dev Only) */}
+        <SolanaModeIndicator />
+
         {/* Full-screen Ocean Canvas */}
         <div
           className="absolute inset-0 w-full h-full"

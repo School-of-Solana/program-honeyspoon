@@ -82,11 +82,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       new Coin98WalletAdapter(),
       new NightlyWalletAdapter(),
       new LedgerWalletAdapter(),
-      new TorusWalletAdapter({
-        params: {
-          network: network === WalletAdapterNetwork.Mainnet ? 'mainnet' : 'testnet',
-        },
-      }),
+      new TorusWalletAdapter(),
     ],
     [network]
   );

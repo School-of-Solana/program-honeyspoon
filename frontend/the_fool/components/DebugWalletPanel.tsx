@@ -18,6 +18,14 @@ import {
 } from "@/app/actions/walletActions";
 
 export default function DebugWalletPanel() {
+  // Check if we're using Solana mode
+  const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
+  
+  // Hide panel completely if using real Solana
+  if (useSolana) {
+    return null;
+  }
+
   // Toggle state
   const [isOpen, setIsOpen] = useState(false);
   const [isTopping, setIsTopping] = useState(false);

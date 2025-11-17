@@ -1,6 +1,7 @@
 'use client';
 
 import { useWallet } from '@solana/wallet-adapter-react';
+import type { WalletName } from '@solana/wallet-adapter-base';
 import { WalletIcon } from '@solana/wallet-adapter-react-ui';
 import { useState, useRef, useEffect } from 'react';
 
@@ -51,7 +52,7 @@ export function WalletMultiButton() {
     }
   };
 
-  const handleWalletSelect = async (walletName: string) => {
+  const handleWalletSelect = async (walletName: WalletName) => {
     select(walletName);
     setDropdownOpen(false);
     // Connect will happen automatically via wallet adapter
