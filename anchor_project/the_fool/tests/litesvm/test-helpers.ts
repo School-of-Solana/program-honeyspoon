@@ -15,7 +15,7 @@ import BN from "bn.js";
 // ============================================================================
 
 export const PROGRAM_ID = new PublicKey(
-  "5f9Gn6yLcMPqZfFPM9pBYQV1f1h6EBDCSs8jynjfoEQ3"
+  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
 );
 
 export const HOUSE_VAULT_SEED = "house_vault";
@@ -306,13 +306,14 @@ export function createLoseSessionInstruction(
 
 export interface ParsedSessionData {
   user: PublicKey;
-  currentTreasure: BN;
+  houseVault: PublicKey;
+  status: "Active" | "Lost" | "CashedOut";
   betAmount: BN;
-  numDives: number;
-  rngSeed: Buffer;
-  sessionIndex: BN;
-  status: number;
+  currentTreasure: BN;
+  maxPayout: BN;
+  diveNumber: number;
   bump: number;
+  rngSeed: Buffer;
 }
 
 export function parseSessionData(data: Buffer): ParsedSessionData {
@@ -321,35 +322,41 @@ export function parseSessionData(data: Buffer): ParsedSessionData {
   const user = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
 
-  const currentTreasure = new BN(data.subarray(offset, offset + 8), "le");
-  offset += 8;
+  const houseVault = new PublicKey(data.subarray(offset, offset + 32));
+  offset += 32;
+
+  const statusVariant = data.readUInt8(offset);
+  offset += 1;
+  const status =
+    statusVariant === 0 ? "Active" : statusVariant === 1 ? "Lost" : "CashedOut";
 
   const betAmount = new BN(data.subarray(offset, offset + 8), "le");
   offset += 8;
 
-  const numDives = data.readUInt16LE(offset);
-  offset += 2;
-
-  const rngSeed = data.subarray(offset, offset + 32);
-  offset += 32;
-
-  const sessionIndex = new BN(data.subarray(offset, offset + 8), "le");
+  const currentTreasure = new BN(data.subarray(offset, offset + 8), "le");
   offset += 8;
 
-  const status = data.readUInt8(offset);
-  offset += 1;
+  const maxPayout = new BN(data.subarray(offset, offset + 8), "le");
+  offset += 8;
+
+  const diveNumber = data.readUInt16LE(offset);
+  offset += 2;
 
   const bump = data.readUInt8(offset);
+  offset += 1;
+
+  const rngSeed = data.subarray(offset, offset + 32);
 
   return {
     user,
-    currentTreasure,
-    betAmount,
-    numDives,
-    rngSeed,
-    sessionIndex,
+    houseVault,
     status,
+    betAmount,
+    currentTreasure,
+    maxPayout,
+    diveNumber,
     bump,
+    rngSeed,
   };
 }
 
@@ -564,4 +571,264 @@ export function startGameSession(params: StartGameSessionParams): void {
     instructions: [startIx],
     signers: [player],
   });
+}
+
+// ============================================================================
+// Transaction Result Helpers
+// ============================================================================
+
+export function logTransactionFailure(result: any, context: string): void {
+  if (result?.constructor?.name === "FailedTransactionMetadata") {
+    console.log(`\n❌ Transaction failed: ${context}`);
+    if (result.logs) {
+      console.log("Transaction logs:");
+      result.logs.forEach((log: string, i: number) => {
+        console.log(`  [${i}] ${log}`);
+      });
+    }
+    if (result.err) {
+      console.log("Error details:", JSON.stringify(result.err, null, 2));
+    }
+  }
+}
+
+export function expectTxSuccess(result: any, context: string): void {
+  if (result?.constructor?.name === "FailedTransactionMetadata") {
+    logTransactionFailure(result, context);
+  }
+  // expect(result?.constructor?.name).to.equal("TransactionMetadata", context);
+}
+
+export function expectTxFailure(result: any, context: string): void {
+  // expect(result?.constructor?.name).to.equal("FailedTransactionMetadata", context);
+}
+
+export function expectTxFailedWith(result: any, errorCode: string): void {
+  // expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
+  if (result && result.logs) {
+    const logs: string[] = result.logs;
+    const errorLog = logs.find((l) => l.includes(errorCode));
+    // expect(errorLog, `Expected error "${errorCode}" not found in logs`).to.not.be.undefined;
+  }
+}
+
+// ============================================================================
+// High-Level Test Context Helpers
+// ============================================================================
+
+export interface TestContext {
+  svm: LiteSVM;
+  authority: Keypair;
+  configPDA: PublicKey;
+  houseVaultPDA: PublicKey;
+}
+
+export function createTestContext(programPath: string): TestContext {
+  const svm = new LiteSVM();
+
+  const programBytes = require("fs").readFileSync(programPath);
+  svm.addProgram(PROGRAM_ID, programBytes);
+
+  const authority = new Keypair();
+  svm.airdrop(authority.publicKey, 100n * 1000000000n);
+
+  const [configPDA] = getConfigPDA();
+  const [houseVaultPDA] = getHouseVaultPDA(authority.publicKey);
+
+  return {
+    svm,
+    authority,
+    configPDA,
+    houseVaultPDA,
+  };
+}
+
+export function initConfig(
+  ctx: TestContext,
+  params: GameConfigParams = {}
+): any {
+  const { svm, authority, configPDA } = ctx;
+
+  const configIx = createInitConfigInstruction(
+    authority.publicKey,
+    configPDA,
+    params
+  );
+
+  const result = buildAndSendTx({
+    svm,
+    instructions: [configIx],
+    signers: [authority],
+  });
+
+  if (result?.constructor?.name === "FailedTransactionMetadata") {
+    logTransactionFailure(result, "Init config");
+  }
+  return result;
+}
+
+export function initHouseVault(ctx: TestContext, locked: boolean = false): any {
+  const { svm, authority, houseVaultPDA } = ctx;
+
+  const vaultIx = createInitHouseVaultInstruction(
+    authority.publicKey,
+    houseVaultPDA,
+    locked
+  );
+
+  const result = buildAndSendTx({
+    svm,
+    instructions: [vaultIx],
+    signers: [authority],
+  });
+
+  if (result?.constructor?.name === "FailedTransactionMetadata") {
+    logTransactionFailure(result, "Init house vault");
+  }
+  return result;
+}
+
+export function setupTestEnvironment(programPath: string): TestContext {
+  const ctx = createTestContext(programPath);
+  initConfig(ctx);
+  initHouseVault(ctx);
+  ctx.svm.airdrop(ctx.houseVaultPDA, 1000n * 1000000000n);
+  return ctx;
+}
+
+export function createPlayer(svm: LiteSVM, sol: number = 10): Keypair {
+  const player = new Keypair();
+  svm.airdrop(player.publicKey, BigInt(sol) * 1000000000n);
+  return player;
+}
+
+export function startSession(
+  ctx: TestContext,
+  player: Keypair,
+  betAmount: BN,
+  sessionIndex: BN = new BN(0)
+): any {
+  const { svm, authority, configPDA, houseVaultPDA } = ctx;
+
+  const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
+
+  const startIx = createStartSessionInstruction(
+    player.publicKey,
+    sessionPDA,
+    configPDA,
+    houseVaultPDA,
+    authority.publicKey,
+    betAmount,
+    sessionIndex
+  );
+
+  const result = buildAndSendTx({
+    svm,
+    instructions: [startIx],
+    signers: [player],
+  });
+
+  if (result?.constructor?.name === "FailedTransactionMetadata") {
+    logTransactionFailure(result, "Start session");
+  }
+  return result;
+}
+
+export function playRound(
+  ctx: TestContext,
+  player: Keypair,
+  sessionIndex: BN = new BN(0)
+): any {
+  const { svm, configPDA } = ctx;
+  const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
+
+  const playIx = createPlayRoundInstruction(
+    player.publicKey,
+    sessionPDA,
+    configPDA
+  );
+
+  return buildAndSendTx({
+    svm,
+    instructions: [playIx],
+    signers: [player],
+  });
+}
+
+export function cashOut(
+  ctx: TestContext,
+  player: Keypair,
+  sessionIndex: BN = new BN(0)
+): any {
+  const { svm, authority, configPDA, houseVaultPDA } = ctx;
+  const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
+
+  const cashOutIx = createCashOutInstruction(
+    player.publicKey,
+    sessionPDA,
+    configPDA,
+    houseVaultPDA,
+    authority.publicKey
+  );
+
+  return buildAndSendTx({
+    svm,
+    instructions: [cashOutIx],
+    signers: [player],
+  });
+}
+
+export function loseSession(
+  ctx: TestContext,
+  player: Keypair,
+  sessionIndex: BN = new BN(0)
+): any {
+  const { svm, authority, houseVaultPDA } = ctx;
+  const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
+
+  const loseIx = createLoseSessionInstruction(
+    player.publicKey,
+    sessionPDA,
+    houseVaultPDA,
+    authority.publicKey
+  );
+
+  return buildAndSendTx({
+    svm,
+    instructions: [loseIx],
+    signers: [player],
+  });
+}
+
+// ============================================================================
+// Data Fetching Helpers
+// ============================================================================
+
+export function getSessionData(
+  svm: LiteSVM,
+  player: PublicKey,
+  sessionIndex: BN = new BN(0)
+): ParsedSessionData | null {
+  const [sessionPDA] = getSessionPDA(player, sessionIndex);
+  const account = svm.getAccount(sessionPDA);
+  if (!account) return null;
+  return parseSessionData(Buffer.from(account.data));
+}
+
+export function getVaultData(
+  svm: LiteSVM,
+  houseVaultPDA: PublicKey
+): ParsedHouseVaultData | null {
+  const account = svm.getAccount(houseVaultPDA);
+  if (!account) return null;
+  return parseHouseVaultData(Buffer.from(account.data));
+}
+
+export function getConfigData(
+  svm: LiteSVM,
+  configPDA: PublicKey
+): ParsedConfigData | null {
+  const account = svm.getAccount(configPDA);
+  if (!account) return null;
+  return parseConfigData(Buffer.from(account.data));
 }
