@@ -45,6 +45,14 @@ pub fn init_config(ctx: Context<InitializeConfig>, params: GameConfigParams) -> 
         crate::errors::GameError::InvalidConfig
     );
     require!(
+        config.treasure_multiplier_num > 0,
+        crate::errors::GameError::InvalidConfig
+    );
+    require!(
+        config.max_payout_multiplier > 0,
+        crate::errors::GameError::InvalidConfig
+    );
+    require!(
         config.base_survival_ppm <= 1_000_000,
         crate::errors::GameError::InvalidConfig
     );
