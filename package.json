@@ -21,7 +21,14 @@
     "logs": "solana logs --url localhost",
     "airdrop": "solana airdrop 10 --url localhost",
     "balance": "solana balance --url localhost",
-    "clean": "pkill -9 solana-test-validator; rm -rf test-ledger; cd anchor_project/the_fool && npm run clean"
+    "clean": "pkill -9 solana-test-validator; rm -rf test-ledger; cd anchor_project/the_fool && npm run clean",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sync-idl": "./scripts/sync-idl.sh",
+    "anchor:build": "cd anchor_project/the_fool && anchor build && cd ../.. && npm run sync-idl",
+    "anchor:deploy": "cd anchor_project/the_fool && anchor deploy",
+    "anchor:test": "cd anchor_project/the_fool && anchor test",
+    "frontend:dev": "cd frontend/the_fool && npm run dev",
+    "frontend:build": "cd frontend/the_fool && npm run build"
   },
   "repository": {
     "type": "git",
