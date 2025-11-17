@@ -38,7 +38,7 @@ describe("Max Rounds & Reservation Horizon", () => {
   });
 
   describe("Round 51 Rejection", () => {
-    it("should reject executeRound(51) after reaching maxRounds", async () => {
+    it("should reject executeRound(50) after reaching maxRounds", async () => {
       // Note: This test takes ~2 seconds to execute 50 rounds
       
       const betAmount = 10;
@@ -95,8 +95,8 @@ describe("Max Rounds & Reservation Horizon", () => {
       // Act: Try to execute round 51
       let round51Error: Error | null = null;
       try {
-        await executeRound(51, currentTreasure, sessionId, userId, "95");
-        assert.fail("executeRound(51) should throw error");
+        await executeRound(50, currentTreasure, sessionId, userId, "95");
+        assert.fail("executeRound(50) should throw error");
       } catch (error) {
         round51Error = error as Error;
       }

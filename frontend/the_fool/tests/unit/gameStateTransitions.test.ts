@@ -34,16 +34,18 @@ describe("Game State Transitions", () => {
     const startResult = await startGame(50, userId, sessionId);
     assert.strictEqual(startResult.success, true, "Game should start");
 
-    const session = getGameSession(sessionId);
+    // Use the returned sessionId (the PDA), not the input sessionId
+    const actualSessionId = startResult.sessionId!;
+    const session = getGameSession(actualSessionId);
     assert.ok(session, "Session should exist");
     assert.strictEqual(session!.isActive, true, "Session should be active");
     assert.strictEqual(session!.diveNumber, 1, "Should be at dive 1");
 
     // State 3: Playing (dive happens)
-    const diveResult = await performDive(1, 50, sessionId, userId, "99");
+    const diveResult = await performDive(1, 50, actualSessionId, userId, "99");
 
     if (diveResult.survived) {
-      const updatedSession = getGameSession(sessionId);
+      const updatedSession = getGameSession(actualSessionId);
       assert.strictEqual(
         updatedSession!.diveNumber,
         2,
@@ -199,7 +201,8 @@ describe("Game State Transitions", () => {
       const newSessionId = await generateSessionId();
 
       // Start
-      const startResult = await startGame(10, userId, newSessionId);
+      const startResult = await startGame(50, userId, sessionId);
+    const actualSessionId = startResult.sessionId!;
       if (!startResult.success) {
         console.log(`  Game ${game}: Failed to start (house limits)`);
         continue;
@@ -249,9 +252,10 @@ describe("Session Management", () => {
 
   it("should create valid session on game start", async () => {
     const sessionId = await generateSessionId();
-    await startGame(50, userId, sessionId);
+    const startResult = await startGame(50, userId, sessionId);
+    const actualSessionId = startResult.sessionId!;
 
-    const session = getGameSession(sessionId);
+    const session = getGameSession(actualSessionId);
 
     assert.ok(session, "Session should exist");
     assert.strictEqual(
