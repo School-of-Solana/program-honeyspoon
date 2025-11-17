@@ -53,9 +53,59 @@ export interface HouseVaultState {
 }
 
 /**
+ * GameConfig account state - matches contract's GameConfig struct
+ * This is the single source of truth for all game parameters
+ */
+export interface GameConfigState {
+  configPda: string;
+  admin: string; // Pubkey
+  baseSurvivalPpm: number; // u32 - parts per million (1M = 100%)
+  decayPerDivePpm: number; // u32
+  minSurvivalPpm: number; // u32
+  treasureMultiplierNum: number; // u16
+  treasureMultiplierDen: number; // u16
+  maxPayoutMultiplier: number; // u16
+  maxDives: number; // u16
+  minBet: bigint; // u64 lamports
+  maxBet: bigint; // u64 lamports
+  bump: number; // u8
+}
+
+/**
  * Port interface for game session blockchain operations
  */
 export interface GameChainPort {
+  /**
+   * Initialize game configuration (admin only, one-time)
+   * Maps to: init_config instruction
+   *
+   * @throws {GameError} if config already exists
+   */
+  initGameConfig(params: {
+    admin: string; // Pubkey
+    baseSurvivalPpm?: number;
+    decayPerDivePpm?: number;
+    minSurvivalPpm?: number;
+    treasureMultiplierNum?: number;
+    treasureMultiplierDen?: number;
+    maxPayoutMultiplier?: number;
+    maxDives?: number;
+    minBet?: bigint;
+    maxBet?: bigint;
+  }): Promise<{
+    configPda: string;
+    state: GameConfigState;
+  }>;
+
+  /**
+   * Get game configuration
+   * Read-only query for game parameters
+   *
+   * @returns {GameConfigState} current game config
+   * @returns {null} if config doesn't exist
+   */
+  getGameConfig(): Promise<GameConfigState | null>;
+
   /**
    * Initialize house vault (admin only, one-time)
    * Maps to: init_house_vault instruction

@@ -1,0 +1,1002 @@
+{
+  "address": "5f9Gn6yLcMPqZfFPM9pBYQV1f1h6EBDCSs8jynjfoEQ3",
+  "metadata": {
+    "name": "dive_game",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Dive game smart contract for Solana"
+  },
+  "instructions": [
+    {
+      "name": "cash_out",
+      "discriminator": [
+        1,
+        110,
+        57,
+        58,
+        159,
+        157,
+        243,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "session"
+          ]
+        },
+        {
+          "name": "session",
+          "writable": true
+        },
+        {
+          "name": "house_vault",
+          "writable": true,
+          "relations": [
+            "session"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "init_config",
+      "docs": [
+        "Initialize game configuration (single source of truth for parameters)",
+        "Pass None for any parameter to use defaults"
+      ],
+      "discriminator": [
+        23,
+        235,
+        115,
+        232,
+        168,
+        96,
+        1,
+        231
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "GameConfigParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "init_house_vault",
+      "discriminator": [
+        82,
+        247,
+        65,
+        25,
+        166,
+        239,
+        30,
+        112
+      ],
+      "accounts": [
+        {
+          "name": "house_authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "house_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  111,
+                  117,
+                  115,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "house_authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "locked",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "lose_session",
+      "discriminator": [
+        13,
+        163,
+        66,
+        150,
+        39,
+        65,
+        34,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "session"
+          ]
+        },
+        {
+          "name": "session",
+          "writable": true
+        },
+        {
+          "name": "house_vault",
+          "writable": true,
+          "relations": [
+            "session"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "play_round",
+      "docs": [
+        "Play a round with secure on-chain outcome computation",
+        "- Outcome computed from stored RNG seed (user cannot manipulate)",
+        "- Treasure calculated deterministically",
+        "- Probability curve applied for win/loss"
+      ],
+      "discriminator": [
+        38,
+        35,
+        89,
+        4,
+        59,
+        139,
+        225,
+        250
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "session"
+          ]
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Game configuration account"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "session",
+          "writable": true
+        },
+        {
+          "name": "house_vault",
+          "writable": true,
+          "relations": [
+            "session"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "start_session",
+      "docs": [
+        "Start a new game session with secure on-chain RNG",
+        "- max_payout computed on-chain (user cannot manipulate)",
+        "- RNG seed generated from slot hashes for deterministic outcomes"
+      ],
+      "discriminator": [
+        23,
+        227,
+        111,
+        142,
+        212,
+        230,
+        3,
+        175
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Game configuration account (single source of truth for all game parameters)"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "house_vault",
+          "writable": true
+        },
+        {
+          "name": "house_authority",
+          "relations": [
+            "house_vault"
+          ]
+        },
+        {
+          "name": "session",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  115,
+                  115,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "arg",
+                "path": "session_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "bet_amount",
+          "type": "u64"
+        },
+        {
+          "name": "session_index",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "toggle_house_lock",
+      "discriminator": [
+        170,
+        63,
+        166,
+        115,
+        196,
+        253,
+        239,
+        115
+      ],
+      "accounts": [
+        {
+          "name": "house_authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "house_vault"
+          ]
+        },
+        {
+          "name": "house_vault",
+          "writable": true
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "GameConfig",
+      "discriminator": [
+        45,
+        146,
+        146,
+        33,
+        170,
+        69,
+        96,
+        133
+      ]
+    },
+    {
+      "name": "GameSession",
+      "discriminator": [
+        150,
+        116,
+        20,
+        197,
+        205,
+        121,
+        220,
+        240
+      ]
+    },
+    {
+      "name": "HouseVault",
+      "discriminator": [
+        125,
+        17,
+        104,
+        101,
+        16,
+        34,
+        39,
+        135
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "InitializeHouseVaultEvent",
+      "discriminator": [
+        168,
+        177,
+        147,
+        20,
+        101,
+        83,
+        103,
+        28
+      ]
+    },
+    {
+      "name": "RoundPlayedEvent",
+      "discriminator": [
+        254,
+        181,
+        20,
+        116,
+        246,
+        74,
+        159,
+        248
+      ]
+    },
+    {
+      "name": "SessionCashedOutEvent",
+      "discriminator": [
+        195,
+        76,
+        152,
+        45,
+        138,
+        65,
+        41,
+        62
+      ]
+    },
+    {
+      "name": "SessionLostEvent",
+      "discriminator": [
+        195,
+        211,
+        168,
+        54,
+        137,
+        90,
+        214,
+        163
+      ]
+    },
+    {
+      "name": "SessionStartedEvent",
+      "discriminator": [
+        94,
+        226,
+        93,
+        23,
+        167,
+        17,
+        206,
+        191
+      ]
+    },
+    {
+      "name": "ToggleHouseLockEvent",
+      "discriminator": [
+        125,
+        201,
+        183,
+        134,
+        233,
+        188,
+        245,
+        108
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "HouseLocked",
+      "msg": "House vault is locked"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidSessionStatus",
+      "msg": "Session is not active"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidBetAmount",
+      "msg": "Bet amount must be greater than zero"
+    },
+    {
+      "code": 6003,
+      "name": "RoundMismatch",
+      "msg": "Round number mismatch"
+    },
+    {
+      "code": 6004,
+      "name": "TreasureInvalid",
+      "msg": "Treasure amount invalid or exceeds max payout"
+    },
+    {
+      "code": 6005,
+      "name": "InsufficientVaultBalance",
+      "msg": "Insufficient vault balance for payout"
+    },
+    {
+      "code": 6006,
+      "name": "Overflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6007,
+      "name": "InsufficientTreasure",
+      "msg": "Cannot cash out with treasure less than or equal to bet"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidConfig",
+      "msg": "Invalid game configuration"
+    },
+    {
+      "code": 6009,
+      "name": "MaxDivesReached",
+      "msg": "Maximum number of dives reached"
+    }
+  ],
+  "types": [
+    {
+      "name": "GameConfig",
+      "docs": [
+        "Game configuration - single source of truth for all game parameters",
+        "This account stores the parameters that govern game mechanics.",
+        "Both on-chain instructions and off-chain clients read from this account."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "docs": [
+              "Admin who can update the config"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "base_survival_ppm",
+            "docs": [
+              "Base survival probability at dive 1 (in PPM = parts per million, 1M = 100%)",
+              "Default: 990_000 = 99%"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "decay_per_dive_ppm",
+            "docs": [
+              "Probability decay per dive (in PPM)",
+              "Default: 5_000 = 0.5% decrease per dive"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "min_survival_ppm",
+            "docs": [
+              "Minimum survival probability floor (in PPM)",
+              "Default: 100_000 = 10%"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "treasure_multiplier_num",
+            "docs": [
+              "Treasure multiplier numerator (default: 11 for 1.1x)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "treasure_multiplier_den",
+            "docs": [
+              "Treasure multiplier denominator (default: 10 for 1.1x)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "max_payout_multiplier",
+            "docs": [
+              "Max payout multiplier (max_payout = bet * this)",
+              "Default: 100 (100x bet)"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "max_dives",
+            "docs": [
+              "Maximum number of dives allowed (safety limit)",
+              "Default: 200"
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "min_bet",
+            "docs": [
+              "Minimum bet amount in lamports",
+              "Default: 1 (allow any bet)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "max_bet",
+            "docs": [
+              "Maximum bet amount in lamports (0 = no limit)",
+              "Default: 0 (no limit)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameConfigParams",
+      "docs": [
+        "Configuration parameters for game initialization"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "base_survival_ppm",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "decay_per_dive_ppm",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "min_survival_ppm",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "treasure_multiplier_num",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "treasure_multiplier_den",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "max_payout_multiplier",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "max_dives",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "min_bet",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "max_bet",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GameSession",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "house_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "SessionStatus"
+              }
+            }
+          },
+          {
+            "name": "bet_amount",
+            "type": "u64"
+          },
+          {
+            "name": "current_treasure",
+            "type": "u64"
+          },
+          {
+            "name": "max_payout",
+            "type": "u64"
+          },
+          {
+            "name": "dive_number",
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "rng_seed",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "HouseVault",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "house_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "locked",
+            "type": "bool"
+          },
+          {
+            "name": "total_reserved",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "InitializeHouseVaultEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "house_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "house_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "locked",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoundPlayedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "session",
+            "type": "pubkey"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "dive_number",
+            "type": "u16"
+          },
+          {
+            "name": "current_treasure",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionCashedOutEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "session",
+            "type": "pubkey"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "house_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "payout_amount",
+            "type": "u64"
+          },
+          {
+            "name": "final_dive_number",
+            "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionLostEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "session",
+            "type": "pubkey"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "house_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "bet_amount",
+            "type": "u64"
+          },
+          {
+            "name": "final_dive_number",
+            "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionStartedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "session",
+            "type": "pubkey"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "house_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "bet_amount",
+            "type": "u64"
+          },
+          {
+            "name": "max_payout",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Lost"
+          },
+          {
+            "name": "CashedOut"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ToggleHouseLockEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "house_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "house_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "locked",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}

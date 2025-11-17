@@ -222,10 +222,57 @@ export class GameError extends Error {
   }
 
   /**
+   * Parse a Solana/Web3.js error into a GameError
+   * Handles both Anchor program errors and generic Solana errors
+   */
+  static fromSolana(error: any): GameError {
+    // If already a GameError, return as-is
+    if (GameError.isGameError(error)) {
+      return error;
+    }
+
+    // Try parsing as Anchor error first
+    if (error.error?.errorCode) {
+      return GameError.fromAnchor(error);
+    }
+
+    // Handle Solana transaction errors
+    const message = error.message || error.toString();
+
+    // Network/RPC errors
+    if (message.includes("fetch") || message.includes("network")) {
+      return GameError.networkError(message);
+    }
+
+    // Insufficient funds
+    if (message.includes("insufficient funds") || message.includes("Insufficient lamports")) {
+      return GameError.insufficientUserFunds(BigInt(0), BigInt(0));
+    }
+
+    // Account not found
+    if (message.includes("AccountNotFound") || message.includes("could not find account")) {
+      return GameError.internalError("Account not found - session may not exist");
+    }
+
+    // Default to internal error
+    return GameError.internalError(message);
+  }
+
+  /**
    * Check if error is a GameError
    */
   static isGameError(error: any): error is GameError {
     return error instanceof GameError;
+  }
+
+  /**
+   * Helper: Create invalid session error
+   */
+  static invalidSession(): GameError {
+    return new GameError(
+      GameErrorCode.INVALID_SESSION_STATUS,
+      "Session not found or inactive"
+    );
   }
 
   /**

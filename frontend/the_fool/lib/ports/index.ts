@@ -17,11 +17,18 @@
 
 import { GameChainPort } from "./GameChainPort";
 import { LocalGameChain } from "./LocalGameChain";
+import { createSolanaGameChain } from "./SolanaGameChain";
 
 // Re-export types and classes
 export * from "./GameChainPort";
 export * from "./GameErrors";
 export { LocalGameChain } from "./LocalGameChain";
+export { 
+  SolanaGameChain, 
+  createSolanaGameChain,
+  type WalletAdapter,
+  type SolanaGameChainConfig
+} from "./SolanaGameChain";
 
 // Global singleton instance
 let gameChainInstance: GameChainPort | null = null;
@@ -30,9 +37,8 @@ let gameChainInstance: GameChainPort | null = null;
  * Get the game chain implementation
  * 
  * Returns the appropriate implementation based on environment:
- * - Development: LocalGameChain (in-memory simulation)
- * - Production with SOLANA_RPC_URL: SolanaGameChain (real blockchain)
- * - Production without SOLANA_RPC_URL: LocalGameChain (fallback)
+ * - NEXT_PUBLIC_USE_SOLANA=true: SolanaGameChain (real blockchain)
+ * - NEXT_PUBLIC_USE_SOLANA=false or unset: LocalGameChain (in-memory simulation)
  * 
  * This function uses singleton pattern for consistent state.
  */
@@ -41,18 +47,21 @@ export function getGameChain(): GameChainPort {
     return gameChainInstance;
   }
 
-  // Check environment variable for Solana RPC
-  const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || process.env.SOLANA_RPC_URL;
-  const useRealChain = process.env.NEXT_PUBLIC_USE_SOLANA_CHAIN === "true";
+  // Check environment variable for Solana
+  const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
+  const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL;
+  const houseAuthority = process.env.NEXT_PUBLIC_HOUSE_AUTHORITY;
 
-  if (useRealChain && rpcUrl) {
-    // TODO: Implement SolanaGameChain when contract is ready
-    console.warn(
-      "[GameChain] NEXT_PUBLIC_USE_SOLANA_CHAIN=true but SolanaGameChain not implemented yet. " +
-      "Falling back to LocalGameChain."
-    );
-    gameChainInstance = new LocalGameChain();
+  if (useSolana && rpcUrl && houseAuthority) {
+    console.log("[GameChain] Using SolanaGameChain with RPC:", rpcUrl);
+    gameChainInstance = createSolanaGameChain(rpcUrl, houseAuthority);
   } else {
+    if (useSolana) {
+      console.warn(
+        "[GameChain] NEXT_PUBLIC_USE_SOLANA=true but missing required env vars. " +
+        "Falling back to LocalGameChain. Required: NEXT_PUBLIC_RPC_URL, NEXT_PUBLIC_HOUSE_AUTHORITY"
+      );
+    }
     // Use local implementation (default)
     gameChainInstance = new LocalGameChain();
   }
