@@ -106,10 +106,10 @@ impl GameConfig {
             50_000,  // min_survival_ppm: 5% floor (matches frontend MIN_WIN_PROB)
             19,      // treasure_multiplier_num: 1.9x numerator (for 5% house edge)
             10,      // treasure_multiplier_den: 1.9x denominator
-            100,     // max_payout_multiplier: 100x bet
+            100,     // max_payout_multiplier: 100x bet (max win: 10 SOL with 0.1 SOL bet)
             50,      // max_dives: 50 rounds max (matches frontend)
-            10_000_000, // min_bet: 0.01 SOL = 10M lamports (10 in SOL terms, matches frontend)
-            500_000_000, // max_bet: 0.5 SOL = 500M lamports (500 in SOL terms, matches frontend)
+            100_000_000, // min_bet: 0.1 SOL = 100M lamports (matches frontend)
+            10_000_000_000, // max_bet: 10 SOL = 10B lamports (100x min bet)
         )
     }
 }

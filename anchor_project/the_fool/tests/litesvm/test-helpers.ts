@@ -592,6 +592,73 @@ export function logTransactionFailure(result: any, context: string): void {
   }
 }
 
+// Helper to log account states for debugging
+export function logAccountStates(
+  svm: LiteSVM,
+  configPDA: PublicKey,
+  houseVaultPDA: PublicKey,
+  playerPubkey: PublicKey,
+  context: string
+): void {
+  console.log(`\n📊 Account States - ${context}`);
+
+  // Config account
+  const configData = getConfigData(svm, configPDA);
+  if (configData) {
+    console.log("Config:");
+    console.log(
+      `  minBet: ${configData.minBet.toString()} lamports (${sol(
+        configData.minBet
+      )} SOL)`
+    );
+    console.log(
+      `  maxBet: ${configData.maxBet.toString()} lamports (${sol(
+        configData.maxBet
+      )} SOL)`
+    );
+    console.log(`  maxPayoutMultiplier: ${configData.maxPayoutMultiplier}`);
+  } else {
+    console.log("Config: NOT FOUND");
+  }
+
+  // House vault account
+  const vaultAccount = svm.getAccount(houseVaultPDA);
+  const vaultData = getVaultData(svm, houseVaultPDA);
+  if (vaultAccount && vaultData) {
+    console.log("House Vault:");
+    console.log(
+      `  account balance: ${vaultAccount.lamports} lamports (${sol(
+        new BN(vaultAccount.lamports.toString())
+      )} SOL)`
+    );
+    console.log(
+      `  totalReserved: ${vaultData.totalReserved.toString()} lamports (${sol(
+        vaultData.totalReserved
+      )} SOL)`
+    );
+    const accountLamports = new BN(vaultAccount.lamports.toString());
+    const available = accountLamports.sub(vaultData.totalReserved);
+    console.log(
+      `  available: ${available.toString()} lamports (${sol(available)} SOL)`
+    );
+  } else {
+    console.log("House Vault: NOT FOUND");
+  }
+
+  // Player account
+  const playerAccount = svm.getAccount(playerPubkey);
+  if (playerAccount) {
+    console.log("Player:");
+    console.log(
+      `  balance: ${playerAccount.lamports} lamports (${sol(
+        new BN(playerAccount.lamports.toString())
+      )} SOL)`
+    );
+  } else {
+    console.log("Player: NOT FOUND");
+  }
+}
+
 export function expectTxSuccess(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
     logTransactionFailure(result, context);
