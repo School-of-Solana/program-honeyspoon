@@ -13,9 +13,11 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
+// NOTE: test-helpers.ts contains reusable helpers that could be used to simplify this file
+// Gradually migrate to using those helpers where appropriate
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 
 /**
  * Helper to log transaction failures verbosely
@@ -513,9 +515,12 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.add(configIx);
       configTx.sign(authority);
       const configResult = svm.sendTransaction(configTx);
-    if (configResult?.constructor?.name === "FailedTransactionMetadata") {
-      logTransactionFailure(configResult, "Config initialization in beforeEach");
-    }
+      if (configResult?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(
+          configResult,
+          "Config initialization in beforeEach"
+        );
+      }
     });
 
     it("should initialize house vault unlocked", () => {
@@ -724,9 +729,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault
@@ -978,8 +984,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
         const configAccount = svm.getAccount(configPDA);
         expect(configAccount).to.not.be.null;
-      if (!configAccount) return;
-      const configData = parseConfigData(configAccount.data);
+        if (!configAccount) return;
+        const configData = parseConfigData(configAccount.data);
 
         // Custom values
         expect(configData.minBet.toString()).to.equal("10000000"); // 0.01 SOL
@@ -1489,8 +1495,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           const vaultAccount = svm.getAccount(limitedVaultPDA);
           const vaultBalance = vaultAccount!.lamports;
           expect(vaultAccount).to.not.be.null;
-      if (!vaultAccount) return;
-      const vaultData = parseHouseVaultData(vaultAccount.data);
+          if (!vaultAccount) return;
+          const vaultData = parseHouseVaultData(vaultAccount.data);
 
           expect(Number(vaultData.totalReserved)).to.be.at.most(
             Number(vaultBalance),
@@ -1589,8 +1595,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         // Parse and check bump
         const sessionAccount = svm.getAccount(sessionPDA);
         expect(sessionAccount).to.not.be.null;
-      if (!sessionAccount) return;
-      const sessionData = parseSessionData(sessionAccount.data);
+        if (!sessionAccount) return;
+        const sessionData = parseSessionData(sessionAccount.data);
 
         expect(sessionData.bump).to.equal(expectedBump);
       });
@@ -1700,9 +1706,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault
@@ -1907,9 +1914,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault
@@ -2096,9 +2104,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault
@@ -2244,9 +2253,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault with massive amount for large bets
@@ -2496,9 +2506,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault
@@ -2737,8 +2748,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
             // Reserved funds should be released
             const vaultAccount = svm.getAccount(houseVaultPDA);
             expect(vaultAccount).to.not.be.null;
-      if (!vaultAccount) return;
-      const vaultData = parseHouseVaultData(vaultAccount.data);
+            if (!vaultAccount) return;
+            const vaultData = parseHouseVaultData(vaultAccount.data);
             expect(vaultData.totalReserved.toString()).to.equal("0");
 
             // Session should be closed
@@ -2864,9 +2875,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault
@@ -3130,9 +3142,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault
@@ -3385,9 +3398,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault
@@ -3574,9 +3588,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault with enough for many sessions
@@ -3694,9 +3709,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultResult = svm.sendTransaction(vaultTx);
 
       if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
-
-        logTransactionFailure(vaultResult, "Vault initialization in beforeEach");
-
+        logTransactionFailure(
+          vaultResult,
+          "Vault initialization in beforeEach"
+        );
       }
 
       // Fund house vault
@@ -3813,13 +3829,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const result = svm.sendTransaction(tx2);
 
       if (result?.constructor?.name === "FailedTransactionMetadata") {
-
         logTransactionFailure(result, "Test transaction");
-
       }
 
       expect(result).to.not.be.null;
-      expect(result?.constructor?.name).to.not.equal("FailedTransactionMetadata");
+      expect(result?.constructor?.name).to.not.equal(
+        "FailedTransactionMetadata"
+      );
 
       // Verify reserved funds account for both sessions
       const vaultAccount = svm.getAccount(houseVaultPDA);

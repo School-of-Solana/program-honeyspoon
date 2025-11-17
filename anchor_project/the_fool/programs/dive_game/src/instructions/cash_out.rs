@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_lang::system_program;
 
 use crate::errors::GameError;
 use crate::events::SessionCashedOutEvent;
@@ -31,13 +32,25 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
         GameError::InsufficientVaultBalance
     );
 
-    // Transfer payout from house vault to user
-    **house_vault.to_account_info().try_borrow_mut_lamports()? -= session.current_treasure;
-    **ctx
-        .accounts
-        .user
-        .to_account_info()
-        .try_borrow_mut_lamports()? += session.current_treasure;
+    // Transfer payout from house vault to user using PDA signer
+    let house_authority_key = house_vault.house_authority;
+    let seeds = &[
+        HOUSE_VAULT_SEED.as_bytes(),
+        house_authority_key.as_ref(),
+        &[house_vault.bump],
+    ];
+    let signer_seeds = &[&seeds[..]];
+
+    let transfer_ix = system_program::Transfer {
+        from: house_vault.to_account_info(),
+        to: ctx.accounts.user.to_account_info(),
+    };
+    let cpi_ctx = CpiContext::new_with_signer(
+        ctx.accounts.system_program.to_account_info(),
+        transfer_ix,
+        signer_seeds,
+    );
+    system_program::transfer(cpi_ctx, session.current_treasure)?;
 
     // Release reserved funds using helper method
     house_vault.release(session.max_payout)?;
@@ -72,4 +85,6 @@ pub struct CashOut<'info> {
 
     #[account(mut)]
     pub house_vault: Account<'info, HouseVault>,
+
+    pub system_program: Program<'info, System>,
 }
