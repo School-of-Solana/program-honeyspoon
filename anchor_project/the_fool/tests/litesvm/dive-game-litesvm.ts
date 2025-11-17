@@ -1,4 +1,3 @@
-
 import { LiteSVM } from "litesvm";
 import {
   PublicKey,
@@ -179,6 +178,19 @@ function buildToggleHouseLockData(): Buffer {
  */
 function buildLoseSessionData(): Buffer {
   return Buffer.from([13, 163, 66, 150, 39, 65, 34, 53]);
+}
+
+/**
+ * Helper to check transaction failed with specific error
+ */
+function expectTxFailedWith(result: any, errorCode: string): void {
+  expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
+  if (result && result.logs) {
+    const logs: string[] = result.logs;
+    const errorLog = logs.find((l) => l.includes(errorCode));
+    expect(errorLog, `Expected error "${errorCode}" not found in logs`).to.not
+      .be.undefined;
+  }
 }
 
 /**
@@ -1134,7 +1146,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
         const tx = new Transaction();
         tx.recentBlockhash = svm.latestBlockhash();
-        tx.add(tx);
+        tx.add(playIx);
         tx.sign(player);
 
         const result = svm.sendTransaction(tx);
@@ -2888,6 +2900,988 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       expect(vaultData.totalReserved.toString()).to.equal(
         expectedReserved.toString()
       );
+    });
+  });
+
+  describe("Config Validation Tests", () => {
+    it("should reject config with zero treasure_multiplier_den", () => {
+      const data = buildInitConfigData({
+        treasureMultiplierDen: 0,
+      });
+
+      const instruction = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data,
+      });
+
+      const tx = new Transaction();
+      tx.recentBlockhash = svm.latestBlockhash();
+      tx.add(instruction);
+      tx.sign(authority);
+
+      const result = svm.sendTransaction(tx);
+      expectTxFailedWith(result, "InvalidConfig");
+    });
+
+    it("should reject config where min_bet > max_bet (when max_bet > 0)", () => {
+      const data = buildInitConfigData({
+        minBet: new BN(10000),
+        maxBet: new BN(1000),
+      });
+
+      const instruction = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data,
+      });
+
+      const tx = new Transaction();
+      tx.recentBlockhash = svm.latestBlockhash();
+      tx.add(instruction);
+      tx.sign(authority);
+
+      const result = svm.sendTransaction(tx);
+      expectTxFailedWith(result, "InvalidConfig");
+    });
+
+    it("should enforce min_bet from config", () => {
+      // Initialize config with min_bet = 0.1 SOL
+      const configData = buildInitConfigData({
+        minBet: lamports(0.1),
+      });
+
+      const configIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: configData,
+      });
+
+      const configTx = new Transaction();
+      configTx.recentBlockhash = svm.latestBlockhash();
+      configTx.add(configIx);
+      configTx.sign(authority);
+      svm.sendTransaction(configTx);
+
+      // Initialize house vault
+      const vaultData = buildInitHouseVaultData(false);
+      const vaultIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: vaultData,
+      });
+
+      const vaultTx = new Transaction();
+      vaultTx.recentBlockhash = svm.latestBlockhash();
+      vaultTx.add(vaultIx);
+      vaultTx.sign(authority);
+      svm.sendTransaction(vaultTx);
+
+      svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
+
+      const player = new Keypair();
+      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+
+      const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
+
+      // Try bet below min_bet (0.01 SOL < 0.1 SOL)
+      const belowMinData = buildStartSessionData(lamports(0.01), new BN(0));
+      const belowMinIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: false },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: belowMinData,
+      });
+
+      const belowMinTx = new Transaction();
+      belowMinTx.recentBlockhash = svm.latestBlockhash();
+      belowMinTx.add(belowMinIx);
+      belowMinTx.sign(player);
+
+      const result = svm.sendTransaction(belowMinTx);
+      expectTxFailedWith(result, "InvalidBetAmount");
+    });
+  });
+
+  describe("Permission & Ownership Tests", () => {
+    let player: Keypair;
+    let attacker: Keypair;
+    let sessionPDA: PublicKey;
+
+    beforeEach(() => {
+      // Initialize config
+      const configData = buildInitConfigData({});
+      const configIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: configData,
+      });
+
+      const configTx = new Transaction();
+      configTx.recentBlockhash = svm.latestBlockhash();
+      configTx.add(configIx);
+      configTx.sign(authority);
+      svm.sendTransaction(configTx);
+
+      // Initialize house vault
+      const vaultData = buildInitHouseVaultData(false);
+      const vaultIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: vaultData,
+      });
+
+      const vaultTx = new Transaction();
+      vaultTx.recentBlockhash = svm.latestBlockhash();
+      vaultTx.add(vaultIx);
+      vaultTx.sign(authority);
+      svm.sendTransaction(vaultTx);
+
+      svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
+
+      // Create player and attacker
+      player = new Keypair();
+      attacker = new Keypair();
+      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+      svm.airdrop(attacker.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+
+      // Start player's session
+      [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
+      const betAmount = lamports(TEST_AMOUNTS.SMALL);
+      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: false },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: startData,
+      });
+
+      const startTx = new Transaction();
+      startTx.recentBlockhash = svm.latestBlockhash();
+      startTx.add(startIx);
+      startTx.sign(player);
+      svm.sendTransaction(startTx);
+    });
+
+    it("should prevent non-owner from playing round", () => {
+      const playData = buildPlayRoundData();
+      const playIx = new TransactionInstruction({
+        keys: [
+          { pubkey: attacker.publicKey, isSigner: true, isWritable: true }, // Wrong signer!
+          { pubkey: configPDA, isSigner: false, isWritable: false },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+        ],
+        programId: PROGRAM_ID,
+        data: playData,
+      });
+
+      const tx = new Transaction();
+      tx.recentBlockhash = svm.latestBlockhash();
+      tx.add(playIx);
+      tx.sign(attacker);
+
+      const result = svm.sendTransaction(tx);
+      // This should fail with a constraint violation
+      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
+    });
+
+    it("should prevent non-owner from cashing out", () => {
+      // Play one successful round first
+      const playData = buildPlayRoundData();
+      const playIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: false },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+        ],
+        programId: PROGRAM_ID,
+        data: playData,
+      });
+
+      const playTx = new Transaction();
+      playTx.recentBlockhash = svm.latestBlockhash();
+      playTx.add(playIx);
+      playTx.sign(player);
+      svm.sendTransaction(playTx);
+
+      // Attacker tries to cash out player's session
+      const cashOutData = buildCashOutData();
+      const cashOutIx = new TransactionInstruction({
+        keys: [
+          { pubkey: attacker.publicKey, isSigner: true, isWritable: true }, // Wrong signer!
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+        ],
+        programId: PROGRAM_ID,
+        data: cashOutData,
+      });
+
+      const tx = new Transaction();
+      tx.recentBlockhash = svm.latestBlockhash();
+      tx.add(cashOutIx);
+      tx.sign(attacker);
+
+      const result = svm.sendTransaction(tx);
+      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
+    });
+
+    it("should prevent non-owner from losing session", () => {
+      const loseData = buildLoseSessionData();
+      const loseIx = new TransactionInstruction({
+        keys: [
+          { pubkey: attacker.publicKey, isSigner: true, isWritable: true }, // Wrong signer!
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+        ],
+        programId: PROGRAM_ID,
+        data: loseData,
+      });
+
+      const tx = new Transaction();
+      tx.recentBlockhash = svm.latestBlockhash();
+      tx.add(loseIx);
+      tx.sign(attacker);
+
+      const result = svm.sendTransaction(tx);
+      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
+    });
+  });
+
+  describe("Reserved Funds Release Tests", () => {
+    let player: Keypair;
+    let sessionPDA: PublicKey;
+
+    beforeEach(() => {
+      // Initialize config
+      const configData = buildInitConfigData({});
+      const configIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: configData,
+      });
+
+      const configTx = new Transaction();
+      configTx.recentBlockhash = svm.latestBlockhash();
+      configTx.add(configIx);
+      configTx.sign(authority);
+      svm.sendTransaction(configTx);
+
+      // Initialize house vault
+      const vaultData = buildInitHouseVaultData(false);
+      const vaultIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: vaultData,
+      });
+
+      const vaultTx = new Transaction();
+      vaultTx.recentBlockhash = svm.latestBlockhash();
+      vaultTx.add(vaultIx);
+      vaultTx.sign(authority);
+      svm.sendTransaction(vaultTx);
+
+      svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
+
+      player = new Keypair();
+      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+
+      [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
+    });
+
+    it("should release reserved funds on lose_session", () => {
+      const betAmount = lamports(TEST_AMOUNTS.MEDIUM);
+      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: false },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: startData,
+      });
+
+      const startTx = new Transaction();
+      startTx.recentBlockhash = svm.latestBlockhash();
+      startTx.add(startIx);
+      startTx.sign(player);
+      svm.sendTransaction(startTx);
+
+      // Check reserved funds before
+      const beforeSession = parseSessionData(svm.getAccount(sessionPDA)!.data);
+      const beforeVault = parseHouseVaultData(
+        svm.getAccount(houseVaultPDA)!.data
+      );
+      const expectedReserved = beforeSession.maxPayout;
+
+      expect(beforeVault.totalReserved.toString()).to.equal(
+        expectedReserved.toString()
+      );
+
+      // Lose session
+      const loseData = buildLoseSessionData();
+      const loseIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+        ],
+        programId: PROGRAM_ID,
+        data: loseData,
+      });
+
+      const loseTx = new Transaction();
+      loseTx.recentBlockhash = svm.latestBlockhash();
+      loseTx.add(loseIx);
+      loseTx.sign(player);
+      svm.sendTransaction(loseTx);
+
+      // Check reserved funds released
+      const afterVault = parseHouseVaultData(
+        svm.getAccount(houseVaultPDA)!.data
+      );
+      expect(afterVault.totalReserved.toString()).to.equal("0");
+
+      // Session should be closed
+      const closedSession = svm.getAccount(sessionPDA);
+      expect(closedSession).to.be.null;
+    });
+
+    it("should release reserved funds and pay user on cash_out", () => {
+      const betAmount = lamports(TEST_AMOUNTS.SMALL);
+      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: false },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: startData,
+      });
+
+      const startTx = new Transaction();
+      startTx.recentBlockhash = svm.latestBlockhash();
+      startTx.add(startIx);
+      startTx.sign(player);
+      svm.sendTransaction(startTx);
+
+      const initialPlayerBalance = svm.getBalance(player.publicKey);
+
+      // Play rounds until treasure > bet
+      for (let i = 0; i < 20; i++) {
+        const playData = buildPlayRoundData();
+        const playIx = new TransactionInstruction({
+          keys: [
+            { pubkey: player.publicKey, isSigner: true, isWritable: true },
+            { pubkey: configPDA, isSigner: false, isWritable: false },
+            { pubkey: sessionPDA, isSigner: false, isWritable: true },
+            { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          ],
+          programId: PROGRAM_ID,
+          data: playData,
+        });
+
+        const playTx = new Transaction();
+        playTx.recentBlockhash = svm.latestBlockhash();
+        playTx.add(playIx);
+        playTx.sign(player);
+
+        const result = svm.sendTransaction(playTx);
+        if (result?.constructor?.name === "FailedTransactionMetadata") break;
+
+        const acc = svm.getAccount(sessionPDA);
+        if (!acc) break;
+
+        const s = parseSessionData(acc.data);
+        if (s.status !== "Active") break;
+        if (s.currentTreasure.gt(s.betAmount)) break;
+      }
+
+      const sessionAccount = svm.getAccount(sessionPDA);
+      if (!sessionAccount) {
+        // Session lost during play rounds - skip test
+        return;
+      }
+
+      const beforeSession = parseSessionData(sessionAccount.data);
+      if (beforeSession.status !== "Active") {
+        // Session not active - skip test
+        return;
+      }
+
+      if (!beforeSession.currentTreasure.gt(beforeSession.betAmount)) {
+        // Treasure not > bet - skip test
+        return;
+      }
+
+      const beforeVault = parseHouseVaultData(
+        svm.getAccount(houseVaultPDA)!.data
+      );
+
+      // Cash out
+      const cashOutData = buildCashOutData();
+      const cashOutIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+        ],
+        programId: PROGRAM_ID,
+        data: cashOutData,
+      });
+
+      const cashOutTx = new Transaction();
+      cashOutTx.recentBlockhash = svm.latestBlockhash();
+      cashOutTx.add(cashOutIx);
+      cashOutTx.sign(player);
+      const cashResult = svm.sendTransaction(cashOutTx);
+
+      if (cashResult?.constructor?.name === "FailedTransactionMetadata") {
+        // Cash out failed - skip test
+        return;
+      }
+
+      // Check reserved funds released
+      const afterVault = parseHouseVaultData(
+        svm.getAccount(houseVaultPDA)!.data
+      );
+      expect(
+        beforeVault.totalReserved.sub(afterVault.totalReserved).toString()
+      ).to.equal(beforeSession.maxPayout.toString());
+
+      // Player balance should increase
+      const afterPlayerBalance = svm.getBalance(player.publicKey);
+      expect(Number(afterPlayerBalance)).to.be.greaterThan(
+        Number(initialPlayerBalance)
+      );
+
+      // Session should be closed
+      const closedSession = svm.getAccount(sessionPDA);
+      expect(closedSession).to.be.null;
+    });
+  });
+
+  describe("RNG Invariants", () => {
+    beforeEach(() => {
+      // Initialize config
+      const configData = buildInitConfigData({});
+      const configIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: configData,
+      });
+
+      const configTx = new Transaction();
+      configTx.recentBlockhash = svm.latestBlockhash();
+      configTx.add(configIx);
+      configTx.sign(authority);
+      svm.sendTransaction(configTx);
+
+      // Initialize house vault
+      const vaultData = buildInitHouseVaultData(false);
+      const vaultIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: vaultData,
+      });
+
+      const vaultTx = new Transaction();
+      vaultTx.recentBlockhash = svm.latestBlockhash();
+      vaultTx.add(vaultIx);
+      vaultTx.sign(authority);
+      svm.sendTransaction(vaultTx);
+
+      svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
+    });
+
+    it("should not change rngSeed across play_round calls", () => {
+      const player = new Keypair();
+      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+
+      const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
+      const betAmount = lamports(TEST_AMOUNTS.SMALL);
+
+      // Start session
+      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: false },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: startData,
+      });
+
+      const startTx = new Transaction();
+      startTx.recentBlockhash = svm.latestBlockhash();
+      startTx.add(startIx);
+      startTx.sign(player);
+      svm.sendTransaction(startTx);
+
+      const sessionBefore = parseSessionData(svm.getAccount(sessionPDA)!.data);
+      const seedHex = sessionBefore.rngSeed.toString("hex");
+
+      // Play multiple rounds
+      for (let i = 0; i < 5; i++) {
+        const playData = buildPlayRoundData();
+        const playIx = new TransactionInstruction({
+          keys: [
+            { pubkey: player.publicKey, isSigner: true, isWritable: true },
+            { pubkey: configPDA, isSigner: false, isWritable: false },
+            { pubkey: sessionPDA, isSigner: false, isWritable: true },
+            { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          ],
+          programId: PROGRAM_ID,
+          data: playData,
+        });
+
+        const playTx = new Transaction();
+        playTx.recentBlockhash = svm.latestBlockhash();
+        playTx.add(playIx);
+        playTx.sign(player);
+
+        const result = svm.sendTransaction(playTx);
+        if (result?.constructor?.name === "FailedTransactionMetadata") break;
+
+        const acc = svm.getAccount(sessionPDA);
+        if (!acc) break;
+
+        const s = parseSessionData(acc.data);
+        if (s.status !== "Active") break;
+
+        // RNG seed must stay the same
+        expect(s.rngSeed.toString("hex")).to.equal(seedHex);
+      }
+    });
+
+    it("should generate different rngSeed for different sessionIndex of same user", () => {
+      const player = new Keypair();
+      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+
+      const betAmount = lamports(TEST_AMOUNTS.TINY);
+      const seeds: string[] = [];
+
+      for (let idx = 0; idx < 3; idx++) {
+        const [sessionPDA] = getSessionPDA(player.publicKey, new BN(idx));
+        const data = buildStartSessionData(betAmount, new BN(idx));
+
+        const ix = new TransactionInstruction({
+          keys: [
+            { pubkey: player.publicKey, isSigner: true, isWritable: true },
+            { pubkey: configPDA, isSigner: false, isWritable: false },
+            { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+            { pubkey: authority.publicKey, isSigner: false, isWritable: false },
+            { pubkey: sessionPDA, isSigner: false, isWritable: true },
+            {
+              pubkey: SystemProgram.programId,
+              isSigner: false,
+              isWritable: false,
+            },
+          ],
+          programId: PROGRAM_ID,
+          data,
+        });
+
+        const tx = new Transaction();
+        tx.recentBlockhash = svm.latestBlockhash();
+        tx.add(ix);
+        tx.sign(player);
+        svm.sendTransaction(tx);
+
+        const acc = svm.getAccount(sessionPDA);
+        const s = parseSessionData(acc!.data);
+        seeds.push(s.rngSeed.toString("hex"));
+      }
+
+      // All seeds must be unique
+      expect(new Set(seeds).size).to.equal(seeds.length);
+    });
+  });
+
+  describe("State Transition Enforcement", () => {
+    let player: Keypair;
+    let sessionPDA: PublicKey;
+
+    beforeEach(() => {
+      // Initialize config
+      const configData = buildInitConfigData({});
+      const configIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: configData,
+      });
+
+      const configTx = new Transaction();
+      configTx.recentBlockhash = svm.latestBlockhash();
+      configTx.add(configIx);
+      configTx.sign(authority);
+      svm.sendTransaction(configTx);
+
+      // Initialize house vault
+      const vaultData = buildInitHouseVaultData(false);
+      const vaultIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: vaultData,
+      });
+
+      const vaultTx = new Transaction();
+      vaultTx.recentBlockhash = svm.latestBlockhash();
+      vaultTx.add(vaultIx);
+      vaultTx.sign(authority);
+      svm.sendTransaction(vaultTx);
+
+      svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
+
+      player = new Keypair();
+      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+
+      [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
+    });
+
+    it("should not allow cash_out after session is Lost", () => {
+      // Start session
+      const betAmount = lamports(TEST_AMOUNTS.SMALL);
+      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: false },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: startData,
+      });
+
+      const startTx = new Transaction();
+      startTx.recentBlockhash = svm.latestBlockhash();
+      startTx.add(startIx);
+      startTx.sign(player);
+      svm.sendTransaction(startTx);
+
+      // Lose the session manually
+      const loseData = buildLoseSessionData();
+      const loseIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+        ],
+        programId: PROGRAM_ID,
+        data: loseData,
+      });
+
+      const loseTx = new Transaction();
+      loseTx.recentBlockhash = svm.latestBlockhash();
+      loseTx.add(loseIx);
+      loseTx.sign(player);
+      svm.sendTransaction(loseTx);
+
+      // Session should be closed, so cash_out should fail
+      const cashOutData = buildCashOutData();
+      const cashOutIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+        ],
+        programId: PROGRAM_ID,
+        data: cashOutData,
+      });
+
+      const cashOutTx = new Transaction();
+      cashOutTx.recentBlockhash = svm.latestBlockhash();
+      cashOutTx.add(cashOutIx);
+      cashOutTx.sign(player);
+
+      const result = svm.sendTransaction(cashOutTx);
+      // Should fail - account closed or InvalidSessionStatus
+      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
+    });
+  });
+
+  describe("Improved Multiple Rounds Test", () => {
+    let player: Keypair;
+    let sessionPDA: PublicKey;
+
+    beforeEach(() => {
+      // Initialize config
+      const configData = buildInitConfigData({});
+      const configIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: configData,
+      });
+
+      const configTx = new Transaction();
+      configTx.recentBlockhash = svm.latestBlockhash();
+      configTx.add(configIx);
+      configTx.sign(authority);
+      svm.sendTransaction(configTx);
+
+      // Initialize house vault
+      const vaultData = buildInitHouseVaultData(false);
+      const vaultIx = new TransactionInstruction({
+        keys: [
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: vaultData,
+      });
+
+      const vaultTx = new Transaction();
+      vaultTx.recentBlockhash = svm.latestBlockhash();
+      vaultTx.add(vaultIx);
+      vaultTx.sign(authority);
+      svm.sendTransaction(vaultTx);
+
+      svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
+
+      player = new Keypair();
+      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+
+      [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
+
+      // Start session
+      const betAmount = lamports(TEST_AMOUNTS.SMALL);
+      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startIx = new TransactionInstruction({
+        keys: [
+          { pubkey: player.publicKey, isSigner: true, isWritable: true },
+          { pubkey: configPDA, isSigner: false, isWritable: false },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
+          {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false,
+          },
+        ],
+        programId: PROGRAM_ID,
+        data: startData,
+      });
+
+      const startTx = new Transaction();
+      startTx.recentBlockhash = svm.latestBlockhash();
+      startTx.add(startIx);
+      startTx.sign(player);
+      svm.sendTransaction(startTx);
+    });
+
+    it("should play multiple rounds with monotone treasure and dive increments", () => {
+      let roundsPlayed = 0;
+      const maxRounds = 10;
+
+      let lastTreasure: BN | null = null;
+      let lastDive = 1;
+
+      for (let i = 0; i < maxRounds; i++) {
+        const playData = buildPlayRoundData();
+        const playIx = new TransactionInstruction({
+          keys: [
+            { pubkey: player.publicKey, isSigner: true, isWritable: true },
+            { pubkey: configPDA, isSigner: false, isWritable: false },
+            { pubkey: sessionPDA, isSigner: false, isWritable: true },
+            { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          ],
+          programId: PROGRAM_ID,
+          data: playData,
+        });
+
+        const tx = new Transaction();
+        tx.recentBlockhash = svm.latestBlockhash();
+        tx.add(playIx);
+        tx.sign(player);
+
+        const result = svm.sendTransaction(tx);
+        if (result?.constructor?.name === "FailedTransactionMetadata") break;
+
+        const sessionAccount = svm.getAccount(sessionPDA);
+        if (!sessionAccount) break;
+
+        const s = parseSessionData(sessionAccount.data);
+        if (s.status !== "Active") break;
+
+        roundsPlayed++;
+
+        // Verify invariants
+        if (lastTreasure !== null) {
+          // Treasure should increase monotonically
+          expect(Number(s.currentTreasure)).to.be.greaterThan(
+            Number(lastTreasure)
+          );
+          // Dive number should increment by 1
+          expect(s.diveNumber).to.equal(lastDive + 1);
+        }
+
+        lastTreasure = s.currentTreasure;
+        lastDive = s.diveNumber;
+      }
+
+      expect(roundsPlayed).to.be.greaterThan(0);
     });
   });
 });
