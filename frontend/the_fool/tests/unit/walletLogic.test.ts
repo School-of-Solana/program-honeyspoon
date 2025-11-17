@@ -64,6 +64,7 @@ function createMockGameSession(
     currentTreasure,
     diveNumber,
     isActive: true,
+    status: "ACTIVE" as const,
     reservedPayout: calculateMaxPotentialPayout(initialBet),
     startTime: Date.now(),
   };
@@ -264,7 +265,8 @@ describe("Wallet Logic - validateBet", () => {
 
   it("should validate edge case: minimum bet", () => {
     const user = createMockUserWallet(1000);
-    const house = createMockHouseWallet(50000);
+    // Use larger house balance (500k like in production) to cover max potential payout
+    const house = createMockHouseWallet(500000);
 
     const validation = validateBet(DEFAULT_LIMITS.minBet, user, house);
 

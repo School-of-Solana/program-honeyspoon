@@ -442,7 +442,7 @@ describe("Wallet Store - Game Sessions", () => {
       currentTreasure: 50,
       diveNumber: 1,
       isActive: false,
-      status: SessionStatus.CashedOut,
+      status: "CASHED_OUT" as const,
       reservedPayout: 2500,
       startTime: Date.now(),
     };
