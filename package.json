@@ -1,0 +1,47 @@
+{
+  "name": "deep-sea-diver",
+  "version": "1.0.0",
+  "description": "Deep Sea Diver game on Solana blockchain",
+  "private": true,
+  "scripts": {
+    "dev": "./start-dev.sh",
+    "dev:local": "./start-dev.sh --local",
+    "dev:clean": "./start-dev.sh --clean",
+    "setup": "./setup-localnet.sh",
+    "setup:quick": "./setup-localnet.sh --quick",
+    "dev:full": "./dev-full.sh",
+    "dev:frontend": "cd frontend/the_fool && npm run dev",
+    "dev:validator": "cd anchor_project/the_fool && npm run localnet",
+    "build:contract": "cd anchor_project/the_fool && anchor build",
+    "deploy:localnet": "cd anchor_project/the_fool && anchor deploy",
+    "init:localnet": "cd anchor_project/the_fool && npm run init-localnet",
+    "test:chain": "cd frontend/the_fool && npm run test:chain",
+    "test:contract": "cd anchor_project/the_fool && npm test",
+    "test:frontend": "cd frontend/the_fool && npm test",
+    "logs": "solana logs --url localhost",
+    "airdrop": "solana airdrop 10 --url localhost",
+    "balance": "solana balance --url localhost",
+    "clean": "pkill -9 solana-test-validator; rm -rf test-ledger; cd anchor_project/the_fool && npm run clean"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/deep-sea-diver"
+  },
+  "keywords": [
+    "solana",
+    "blockchain",
+    "game",
+    "anchor",
+    "nextjs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "workspaces": [
+    "frontend/the_fool",
+    "anchor_project/the_fool"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

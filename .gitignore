@@ -1,2 +1,4 @@
 .DS_Store
 repomix-output.xml
+test-ledger
+node_modules
