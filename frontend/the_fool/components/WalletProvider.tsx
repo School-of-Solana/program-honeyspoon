@@ -9,11 +9,12 @@ import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { 
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  BackpackWalletAdapter,
   TrustWalletAdapter,
   CoinbaseWalletAdapter,
   LedgerWalletAdapter,
   TorusWalletAdapter,
+  Coin98WalletAdapter,
+  NightlyWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 
@@ -36,9 +37,10 @@ interface WalletProviderProps {
  * Supported Wallets:
  * - Phantom (most popular)
  * - Solflare
- * - Backpack
  * - Trust Wallet
  * - Coinbase Wallet
+ * - Coin98
+ * - Nightly
  * - Ledger
  * - Torus
  * 
@@ -75,9 +77,10 @@ export function WalletProvider({ children }: WalletProviderProps) {
       // Most popular wallets first
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-      new BackpackWalletAdapter(),
       new TrustWalletAdapter(),
       new CoinbaseWalletAdapter(),
+      new Coin98WalletAdapter(),
+      new NightlyWalletAdapter(),
       new LedgerWalletAdapter(),
       new TorusWalletAdapter({
         params: {
