@@ -120,10 +120,14 @@ describe("Wallet Store - House Wallet", () => {
     resetWalletStore();
   });
 
-  it("should initialize house wallet with $50,000", () => {
+  it("should initialize house wallet with $500,000", () => {
     const house = getHouseWallet();
 
-    assert.strictEqual(house.balance, 50000, "Starting balance should be $500k");
+    assert.strictEqual(
+      house.balance,
+      500000,
+      "Starting balance should be $500k"
+    );
     assert.strictEqual(house.reservedFunds, 0, "Reserved funds should be 0");
     assert.strictEqual(house.totalPaidOut, 0, "Total paid out should be 0");
     assert.strictEqual(house.totalReceived, 0, "Total received should be 0");
@@ -438,6 +442,7 @@ describe("Wallet Store - Game Sessions", () => {
       currentTreasure: 50,
       diveNumber: 1,
       isActive: false,
+      status: SessionStatus.CashedOut,
       reservedPayout: 2500,
       startTime: Date.now(),
     };
@@ -483,7 +488,7 @@ describe("Wallet Store - Game Sessions", () => {
         currentTreasure: 100,
         diveNumber: 1,
         isActive: true,
-      status: "ACTIVE" as const,
+        status: "ACTIVE" as const,
         reservedPayout: 5000,
         startTime: Date.now(),
       });
