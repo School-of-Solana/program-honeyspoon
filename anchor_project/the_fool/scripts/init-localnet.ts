@@ -101,8 +101,8 @@ async function main() {
         serializeOption(null, 2), // treasureMultiplierDen: use default (10)
         serializeOption(null, 2), // maxPayoutMultiplier: use default (100)
         serializeOption(null, 2), // maxDives: use default (50)
-        serializeOption(null, 8), // minBet: use default (10_000_000 = 0.01 SOL)
-        serializeOption(null, 8), // maxBet: use default (500_000_000 = 0.5 SOL)
+        serializeOption(100_000_000, 8), // minBet: 100_000_000 lamports = 0.1 SOL
+        serializeOption(10_000_000_000, 8), // maxBet: 10_000_000_000 lamports = 10 SOL
       ]);
 
       const instruction = new TransactionInstruction({
