@@ -59,7 +59,11 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
     // This avoids the "from must not carry data" error from Anchor's close constraint
     let session_lamports = session.to_account_info().lamports();
     **session.to_account_info().try_borrow_mut_lamports()? = 0;
-    **ctx.accounts.user.to_account_info().try_borrow_mut_lamports()? += session_lamports;
+    **ctx
+        .accounts
+        .user
+        .to_account_info()
+        .try_borrow_mut_lamports()? += session_lamports;
 
     Ok(())
 }

@@ -15,7 +15,7 @@ import BN from "bn.js";
 
 
 export const PROGRAM_ID = new PublicKey(
-  "7f56Kmapmckgg8avSnqJvCUjtfDKVovENtzfvhSTEQ6h"
+  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
 );
 
 export const HOUSE_VAULT_SEED = "house_vault";
@@ -170,7 +170,9 @@ export function buildStartSessionData(betAmount: BN, sessionIndex: BN): Buffer {
 }
 
 export function buildPlayRoundData(): Buffer {
-  return Buffer.from([62, 241, 0, 151, 88, 72, 219, 217]);
+  // Simple on-chain RNG - no parameters needed
+  const discriminator = Buffer.from([38, 35, 89, 4, 59, 139, 225, 250]);
+  return discriminator;
 }
 
 export function buildCashOutData(): Buffer {
@@ -186,6 +188,12 @@ export function buildToggleHouseLockData(): Buffer {
 }
 export function buildCleanExpiredSessionData(): Buffer {
   return Buffer.from([205, 213, 13, 151, 46, 192, 217, 158]);
+}
+
+export function buildWithdrawHouseData(amount: BN): Buffer {
+  const discriminator = Buffer.from([226, 236, 222, 156, 198, 230, 70, 147]);
+  const amountBytes = amount.toArrayLike(Buffer, "le", 8);
+  return Buffer.concat([discriminator, amountBytes]);
 }
 
 
@@ -259,7 +267,6 @@ export function createPlayRoundInstruction(
       { pubkey: configPDA, isSigner: false, isWritable: false },
       { pubkey: sessionPDA, isSigner: false, isWritable: true },
       { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-      { pubkey: SYSVAR_SLOT_HASHES_PUBKEY, isSigner: false, isWritable: false },
     ],
     programId: PROGRAM_ID,
     data: buildPlayRoundData(),
@@ -303,6 +310,21 @@ export function createLoseSessionInstruction(
   });
 }
 
+export function createWithdrawHouseInstruction(
+  houseAuthority: PublicKey,
+  houseVaultPDA: PublicKey,
+  amount: BN
+): TransactionInstruction {
+  return new TransactionInstruction({
+    keys: [
+      { pubkey: houseAuthority, isSigner: true, isWritable: true },
+      { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+    ],
+    programId: PROGRAM_ID,
+    data: buildWithdrawHouseData(amount),
+  });
+}
+
 
 
 
@@ -316,10 +338,11 @@ export interface ParsedSessionData {
   maxPayout: BN;
   diveNumber: number;
   bump: number;
-  rngSeed: Buffer;
+  lastActiveSlot: BN;
 }
 
-export function parseSessionData(data: Buffer): ParsedSessionData {
+export function parseSessionData(dataInput: Buffer | Uint8Array): ParsedSessionData {
+  const data = Buffer.from(dataInput);
   let offset = 8; 
 
   const user = new PublicKey(data.subarray(offset, offset + 32));
@@ -348,7 +371,8 @@ export function parseSessionData(data: Buffer): ParsedSessionData {
   const bump = data.readUInt8(offset);
   offset += 1;
 
-  const rngSeed = data.subarray(offset, offset + 32);
+  const lastActiveSlot = new BN(data.subarray(offset, offset + 8), "le");
+  offset += 8;
 
   return {
     user,
@@ -359,33 +383,39 @@ export function parseSessionData(data: Buffer): ParsedSessionData {
     maxPayout,
     diveNumber,
     bump,
-    rngSeed,
+    lastActiveSlot,
   };
 }
 
 export interface ParsedHouseVaultData {
   authority: PublicKey;
+  gameKeeper: PublicKey;  // New field
   totalReserved: BN;
   isLocked: boolean;
   bump: number;
 }
 
-export function parseHouseVaultData(data: Buffer): ParsedHouseVaultData {
+export function parseHouseVaultData(dataInput: Buffer | Uint8Array): ParsedHouseVaultData {
+  const data = Buffer.from(dataInput);
   let offset = 8; 
 
   const authority = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
 
-  const totalReserved = new BN(data.subarray(offset, offset + 8), "le");
-  offset += 8;
+  const gameKeeper = new PublicKey(data.subarray(offset, offset + 32));  // Parse game_keeper
+  offset += 32;
 
   const isLocked = data.readUInt8(offset) === 1;
   offset += 1;
+
+  const totalReserved = new BN(data.subarray(offset, offset + 8), "le");
+  offset += 8;
 
   const bump = data.readUInt8(offset);
 
   return {
     authority,
+    gameKeeper,
     totalReserved,
     isLocked,
     bump,
@@ -406,7 +436,8 @@ export interface ParsedConfigData {
   bump: number;
 }
 
-export function parseConfigData(data: Buffer): ParsedConfigData {
+export function parseConfigData(dataInput: Buffer | Uint8Array): ParsedConfigData {
+  const data = Buffer.from(dataInput);
   let offset = 8; 
 
   const admin = new PublicKey(data.subarray(offset, offset + 32));
@@ -809,13 +840,14 @@ export function playRound(
   player: Keypair,
   sessionIndex: BN = new BN(0)
 ): any {
-  const { svm, configPDA } = ctx;
+  const { svm, configPDA, houseVaultPDA } = ctx;
   const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
 
   const playIx = createPlayRoundInstruction(
     player.publicKey,
     sessionPDA,
-    configPDA
+    configPDA,
+    houseVaultPDA
   );
 
   return buildAndSendTx({

@@ -24,8 +24,8 @@ pub mod dive_game {
     ) -> Result<()> {
         instructions::start_session(ctx, bet_amount, session_index)
     }
-    pub fn play_round(ctx: Context<PlayRound>, server_seed: u64) -> Result<()> {
-        instructions::play_round(ctx, server_seed)
+    pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
+        instructions::play_round(ctx)
     }
     pub fn lose_session(ctx: Context<LoseSession>) -> Result<()> {
         instructions::lose_session(ctx)

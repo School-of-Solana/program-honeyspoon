@@ -3,11 +3,13 @@ use crate::events::{RoundPlayedEvent, SessionLostEvent};
 use crate::game_math;
 use crate::states::*;
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::hash::hash;
+use solana_program::hash::hash;
 
-/// Server Authoritative RNG: server_seed is generated off-chain by the backend
-/// The game_keeper (hot wallet) signs the transaction, proving authenticity
-pub fn play_round(ctx: Context<PlayRound>, server_seed: u64) -> Result<()> {
+/// Simple On-Chain RNG
+/// Uses slot + timestamp + session data for randomness
+/// ⚠️ Note: This is predictable and suitable only for homework/demo purposes
+/// For production, use SlotHashes sysvar or Switchboard VRF
+pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
     let config = &ctx.accounts.config;
     let session = &mut ctx.accounts.session;
     let house_vault = &mut ctx.accounts.house_vault;
@@ -27,17 +29,14 @@ pub fn play_round(ctx: Context<PlayRound>, server_seed: u64) -> Result<()> {
         GameError::MaxDivesReached
     );
 
-    // --- SERVER AUTHORITATIVE RNG ---
-    // Combine server entropy (server_seed) + chain entropy (slot/timestamp)
-    // + context (session key, dive number)
-    // This is secure because:
-    // 1. User cannot forge the game_keeper's signature
-    // 2. User cannot predict what server_seed the keeper will provide
-    // 3. Even if the server is malicious, they can only withhold winning txs (reputation risk)
+    // --- SIMPLE ON-CHAIN RNG ---
+    // Combine various on-chain data for pseudo-randomness
+    // This is deterministic but unpredictable enough for homework/demo
     let raw_entropy = [
-        server_seed.to_le_bytes().as_ref(),
         clock.slot.to_le_bytes().as_ref(),
+        clock.unix_timestamp.to_le_bytes().as_ref(),
         session.key().to_bytes().as_ref(),
+        session.user.to_bytes().as_ref(),
         session.dive_number.to_le_bytes().as_ref(),
     ]
     .concat();
@@ -102,11 +101,6 @@ pub fn play_round(ctx: Context<PlayRound>, server_seed: u64) -> Result<()> {
 pub struct PlayRound<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
-
-    /// The game keeper (server hot wallet) MUST sign this transaction
-    /// This proves the 'server_seed' is authentic and prevents user simulation
-    #[account(address = house_vault.game_keeper)]
-    pub game_keeper: Signer<'info>,
 
     #[account(
         seeds = [GAME_CONFIG_SEED.as_bytes()],

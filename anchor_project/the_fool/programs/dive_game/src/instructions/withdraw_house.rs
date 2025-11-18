@@ -15,9 +15,7 @@ pub fn withdraw_house(ctx: Context<WithdrawHouse>, amount: u64) -> Result<()> {
     // Rent exempt minimum for HouseVault (approx 1.4 SOL for safety)
     let rent_exempt = 1_398_960;
     let required = house_vault
-        .total_reserved
-        .checked_add(rent_exempt)
-        .unwrap_or(u64::MAX);
+        .total_reserved.saturating_add(rent_exempt);
 
     let available = current_balance.saturating_sub(required);
 
@@ -28,7 +26,10 @@ pub fn withdraw_house(ctx: Context<WithdrawHouse>, amount: u64) -> Result<()> {
     **ctx.accounts.house_authority.try_borrow_mut_lamports()? += amount;
 
     msg!("House withdrawal: {} lamports", amount);
-    msg!("Vault balance after withdrawal: {}", vault_account.lamports());
+    msg!(
+        "Vault balance after withdrawal: {}",
+        vault_account.lamports()
+    );
     msg!("Reserved funds: {}", house_vault.total_reserved);
 
     Ok(())
