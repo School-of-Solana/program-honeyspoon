@@ -1027,14 +1027,15 @@ export default function Home() {
                         })
                       }
                     >
-                      {gameState.walletBalance || 0} SOL
+                      {(gameState.walletBalance || 0).toFixed(3)} SOL
                     </span>
                     <button
                       className="nes-btn is-primary"
                       style={{
-                        padding: "2px 8px",
-                        fontSize: "10px",
-                        minHeight: "24px",
+                        padding: "4px 10px",
+                        fontSize: "16px",
+                        minHeight: "28px",
+                        lineHeight: "1",
                       }}
                       onClick={async () => {
                         console.log("[UI] 🔄 Manual balance refresh requested");
