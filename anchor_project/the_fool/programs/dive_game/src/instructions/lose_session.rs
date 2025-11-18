@@ -1,17 +1,13 @@
 use anchor_lang::prelude::*;
-use crate::errors::GameError;
 use crate::events::SessionLostEvent;
 use crate::states::*;
 pub fn lose_session(ctx: Context<LoseSession>) -> Result<()> {
     let session = &mut ctx.accounts.session;
     let house_vault = &mut ctx.accounts.house_vault;
     let clock = Clock::get()?;
-    require!(
-        session.status == SessionStatus::Active,
-        GameError::InvalidSessionStatus
-    );
+    session.ensure_active()?;
     house_vault.release(session.max_payout)?;
-    session.status = SessionStatus::Lost;
+    session.mark_lost()?;
     emit!(SessionLostEvent {
         session: session.key(),
         user: session.user,

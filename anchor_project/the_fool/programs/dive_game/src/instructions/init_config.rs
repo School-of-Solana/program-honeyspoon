@@ -26,36 +26,9 @@ pub fn init_config(ctx: Context<InitializeConfig>, params: GameConfigParams) -> 
     config.min_bet = params.min_bet.unwrap_or(defaults.7);
     config.max_bet = params.max_bet.unwrap_or(defaults.8);
     config.bump = ctx.bumps.config;
-    require!(
-        config.treasure_multiplier_den > 0,
-        crate::errors::GameError::InvalidConfig
-    );
-    require!(
-        config.treasure_multiplier_num > 0,
-        crate::errors::GameError::InvalidConfig
-    );
-    require!(
-        config.max_payout_multiplier > 0,
-        crate::errors::GameError::InvalidConfig
-    );
-    require!(
-        config.base_survival_ppm <= 1_000_000,
-        crate::errors::GameError::InvalidConfig
-    );
-    require!(
-        config.min_survival_ppm <= config.base_survival_ppm,
-        crate::errors::GameError::InvalidConfig
-    );
-    require!(
-        config.max_dives > 0,
-        crate::errors::GameError::InvalidConfig
-    );
-    if config.max_bet > 0 {
-        require!(
-            config.min_bet <= config.max_bet,
-            crate::errors::GameError::InvalidConfig
-        );
-    }
+    
+    // Validate all config parameters using centralized validation
+    config.validate()?;
     msg!("Game config initialized:");
     msg!(
         "  Base survival: {}ppm ({}%)",
@@ -112,8 +85,6 @@ mod tests {
     }
     #[test]
     fn test_config_validation_zero_denominator() {
-        let mut params = default_params();
-        params.treasure_multiplier_den = Some(0);
         let config = GameConfig {
             admin: Pubkey::default(),
             base_survival_ppm: 990_000,
@@ -127,14 +98,7 @@ mod tests {
             max_bet: 0,
             bump: 0,
         };
-        let result = (|| {
-            require!(
-                config.treasure_multiplier_den > 0,
-                crate::errors::GameError::InvalidConfig
-            );
-            Ok::<(), Error>(())
-        })();
-        assert!(result.is_err());
+        assert!(config.validate().is_err());
     }
     #[test]
     fn test_config_validation_inverted_probabilities() {
@@ -151,14 +115,7 @@ mod tests {
             max_bet: 0,
             bump: 0,
         };
-        let result = (|| {
-            require!(
-                config.min_survival_ppm <= config.base_survival_ppm,
-                crate::errors::GameError::InvalidConfig
-            );
-            Ok::<(), Error>(())
-        })();
-        assert!(result.is_err());
+        assert!(config.validate().is_err());
     }
     #[test]
     fn test_config_validation_probability_exceeds_100_percent() {
@@ -175,14 +132,7 @@ mod tests {
             max_bet: 0,
             bump: 0,
         };
-        let result = (|| {
-            require!(
-                config.base_survival_ppm <= 1_000_000,
-                crate::errors::GameError::InvalidConfig
-            );
-            Ok::<(), Error>(())
-        })();
-        assert!(result.is_err());
+        assert!(config.validate().is_err());
     }
     #[test]
     fn test_config_validation_min_bet_greater_than_max_bet() {
@@ -199,16 +149,7 @@ mod tests {
             max_bet: 100,  
             bump: 0,
         };
-        let result = (|| {
-            if config.max_bet > 0 {
-                require!(
-                    config.min_bet <= config.max_bet,
-                    crate::errors::GameError::InvalidConfig
-                );
-            }
-            Ok::<(), Error>(())
-        })();
-        assert!(result.is_err());
+        assert!(config.validate().is_err());
     }
     #[test]
     fn test_config_validation_zero_max_dives() {
@@ -225,14 +166,7 @@ mod tests {
             max_bet: 0,
             bump: 0,
         };
-        let result = (|| {
-            require!(
-                config.max_dives > 0,
-                crate::errors::GameError::InvalidConfig
-            );
-            Ok::<(), Error>(())
-        })();
-        assert!(result.is_err());
+        assert!(config.validate().is_err());
     }
     #[test]
     fn test_config_validation_valid_config_passes() {
@@ -249,31 +183,6 @@ mod tests {
             max_bet: 0,
             bump: 0,
         };
-        let result = (|| {
-            require!(
-                config.treasure_multiplier_den > 0,
-                crate::errors::GameError::InvalidConfig
-            );
-            require!(
-                config.base_survival_ppm <= 1_000_000,
-                crate::errors::GameError::InvalidConfig
-            );
-            require!(
-                config.min_survival_ppm <= config.base_survival_ppm,
-                crate::errors::GameError::InvalidConfig
-            );
-            require!(
-                config.max_dives > 0,
-                crate::errors::GameError::InvalidConfig
-            );
-            if config.max_bet > 0 {
-                require!(
-                    config.min_bet <= config.max_bet,
-                    crate::errors::GameError::InvalidConfig
-                );
-            }
-            Ok::<(), Error>(())
-        })();
-        assert!(result.is_ok());
+        assert!(config.validate().is_ok());
     }
 }

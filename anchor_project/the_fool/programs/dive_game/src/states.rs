@@ -65,6 +65,52 @@ impl GameConfig {
             10_000_000_000, 
         )
     }
+    
+    /// Validates all configuration parameters
+    /// This is the single source of truth for config validation
+    pub fn validate(&self) -> Result<()> {
+        // Treasury multiplier validation
+        require!(
+            self.treasure_multiplier_den > 0,
+            crate::errors::GameError::InvalidConfig
+        );
+        require!(
+            self.treasure_multiplier_num > 0,
+            crate::errors::GameError::InvalidConfig
+        );
+        
+        // Payout multiplier validation
+        require!(
+            self.max_payout_multiplier > 0,
+            crate::errors::GameError::InvalidConfig
+        );
+        
+        // Survival probability validation (must be <= 100%)
+        require!(
+            self.base_survival_ppm <= 1_000_000,
+            crate::errors::GameError::InvalidConfig
+        );
+        require!(
+            self.min_survival_ppm <= self.base_survival_ppm,
+            crate::errors::GameError::InvalidConfig
+        );
+        
+        // Dive limit validation
+        require!(
+            self.max_dives > 0,
+            crate::errors::GameError::InvalidConfig
+        );
+        
+        // Bet range validation (only if max_bet is set)
+        if self.max_bet > 0 {
+            require!(
+                self.min_bet <= self.max_bet,
+                crate::errors::GameError::InvalidConfig
+            );
+        }
+        
+        Ok(())
+    }
 }
 #[account]
 #[derive(InitSpace)]
@@ -78,4 +124,30 @@ pub struct GameSession {
     pub dive_number: u16,
     pub bump: u8,
     pub rng_seed: [u8; 32], 
+}
+
+impl GameSession {
+    /// Ensures the session is in Active status
+    /// Should be called at the start of any instruction that requires active gameplay
+    pub fn ensure_active(&self) -> Result<()> {
+        require!(
+            self.status == SessionStatus::Active,
+            crate::errors::GameError::InvalidSessionStatus
+        );
+        Ok(())
+    }
+    
+    /// Marks the session as Lost and validates the state transition
+    pub fn mark_lost(&mut self) -> Result<()> {
+        self.ensure_active()?;
+        self.status = SessionStatus::Lost;
+        Ok(())
+    }
+    
+    /// Marks the session as CashedOut and validates the state transition
+    pub fn mark_cashed_out(&mut self) -> Result<()> {
+        self.ensure_active()?;
+        self.status = SessionStatus::CashedOut;
+        Ok(())
+    }
 }

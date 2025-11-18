@@ -9,10 +9,10 @@ pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
     let session = &mut ctx.accounts.session;
     let house_vault = &mut ctx.accounts.house_vault;
     let clock = Clock::get()?;
-    require!(
-        session.status == SessionStatus::Active,
-        GameError::InvalidSessionStatus
-    );
+    
+    // Use helper method to ensure session is active
+    session.ensure_active()?;
+    
     require!(
         session.dive_number < config.max_dives,
         GameError::MaxDivesReached
@@ -31,15 +31,10 @@ pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
             timestamp: clock.unix_timestamp,
         });
     } else {
-        session.status = SessionStatus::Lost;
-        require!(
-            house_vault.total_reserved >= session.max_payout,
-            GameError::Overflow
-        );
-        house_vault.total_reserved = house_vault
-            .total_reserved
-            .checked_sub(session.max_payout)
-            .ok_or(GameError::Overflow)?;
+        // Use helper methods for state transition and fund release
+        session.mark_lost()?;
+        house_vault.release(session.max_payout)?;
+        
         emit!(SessionLostEvent {
             session: session.key(),
             user: session.user,
