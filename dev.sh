@@ -271,23 +271,30 @@ if [ "$USE_LOCAL" = false ]; then
 
     # Run initialization script
     echo -e "${BLUE}⚙️  Running initialization...${NC}"
-    cd "$PROJECT_ROOT"
     
-    # Create temporary init script output
+    # Run the comprehensive init script that handles both config and vault
     INIT_OUTPUT="/tmp/dive-init.log"
-    npx tsx "$SCRIPTS_DIR/init-game-config.ts" > "$INIT_OUTPUT" 2>&1 || true
+    cd "$ANCHOR_DIR"
+    npm run init-localnet > "$INIT_OUTPUT" 2>&1
+    INIT_EXIT_CODE=$?
     
-    # Parse output
-    CONFIG_PDA=$(grep -E "Config PDA:|config" "$INIT_OUTPUT" | grep -oE "[A-Za-z0-9]{32,}" | head -1 || echo "")
-    HOUSE_AUTH=$(grep "NEXT_PUBLIC_HOUSE_AUTHORITY" "$FRONTEND_DIR/.env.local" 2>/dev/null | cut -d'=' -f2 || echo "7qdd7r1CJdnXVcr3bFD5CyBRyDF9eW4taoJqABhN5hXW")
+    # Show init output
+    cat "$INIT_OUTPUT"
+    echo ""
     
-    # Derive vault PDA
-    if [ -n "$CONFIG_PDA" ]; then
-        echo -e "${CYAN}   Config PDA: $CONFIG_PDA${NC}"
+    if [ $INIT_EXIT_CODE -eq 0 ]; then
+        # Parse output for house authority
+        HOUSE_AUTH=$(grep "House Authority:" "$INIT_OUTPUT" | awk '{print $3}' | head -1)
+        if [ -z "$HOUSE_AUTH" ]; then
+            HOUSE_AUTH=$(solana address ~/.config/solana/id.json 2>/dev/null || echo "7qdd7r1CJdnXVcr3bFD5CyBRyDF9eW4taoJqABhN5hXW")
+        fi
+        echo -e "${GREEN}   ✅ Initialization complete${NC}"
+    else
+        echo -e "${RED}   ⚠️  Initialization had errors (might be already initialized)${NC}"
+        HOUSE_AUTH=$(solana address ~/.config/solana/id.json 2>/dev/null || echo "7qdd7r1CJdnXVcr3bFD5CyBRyDF9eW4taoJqABhN5hXW")
     fi
     
-    echo -e "${CYAN}   House Authority: $HOUSE_AUTH${NC}"
-    echo -e "${GREEN}   ✅ Initialized (or already exists)${NC}"
+    cd "$PROJECT_ROOT"
     echo ""
 fi
 
