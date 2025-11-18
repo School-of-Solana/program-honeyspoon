@@ -115,8 +115,7 @@ export class SolanaGameChain implements GameChainPort {
    */
   private getConfigPDA(): PublicKey {
     if (!this.configPda) {
-      const [pda] = getConfigPDA();
-      this.configPda = pda;
+      this.configPda = getConfigPDA();
     }
     return this.configPda;
   }
@@ -126,8 +125,7 @@ export class SolanaGameChain implements GameChainPort {
    */
   private getVaultPDA(): PublicKey {
     if (!this.vaultPda) {
-      const [pda] = getHouseVaultPDA(this.houseAuthority);
-      this.vaultPda = pda;
+      this.vaultPda = getHouseVaultPDA(this.houseAuthority);
     }
     return this.vaultPda;
   }
@@ -287,7 +285,7 @@ export class SolanaGameChain implements GameChainPort {
     houseAuthority: string;
   }): Promise<{ vaultPda: string; state: HouseVaultState }> {
     const houseAuthorityPubkey = new PublicKey(params.houseAuthority);
-    const [vaultPda] = getHouseVaultPDA(houseAuthorityPubkey);
+    const vaultPda = getHouseVaultPDA(houseAuthorityPubkey);
 
     // Build instruction data (locked = false by default)
     const data = buildInitHouseVaultData(false);
@@ -386,7 +384,8 @@ export class SolanaGameChain implements GameChainPort {
 
     // Generate session index (timestamp-based for uniqueness)
     const sessionIndex = BigInt(Date.now());
-    const [sessionPda] = getSessionPDA(userPubkey, sessionIndex);
+    const sessionIndexBN = new BN(sessionIndex.toString());
+    const sessionPda = getSessionPDA(userPubkey, sessionIndexBN);
 
     // Build instruction data
     const betBN = new BN(params.betAmountLamports.toString());
