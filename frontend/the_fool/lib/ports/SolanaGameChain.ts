@@ -1,9 +1,9 @@
 /**
  * SolanaGameChain - Real Solana blockchain implementation
- * 
+ *
  * This implementation connects to an actual Solana RPC node and
  * calls the deployed dive_game Anchor program.
- * 
+ *
  * IMPORTANT: This class implements the GameChainPort interface exactly,
  * ensuring compatibility with LocalGameChain for testing.
  */
@@ -78,7 +78,7 @@ export class SolanaGameChain implements GameChainPort {
   private readonly connection: Connection;
   private readonly houseAuthority: PublicKey;
   private wallet: WalletAdapter | undefined;
-  
+
   // Cache for PDAs
   private configPda: PublicKey | null = null;
   private vaultPda: PublicKey | null = null;
@@ -148,19 +148,19 @@ export class SolanaGameChain implements GameChainPort {
     try {
       const transaction = new Transaction().add(...instructions);
       transaction.feePayer = this.wallet.publicKey;
-      
+
       // Get recent blockhash
       const { blockhash } = await this.connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
-      
+
       // Sign with any additional signers (e.g., for account creation)
       if (signers.length > 0) {
         transaction.partialSign(...signers);
       }
-      
+
       // Sign with wallet
       const signedTransaction = await this.wallet.signTransaction(transaction);
-      
+
       // Send and confirm
       const signature = await this.connection.sendRawTransaction(
         signedTransaction.serialize(),
@@ -169,9 +169,9 @@ export class SolanaGameChain implements GameChainPort {
           preflightCommitment: "confirmed",
         }
       );
-      
+
       await this.connection.confirmTransaction(signature, "confirmed");
-      
+
       return signature;
     } catch (error: any) {
       // Convert Solana errors to GameError
@@ -194,10 +194,18 @@ export class SolanaGameChain implements GameChainPort {
       return parser(accountInfo.data);
     } catch (error: any) {
       // Log network errors more quietly
-      if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED')) {
-        console.warn(`[SolanaGameChain] Network error (is localnet running?): ${error.message}`);
+      if (
+        error.message?.includes("fetch failed") ||
+        error.message?.includes("ECONNREFUSED")
+      ) {
+        console.warn(
+          `[SolanaGameChain] Network error (is localnet running?): ${error.message}`
+        );
       } else {
-        console.error(`[SolanaGameChain] Error fetching account ${address.toBase58()}:`, error.message);
+        console.error(
+          `[SolanaGameChain] Error fetching account ${address.toBase58()}:`,
+          error.message
+        );
       }
       return null;
     }
@@ -256,7 +264,7 @@ export class SolanaGameChain implements GameChainPort {
   async getGameConfig(): Promise<GameConfigState | null> {
     const configPda = this.getConfigPDA();
     const account = await this.fetchAccount(configPda, parseGameConfigData);
-    
+
     if (!account) {
       return null;
     }
@@ -336,7 +344,7 @@ export class SolanaGameChain implements GameChainPort {
   async getHouseVault(vaultPda: string): Promise<HouseVaultState | null> {
     const vaultPubkey = new PublicKey(vaultPda);
     const account = await this.fetchAccount(vaultPubkey, parseHouseVaultData);
-    
+
     if (!account) {
       return null;
     }
@@ -360,8 +368,13 @@ export class SolanaGameChain implements GameChainPort {
       return BigInt(balance);
     } catch (error: any) {
       // Handle network errors gracefully
-      if (error.message?.includes('fetch failed') || error.message?.includes('ECONNREFUSED')) {
-        console.warn('[SolanaGameChain] Cannot connect to RPC (is localnet running?)');
+      if (
+        error.message?.includes("fetch failed") ||
+        error.message?.includes("ECONNREFUSED")
+      ) {
+        console.warn(
+          "[SolanaGameChain] Cannot connect to RPC (is localnet running?)"
+        );
         return BigInt(0);
       }
       throw GameError.fromSolana(error);
@@ -408,23 +421,25 @@ export class SolanaGameChain implements GameChainPort {
 
     // Send transaction with wallet
     await this.sendTransaction([instruction]);
-    
+
     // Fetch session state
     const state = await this.getSession(sessionPda.toBase58());
     if (!state) {
       throw GameError.invalidSession();
     }
-    
+
     return {
       sessionPda: sessionPda.toBase58(),
       state,
     };
   }
 
-  async getSession(sessionPda: SessionHandle): Promise<GameSessionState | null> {
+  async getSession(
+    sessionPda: SessionHandle
+  ): Promise<GameSessionState | null> {
     const sessionPubkey = new PublicKey(sessionPda);
     const account = await this.fetchAccount(sessionPubkey, parseSessionData);
-    
+
     if (!account) {
       return null;
     }
@@ -435,11 +450,15 @@ export class SolanaGameChain implements GameChainPort {
   async playRound(params: {
     sessionPda: SessionHandle;
     userPubkey: string;
-  }): Promise<{ state: GameSessionState; survived: boolean; randomRoll?: number }> {
+  }): Promise<{
+    state: GameSessionState;
+    survived: boolean;
+    randomRoll?: number;
+  }> {
     const sessionPubkey = new PublicKey(params.sessionPda);
     const userPubkey = new PublicKey(params.userPubkey);
     const configPda = this.getConfigPDA();
-    
+
     // Get session to find house vault
     const session = await this.fetchAccount(sessionPubkey, parseSessionData);
     if (!session) {
@@ -465,16 +484,16 @@ export class SolanaGameChain implements GameChainPort {
 
     // Send transaction with wallet
     await this.sendTransaction([instruction]);
-    
+
     // Fetch updated session state
     const state = await this.getSession(params.sessionPda);
     if (!state) {
       throw GameError.invalidSession();
     }
-    
+
     // Determine if survived based on status
     const survived = state.status === SessionStatus.Active;
-    
+
     return {
       state,
       survived,
@@ -490,12 +509,17 @@ export class SolanaGameChain implements GameChainPort {
     const userPubkey = new PublicKey(params.userPubkey);
 
     // Get session to find house vault and current treasure
-    const sessionBefore = await this.fetchAccount(sessionPubkey, parseSessionData);
+    const sessionBefore = await this.fetchAccount(
+      sessionPubkey,
+      parseSessionData
+    );
     if (!sessionBefore) {
       throw GameError.invalidSession();
     }
-    
-    const treasureBeforeCashout = BigInt(sessionBefore.currentTreasure.toString());
+
+    const treasureBeforeCashout = BigInt(
+      sessionBefore.currentTreasure.toString()
+    );
 
     // Build instruction data
     const data = buildCashOutData();
@@ -514,7 +538,7 @@ export class SolanaGameChain implements GameChainPort {
 
     // Send transaction with wallet
     await this.sendTransaction([instruction]);
-    
+
     // Session is now closed and account no longer exists
     // Return a "cashed out" state for UI purposes
     return {
@@ -562,9 +586,7 @@ export class SolanaGameChain implements GameChainPort {
     });
 
     // Note: Requires user keypair
-    throw new Error(
-      "loseSession is deprecated - use playRound instead"
-    );
+    throw new Error("loseSession is deprecated - use playRound instead");
   }
 
   // =========================================================================
@@ -578,8 +600,13 @@ export class SolanaGameChain implements GameChainPort {
       return BigInt(balance);
     } catch (error: any) {
       // If invalid pubkey (e.g., LocalGameChain user ID), return 0
-      if (error.message?.includes('Non-base58') || error.message?.includes('Invalid public key')) {
-        console.warn(`[SolanaGameChain] Invalid public key: ${userPubkey}, returning 0 balance`);
+      if (
+        error.message?.includes("Non-base58") ||
+        error.message?.includes("Invalid public key")
+      ) {
+        console.warn(
+          `[SolanaGameChain] Invalid public key: ${userPubkey}, returning 0 balance`
+        );
         return BigInt(0);
       }
       throw GameError.fromSolana(error);
@@ -621,17 +648,21 @@ export function createSolanaGameChain(
   wallet?: WalletAdapter
 ): SolanaGameChain {
   // Validate houseAuthority is a valid base58 string
-  if (!houseAuthority || houseAuthority.trim() === '') {
-    throw new Error('[createSolanaGameChain] houseAuthority is required and cannot be empty');
+  if (!houseAuthority || houseAuthority.trim() === "") {
+    throw new Error(
+      "[createSolanaGameChain] houseAuthority is required and cannot be empty"
+    );
   }
-  
+
   let houseAuthorityPubkey: PublicKey;
   try {
     houseAuthorityPubkey = new PublicKey(houseAuthority);
   } catch (error) {
-    throw new Error(`[createSolanaGameChain] Invalid houseAuthority: "${houseAuthority}". Must be a valid base58 public key.`);
+    throw new Error(
+      `[createSolanaGameChain] Invalid houseAuthority: "${houseAuthority}". Must be a valid base58 public key.`
+    );
   }
-  
+
   return new SolanaGameChain({
     rpcUrl,
     commitment: "confirmed",

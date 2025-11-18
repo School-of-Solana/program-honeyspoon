@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useMemo, ReactNode } from 'react';
-import { 
-  ConnectionProvider, 
-  WalletProvider as SolanaWalletProvider 
-} from '@solana/wallet-adapter-react';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { 
+import { useMemo, ReactNode } from "react";
+import {
+  ConnectionProvider,
+  WalletProvider as SolanaWalletProvider,
+} from "@solana/wallet-adapter-react";
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
   TrustWalletAdapter,
@@ -15,11 +15,11 @@ import {
   TorusWalletAdapter,
   Coin98WalletAdapter,
   NightlyWalletAdapter,
-} from '@solana/wallet-adapter-wallets';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+} from "@solana/wallet-adapter-wallets";
+import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 
 // Import wallet adapter CSS
-import '@solana/wallet-adapter-react-ui/styles.css';
+import "@solana/wallet-adapter-react-ui/styles.css";
 
 interface WalletProviderProps {
   children: ReactNode;
@@ -27,13 +27,13 @@ interface WalletProviderProps {
 
 /**
  * WalletProvider wraps the app with Solana wallet adapter
- * 
+ *
  * Features:
  * - Connects to RPC endpoint from env vars
  * - Supports multiple wallets (Phantom, Solflare, Backpack, etc.)
  * - Auto-connects to previously used wallet
  * - Provides wallet modal for connection UI
- * 
+ *
  * Supported Wallets:
  * - Phantom (most popular)
  * - Solflare
@@ -43,11 +43,11 @@ interface WalletProviderProps {
  * - Nightly
  * - Ledger
  * - Torus
- * 
+ *
  * Usage in layout.tsx:
  * ```tsx
  * import { WalletProvider } from '@/components/WalletProvider';
- * 
+ *
  * export default function RootLayout({ children }) {
  *   return (
  *     <html>
@@ -61,16 +61,16 @@ interface WalletProviderProps {
  */
 export function WalletProvider({ children }: WalletProviderProps) {
   // Get RPC endpoint from environment
-  const endpoint = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8899';
-  
+  const endpoint = process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8899";
+
   // Determine network (for wallet auto-detection)
   const network = useMemo(() => {
-    if (endpoint.includes('devnet')) return WalletAdapterNetwork.Devnet;
-    if (endpoint.includes('testnet')) return WalletAdapterNetwork.Testnet;
-    if (endpoint.includes('mainnet')) return WalletAdapterNetwork.Mainnet;
+    if (endpoint.includes("devnet")) return WalletAdapterNetwork.Devnet;
+    if (endpoint.includes("testnet")) return WalletAdapterNetwork.Testnet;
+    if (endpoint.includes("mainnet")) return WalletAdapterNetwork.Mainnet;
     return WalletAdapterNetwork.Devnet; // Default for localhost
   }, [endpoint]);
-  
+
   // Initialize wallet adapters
   const wallets = useMemo(
     () => [
@@ -90,9 +90,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
   return (
     <ConnectionProvider endpoint={endpoint}>
       <SolanaWalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
-          {children}
-        </WalletModalProvider>
+        <WalletModalProvider>{children}</WalletModalProvider>
       </SolanaWalletProvider>
     </ConnectionProvider>
   );

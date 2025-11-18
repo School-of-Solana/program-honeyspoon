@@ -1,11 +1,11 @@
 /**
  * Session Lifecycle & Illegal Sequence Tests
- * 
+ *
  * Tests the session state machine and prevents illegal operations:
- * 
+ *
  * Valid sequence:
  *   startGameSession → executeRound (1+) → cashOut OR loss → session ends
- * 
+ *
  * Invalid sequences (must be rejected):
  *   - Double cashout on same session
  *   - executeRound after cashOut
@@ -44,11 +44,11 @@ describe("Session Lifecycle - Illegal Sequences", () => {
     it("should reject second cashout on same session", async () => {
       // Arrange: Setup winning game ready to cash out
       await startGameSession(100, userId, sessionId);
-      
+
       // Execute one winning round to get some treasure
       const round1 = await executeRound(1, 100, sessionId, userId, "15"); // High roll = win
       assert.strictEqual(round1.survived, true, "Round 1 should succeed");
-      
+
       const treasureAmount = round1.totalValue;
       assert.ok(treasureAmount > 100, "Should have profit");
 
@@ -58,7 +58,11 @@ describe("Session Lifecycle - Illegal Sequences", () => {
 
       // Act: First cashout (should succeed)
       const firstCashout = await cashOut(treasureAmount, sessionId, userId);
-      assert.strictEqual(firstCashout.success, true, "First cashout should succeed");
+      assert.strictEqual(
+        firstCashout.success,
+        true,
+        "First cashout should succeed"
+      );
 
       // Capture state after first cashout
       const userAfterFirst = getUserWallet(userId);
@@ -85,7 +89,10 @@ describe("Session Lifecycle - Illegal Sequences", () => {
       }
 
       // Assert: Second cashout rejected
-      assert.ok(secondCashoutError !== null, "Second cashout should throw error");
+      assert.ok(
+        secondCashoutError !== null,
+        "Second cashout should throw error"
+      );
       assert.ok(
         secondCashoutError!.message.includes("Invalid") ||
           secondCashoutError!.message.includes("inactive"),
@@ -115,7 +122,9 @@ describe("Session Lifecycle - Illegal Sequences", () => {
 
       console.log("✅ Double cashout correctly rejected");
       console.log(`   First cashout: $${firstCashout.finalAmount}`);
-      console.log(`   Second cashout: Rejected with "${secondCashoutError!.message}"`);
+      console.log(
+        `   Second cashout: Rejected with "${secondCashoutError!.message}"`
+      );
     });
 
     it("should prevent race condition double cashout", async () => {
@@ -141,11 +150,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         1,
         "Exactly one cashout should succeed"
       );
-      assert.strictEqual(
-        failures.length,
-        1,
-        "Exactly one cashout should fail"
-      );
+      assert.strictEqual(failures.length, 1, "Exactly one cashout should fail");
 
       // Verify the failure has correct error message
       const failure = failures[0] as PromiseRejectedResult;
@@ -164,15 +169,20 @@ describe("Session Lifecycle - Illegal Sequences", () => {
       // Arrange: Complete a game with cashout
       await startGameSession(100, userId, sessionId);
       const round1 = await executeRound(1, 100, sessionId, userId, "15");
-      
+
       assert.ok(round1.survived, "Round 1 should survive with roll 90");
-      assert.ok(round1.totalValue > 0, `totalValue should be > 0, got: ${round1.totalValue}`);
-      
+      assert.ok(
+        round1.totalValue > 0,
+        `totalValue should be > 0, got: ${round1.totalValue}`
+      );
+
       const treasureAmount = round1.totalValue;
       const sessionCheck = getGameSession(sessionId);
       assert.ok(sessionCheck !== undefined, "Session should exist");
-      console.log(`[DEBUG] Session currentTreasure: ${sessionCheck?.currentTreasure}, treasureAmount: ${treasureAmount}`);
-      
+      console.log(
+        `[DEBUG] Session currentTreasure: ${sessionCheck?.currentTreasure}, treasureAmount: ${treasureAmount}`
+      );
+
       await cashOut(treasureAmount, sessionId, userId);
 
       // Capture state after cashout
@@ -251,7 +261,9 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "All executeRound attempts should fail"
       );
 
-      console.log("✅ Multiple executeRound attempts after cashout all rejected");
+      console.log(
+        "✅ Multiple executeRound attempts after cashout all rejected"
+      );
     });
   });
 
@@ -332,11 +344,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
 
       // Assert: All should fail with same error
       const failures = results.filter((r) => r.status === "rejected");
-      assert.strictEqual(
-        failures.length,
-        10,
-        "All retry attempts should fail"
-      );
+      assert.strictEqual(failures.length, 10, "All retry attempts should fail");
 
       // Verify all have consistent error messages
       for (const failure of failures) {
@@ -464,7 +472,8 @@ describe("Session Lifecycle - Illegal Sequences", () => {
 
       assert.ok(error !== null, "Should throw error");
       assert.ok(
-        error!.message.includes("Invalid") || error!.message.includes("inactive"),
+        error!.message.includes("Invalid") ||
+          error!.message.includes("inactive"),
         "Should mention invalid session"
       );
 
@@ -484,7 +493,8 @@ describe("Session Lifecycle - Illegal Sequences", () => {
 
       assert.ok(error !== null, "Should throw error");
       assert.ok(
-        error!.message.includes("Invalid") || error!.message.includes("inactive"),
+        error!.message.includes("Invalid") ||
+          error!.message.includes("inactive"),
         "Should mention invalid session"
       );
 

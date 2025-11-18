@@ -91,10 +91,15 @@ describe("Wallet + Game Integration - Full Game Flow", () => {
       const stats = calculateDiveStats(dive);
       const before = currentTreasure;
       currentTreasure = Math.floor(currentTreasure * stats.multiplier);
-      console.log(`  Dive ${dive}: $${before} × ${stats.multiplier.toFixed(2)} = $${currentTreasure}`);
+      console.log(
+        `  Dive ${dive}: $${before} × ${stats.multiplier.toFixed(2)} = $${currentTreasure}`
+      );
     }
 
-    assert.ok(currentTreasure >= initialBet, `Treasure should not decrease: ${currentTreasure} > ${initialBet}`);
+    assert.ok(
+      currentTreasure >= initialBet,
+      `Treasure should not decrease: ${currentTreasure} > ${initialBet}`
+    );
 
     // 5. Surface and collect winnings
     const userAfterWin = processWin(userAfterBet, currentTreasure, initialBet);

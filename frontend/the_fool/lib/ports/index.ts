@@ -1,15 +1,15 @@
 /**
  * Ports module - Dependency injection and exports
- * 
+ *
  * This module provides:
  * - GameChainPort interface and types
  * - GameError and error codes
  * - Factory function to get the appropriate implementation
- * 
+ *
  * Usage:
  * ```typescript
  * import { getGameChain, GameError } from '@/lib/ports';
- * 
+ *
  * const chain = getGameChain();
  * const result = await chain.startSession({ ... });
  * ```
@@ -23,11 +23,11 @@ import { createSolanaGameChain } from "./SolanaGameChain";
 export * from "./GameChainPort";
 export * from "./GameErrors";
 export { LocalGameChain } from "./LocalGameChain";
-export { 
-  SolanaGameChain, 
+export {
+  SolanaGameChain,
   createSolanaGameChain,
   type WalletAdapter,
-  type SolanaGameChainConfig
+  type SolanaGameChainConfig,
 } from "./SolanaGameChain";
 
 // Global singleton instance
@@ -35,11 +35,11 @@ let gameChainInstance: GameChainPort | null = null;
 
 /**
  * Get the game chain implementation
- * 
+ *
  * Returns the appropriate implementation based on environment:
  * - NEXT_PUBLIC_USE_SOLANA=true: SolanaGameChain (real blockchain)
  * - NEXT_PUBLIC_USE_SOLANA=false or unset: LocalGameChain (in-memory simulation)
- * 
+ *
  * This function uses singleton pattern for consistent state.
  */
 export function getGameChain(): GameChainPort {
@@ -69,7 +69,7 @@ export function getGameChain(): GameChainPort {
     if (useSolana) {
       console.warn(
         "[GameChain] NEXT_PUBLIC_USE_SOLANA=true but missing required env vars. " +
-        "Falling back to LocalGameChain. Required: NEXT_PUBLIC_RPC_URL, NEXT_PUBLIC_HOUSE_AUTHORITY"
+          "Falling back to LocalGameChain. Required: NEXT_PUBLIC_RPC_URL, NEXT_PUBLIC_HOUSE_AUTHORITY"
       );
     }
     // Use local implementation (default)

@@ -18,7 +18,7 @@ export function createStarfish(
   x: number,
   y: number,
   scale: number = 1.5,
-  zIndex: number = 5,
+  zIndex: number = 5
 ): GameObj {
   const starfish = k.add([
     k.sprite("starfish"),

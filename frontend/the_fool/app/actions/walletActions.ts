@@ -283,11 +283,13 @@ export async function airdropSol(
       newBalance,
     });
 
-    // Trigger SSE update for all connected clients  
+    // Trigger SSE update for all connected clients
     // Note: We can't directly import from route handlers in server actions
     // The SSE will pick up the balance change on next poll (5s fallback)
     // or clients can manually refresh
-    console.log(`[WALLET ACTIONS] 💡 Airdrop complete. SSE will update on next poll.`);
+    console.log(
+      `[WALLET ACTIONS] 💡 Airdrop complete. SSE will update on next poll.`
+    );
 
     return {
       success: true,

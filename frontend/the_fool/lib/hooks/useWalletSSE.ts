@@ -1,16 +1,16 @@
 /**
  * useWalletSSE - Server-Sent Events hook for real-time wallet updates
- * 
+ *
  * Replaces polling with push-based updates from the server.
  * Automatically reconnects on connection loss.
- * 
+ *
  * @param userId - User wallet address to subscribe to
  * @returns Wallet data and connection status
  */
 
-'use client';
+"use client";
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback } from "react";
 
 export interface WalletSSEData {
   userBalance: number;
@@ -36,7 +36,7 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
 
   const cleanup = useCallback(() => {
     if (eventSourceRef.current) {
-      console.log('[SSE Hook] Closing existing connection');
+      console.log("[SSE Hook] Closing existing connection");
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
@@ -48,7 +48,7 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
 
   const connect = useCallback(() => {
     if (!userId) {
-      console.log('[SSE Hook] No userId, skipping connection');
+      console.log("[SSE Hook] No userId, skipping connection");
       return;
     }
 
@@ -56,13 +56,13 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
     cleanup();
 
     const url = `/api/wallet-events?userId=${encodeURIComponent(userId)}`;
-    console.log('[SSE Hook] 🔌 Connecting to SSE:', url);
+    console.log("[SSE Hook] 🔌 Connecting to SSE:", url);
 
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
-      console.log('[SSE Hook] ✅ Connected to wallet events stream');
+      console.log("[SSE Hook] ✅ Connected to wallet events stream");
       setIsConnected(true);
       setError(null);
       reconnectAttemptsRef.current = 0; // Reset reconnect counter on success
@@ -71,12 +71,15 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
     eventSource.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
-        console.log('[SSE Hook] 📨 Received message:', message);
+        console.log("[SSE Hook] 📨 Received message:", message);
 
-        if (message.type === 'connected') {
-          console.log('[SSE Hook] 🎉 Connection established at', new Date(message.timestamp).toISOString());
-        } else if (message.type === 'balance-update') {
-          console.log('[SSE Hook] 💰 Balance update received:', {
+        if (message.type === "connected") {
+          console.log(
+            "[SSE Hook] 🎉 Connection established at",
+            new Date(message.timestamp).toISOString()
+          );
+        } else if (message.type === "balance-update") {
+          console.log("[SSE Hook] 💰 Balance update received:", {
             userBalance: message.userBalance,
             houseVaultBalance: message.houseVaultBalance,
             houseVaultReserved: message.houseVaultReserved,
@@ -89,25 +92,30 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
           });
         }
       } catch (error) {
-        console.error('[SSE Hook] Failed to parse SSE message:', error);
+        console.error("[SSE Hook] Failed to parse SSE message:", error);
       }
     };
 
     eventSource.onerror = (err) => {
-      console.error('[SSE Hook] ❌ SSE connection error:', err);
+      console.error("[SSE Hook] ❌ SSE connection error:", err);
       setIsConnected(false);
-      
+
       // Exponential backoff for reconnection
       reconnectAttemptsRef.current++;
-      const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
-      
-      console.log(`[SSE Hook] 🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`);
+      const delay = Math.min(
+        1000 * Math.pow(2, reconnectAttemptsRef.current),
+        30000
+      );
+
+      console.log(
+        `[SSE Hook] 🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`
+      );
       setError(`Connection lost. Reconnecting in ${delay / 1000}s...`);
-      
+
       cleanup();
-      
+
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log('[SSE Hook] Attempting reconnection...');
+        console.log("[SSE Hook] Attempting reconnection...");
         connect();
       }, delay);
     };
@@ -120,13 +128,13 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
     }
 
     return () => {
-      console.log('[SSE Hook] 🧹 Cleaning up SSE connection');
+      console.log("[SSE Hook] 🧹 Cleaning up SSE connection");
       cleanup();
     };
   }, [userId, connect, cleanup]);
 
   const reconnect = useCallback(() => {
-    console.log('[SSE Hook] Manual reconnect requested');
+    console.log("[SSE Hook] Manual reconnect requested");
     reconnectAttemptsRef.current = 0;
     connect();
   }, [connect]);

@@ -31,7 +31,7 @@ export function createFish(k: KAPLAYCtx, lightLevel: number): GameObj {
     k.z(CONST.Z_LAYERS.FISH),
     k.scale(
       direction > 0 ? scaleMultiplier : -scaleMultiplier,
-      scaleMultiplier,
+      scaleMultiplier
     ),
     k.opacity(lightLevel * CONST.FISH.OPACITY_BASE),
   ]);

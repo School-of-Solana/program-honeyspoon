@@ -1,6 +1,6 @@
 /**
  * SSE Manager - Shared SSE connection management
- * 
+ *
  * This module manages Server-Sent Events connections and provides
  * a way for server actions to trigger balance updates.
  */
@@ -11,17 +11,24 @@ const connections = new Set<ReadableStreamDefaultController>();
 /**
  * Register an SSE connection
  */
-export function registerSSEConnection(controller: ReadableStreamDefaultController) {
+export function registerSSEConnection(
+  controller: ReadableStreamDefaultController
+) {
   connections.add(controller);
-  console.log('[SSE Manager] Registered connection. Total:', connections.size);
+  console.log("[SSE Manager] Registered connection. Total:", connections.size);
 }
 
 /**
  * Unregister an SSE connection
  */
-export function unregisterSSEConnection(controller: ReadableStreamDefaultController) {
+export function unregisterSSEConnection(
+  controller: ReadableStreamDefaultController
+) {
   connections.delete(controller);
-  console.log('[SSE Manager] Unregistered connection. Total:', connections.size);
+  console.log(
+    "[SSE Manager] Unregistered connection. Total:",
+    connections.size
+  );
 }
 
 /**
@@ -29,8 +36,12 @@ export function unregisterSSEConnection(controller: ReadableStreamDefaultControl
  * This triggers each connection's sendUpdate function
  */
 export function broadcastBalanceUpdate() {
-  console.log('[SSE Manager] 📢 Broadcasting balance update to', connections.size, 'clients');
-  
+  console.log(
+    "[SSE Manager] 📢 Broadcasting balance update to",
+    connections.size,
+    "clients"
+  );
+
   connections.forEach((controller) => {
     try {
       // Call the stored sendUpdate function to fetch fresh balances
@@ -39,7 +50,7 @@ export function broadcastBalanceUpdate() {
         sendUpdate();
       }
     } catch (error) {
-      console.error('[SSE Manager] Failed to send update to client:', error);
+      console.error("[SSE Manager] Failed to send update to client:", error);
     }
   });
 }
@@ -56,7 +67,7 @@ export function broadcastEvent(event: any) {
     try {
       controller.enqueue(encoded);
     } catch (error) {
-      console.error('[SSE Manager] Failed to send event to client:', error);
+      console.error("[SSE Manager] Failed to send event to client:", error);
     }
   });
 }

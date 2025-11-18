@@ -18,7 +18,7 @@ export function createSeagull(
   k: KAPLAYCtx,
   startX: number,
   startY: number,
-  speed: number,
+  speed: number
 ): GameObj {
   const seagull = k.add([
     k.sprite("seagull", { anim: "fly" }),

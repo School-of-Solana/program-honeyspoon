@@ -1,9 +1,9 @@
 /**
  * Max Rounds & Reservation Horizon Tests
- * 
+ *
  * Tests the extreme case of surviving to maxRounds (50) and the fund
  * reservation mechanics over long winning streaks.
- * 
+ *
  * Critical scenarios:
  * 1. Round 51 rejection - Can't exceed maxRounds
  * 2. Surviving all 50 rounds and cashing out - Fund reservation correctness
@@ -40,7 +40,7 @@ describe("Max Rounds & Reservation Horizon", () => {
   describe("Round 51 Rejection", () => {
     it("should reject executeRound(50) after reaching maxRounds", async () => {
       // Note: This test takes ~2 seconds to execute 50 rounds
-      
+
       const betAmount = 10;
       await startGameSession(betAmount, userId, sessionId);
 
@@ -68,13 +68,18 @@ describe("Max Rounds & Reservation Horizon", () => {
 
         // Progress indicator
         if (round % 10 === 0) {
-          console.log(`  Progress: Round ${round}/50 complete, treasure: $${currentTreasure}`);
+          console.log(
+            `  Progress: Round ${round}/50 complete, treasure: $${currentTreasure}`
+          );
         }
       }
 
       // Verify session is at round 51 (ready for next round)
       const sessionAt50 = getGameSession(sessionId);
-      assert.ok(sessionAt50 !== undefined, "Session should exist after round 50");
+      assert.ok(
+        sessionAt50 !== undefined,
+        "Session should exist after round 50"
+      );
       assert.strictEqual(
         sessionAt50!.diveNumber,
         51,
@@ -154,7 +159,6 @@ describe("Max Rounds & Reservation Horizon", () => {
     });
 
     it("should allow cashOut at round 50", async () => {
-      
       const betAmount = 10;
       await startGameSession(betAmount, userId, sessionId);
 
@@ -177,7 +181,11 @@ describe("Max Rounds & Reservation Horizon", () => {
       const cashOutResult = await cashOut(currentTreasure, sessionId, userId);
 
       // Assert: Cash out succeeds
-      assert.strictEqual(cashOutResult.success, true, "Cash out should succeed");
+      assert.strictEqual(
+        cashOutResult.success,
+        true,
+        "Cash out should succeed"
+      );
       assert.strictEqual(
         cashOutResult.finalAmount,
         currentTreasure,
@@ -200,7 +208,6 @@ describe("Max Rounds & Reservation Horizon", () => {
 
   describe("Reservation Horizon - Full 50 Rounds", () => {
     it("should correctly reserve and release funds over 50 rounds", async () => {
-      
       const betAmount = 10;
 
       // Capture initial balances
@@ -210,23 +217,21 @@ describe("Max Rounds & Reservation Horizon", () => {
       console.log(`  Initial state:`);
       console.log(`    User balance: $${userInitial.balance}`);
       console.log(`    House balance: $${houseInitial.balance}`);
-      console.log(`    House available: $${houseInitial.balance - houseInitial.reservedFunds}`);
+      console.log(
+        `    House available: $${houseInitial.balance - houseInitial.reservedFunds}`
+      );
 
       // Calculate expected max payout
-      const expectedMaxPayout = calculateMaxPotentialPayout(
-        betAmount,
-        50,
-        {
-          houseEdge: GAME_CONFIG.HOUSE_EDGE,
-          baseWinProbability: GAME_CONFIG.BASE_WIN_PROB,
-          decayConstant: GAME_CONFIG.DECAY_CONSTANT,
-          minWinProbability: GAME_CONFIG.MIN_WIN_PROB,
-          minBet: GAME_CONFIG.MIN_BET,
-          maxBet: GAME_CONFIG.MAX_BET,
-          maxPotentialWin: 100000,
-          maxRounds: 50,
-        }
-      );
+      const expectedMaxPayout = calculateMaxPotentialPayout(betAmount, 50, {
+        houseEdge: GAME_CONFIG.HOUSE_EDGE,
+        baseWinProbability: GAME_CONFIG.BASE_WIN_PROB,
+        decayConstant: GAME_CONFIG.DECAY_CONSTANT,
+        minWinProbability: GAME_CONFIG.MIN_WIN_PROB,
+        minBet: GAME_CONFIG.MIN_BET,
+        maxBet: GAME_CONFIG.MAX_BET,
+        maxPotentialWin: 100000,
+        maxRounds: 50,
+      });
 
       console.log(`  Expected max payout reservation: $${expectedMaxPayout}`);
 
@@ -248,15 +253,13 @@ describe("Max Rounds & Reservation Horizon", () => {
         "House should have received bet"
       );
 
-      const reservedAmount = houseAfterBet.reservedFunds - houseInitial.reservedFunds;
+      const reservedAmount =
+        houseAfterBet.reservedFunds - houseInitial.reservedFunds;
       console.log(`  Funds reserved after bet: $${reservedAmount}`);
-      
+
       // The reserved amount should be close to expectedMaxPayout
       // (may differ due to rounding or capping at maxPotentialWin)
-      assert.ok(
-        reservedAmount > 0,
-        "Should have reserved funds"
-      );
+      assert.ok(reservedAmount > 0, "Should have reserved funds");
 
       // Survive all 50 rounds
       let currentTreasure = betAmount;
@@ -271,7 +274,11 @@ describe("Max Rounds & Reservation Horizon", () => {
           "95" // Always survive
         );
 
-        assert.strictEqual(result.survived, true, `Round ${round} should survive`);
+        assert.strictEqual(
+          result.survived,
+          true,
+          `Round ${round} should survive`
+        );
         currentTreasure = result.totalValue;
         actualMaxTreasure = Math.max(actualMaxTreasure, currentTreasure);
 
@@ -293,7 +300,11 @@ describe("Max Rounds & Reservation Horizon", () => {
 
       // Cash out
       const cashOutResult = await cashOut(currentTreasure, sessionId, userId);
-      assert.strictEqual(cashOutResult.success, true, "Cash out should succeed");
+      assert.strictEqual(
+        cashOutResult.success,
+        true,
+        "Cash out should succeed"
+      );
 
       // Verify final state
       const userFinal = getUserWallet(userId);
@@ -315,8 +326,12 @@ describe("Max Rounds & Reservation Horizon", () => {
       const userNetChange = userFinal.balance - userInitial.balance;
       const houseNetChange = houseFinal.balance - houseInitial.balance;
 
-      console.log(`  User net change: ${userNetChange > 0 ? '+' : ''}$${userNetChange}`);
-      console.log(`  House net change: ${houseNetChange > 0 ? '+' : ''}$${houseNetChange}`);
+      console.log(
+        `  User net change: ${userNetChange > 0 ? "+" : ""}$${userNetChange}`
+      );
+      console.log(
+        `  House net change: ${houseNetChange > 0 ? "+" : ""}$${houseNetChange}`
+      );
 
       assert.strictEqual(
         userNetChange + houseNetChange,
@@ -341,22 +356,33 @@ describe("Max Rounds & Reservation Horizon", () => {
       // to ~$1.11e+43. This is capped at maxPotentialWin ($100k) for reservation,
       // but actual payout can exceed this if player somehow survives all 50 rounds.
       // In practice, probability of surviving 50 rounds is astronomically low (~10^-41).
-      
+
       const actualPayout = currentTreasure;
       console.log(`  ⚠️  Actual payout: $${actualPayout.toExponential(2)}`);
       console.log(`  ⚠️  Reserved amount: $${reservedAmount}`);
-      console.log(`  ⚠️  House balance: $${houseFinal.balance.toExponential(2)}`);
-      
+      console.log(
+        `  ⚠️  House balance: $${houseFinal.balance.toExponential(2)}`
+      );
+
       if (actualPayout > reservedAmount || houseFinal.balance < 0) {
-        console.log(`  ⚠️  WARNING: Payout exceeded reservation / House went negative!`);
+        console.log(
+          `  ⚠️  WARNING: Payout exceeded reservation / House went negative!`
+        );
         console.log(`  This is EXPECTED for forced 50-round win streak.`);
-        console.log(`  Actual payout ($${actualPayout.toExponential(2)}) far exceeds cap ($${reservedAmount})`);
+        console.log(
+          `  Actual payout ($${actualPayout.toExponential(2)}) far exceeds cap ($${reservedAmount})`
+        );
         console.log(`  Probability of this occurring naturally: ~0% (10^-41)`);
-        console.log(`  This demonstrates why maxRounds should be limited or payouts capped more aggressively.`);
-        
+        console.log(
+          `  This demonstrates why maxRounds should be limited or payouts capped more aggressively.`
+        );
+
         // This test documents a theoretical upper bound
         // In production with true randomness, this is virtually impossible
-        assert.ok(true, "Acknowledged: Forced 50-round streak exceeds house capacity");
+        assert.ok(
+          true,
+          "Acknowledged: Forced 50-round streak exceeds house capacity"
+        );
       } else {
         // If somehow the payout stayed within bounds
         assert.ok(
@@ -394,12 +420,25 @@ describe("Max Rounds & Reservation Horizon", () => {
       const houseAfterTwoBets = getHouseWallet();
 
       // Reserved funds should be approximately 2x (one for each session)
-      const totalReserved = houseAfterTwoBets.reservedFunds - houseInitial.reservedFunds;
+      const totalReserved =
+        houseAfterTwoBets.reservedFunds - houseInitial.reservedFunds;
       console.log(`  Reserved for 2 sessions: $${totalReserved}`);
 
       // Execute one round on each
-      const result1 = await executeRound(1, betAmount, session1Id, userId, "95");
-      const result2 = await executeRound(1, betAmount, session2Id, userId, "95");
+      const result1 = await executeRound(
+        1,
+        betAmount,
+        session1Id,
+        userId,
+        "95"
+      );
+      const result2 = await executeRound(
+        1,
+        betAmount,
+        session2Id,
+        userId,
+        "95"
+      );
 
       // Cash out first session
       await cashOut(result1.totalValue, session1Id, userId);
@@ -407,7 +446,8 @@ describe("Max Rounds & Reservation Horizon", () => {
       const houseAfterFirstCashout = getHouseWallet();
 
       // Reserved funds should decrease by approximately half
-      const reservedAfterOne = houseAfterFirstCashout.reservedFunds - houseInitial.reservedFunds;
+      const reservedAfterOne =
+        houseAfterFirstCashout.reservedFunds - houseInitial.reservedFunds;
       console.log(`  Reserved after 1 cashout: $${reservedAfterOne}`);
 
       assert.ok(
@@ -464,7 +504,6 @@ describe("Max Rounds & Reservation Horizon", () => {
 
   describe("Extreme Streak Money Conservation", () => {
     it("should conserve money over a 20-round winning streak", async () => {
-      
       const betAmount = 10;
 
       const userInitial = getUserWallet(userId);
@@ -499,7 +538,9 @@ describe("Max Rounds & Reservation Horizon", () => {
       );
 
       console.log(`✅ Money conserved over 20-round streak`);
-      console.log(`   System total: $${systemTotalInitial} → $${systemTotalFinal}`);
+      console.log(
+        `   System total: $${systemTotalInitial} → $${systemTotalFinal}`
+      );
     });
 
     it("should conserve money across win, loss, and cashout scenarios", async () => {
@@ -541,13 +582,14 @@ describe("Max Rounds & Reservation Horizon", () => {
 
       console.log(`✅ Money conserved across mixed scenarios`);
       console.log(`   3 games played (win, loss, multi-round win)`);
-      console.log(`   System total: $${systemTotalInitial} → $${systemTotalFinal}`);
+      console.log(
+        `   System total: $${systemTotalInitial} → $${systemTotalFinal}`
+      );
     });
   });
 
   describe("Session State at maxRounds", () => {
     it("should maintain consistent session state at round 50", async () => {
-      
       const betAmount = 10;
       await startGameSession(betAmount, userId, sessionId);
 
@@ -574,13 +616,21 @@ describe("Max Rounds & Reservation Horizon", () => {
       );
 
       // Verify round 50 executed successfully
-      assert.strictEqual(round50Result.survived, true, "Round 50 should succeed");
+      assert.strictEqual(
+        round50Result.survived,
+        true,
+        "Round 50 should succeed"
+      );
       assert.strictEqual(round50Result.roundNumber, 50, "Should be round 50");
 
       // Check session state
       const sessionAt50 = getGameSession(sessionId);
       assert.ok(sessionAt50 !== undefined, "Session should exist");
-      assert.strictEqual(sessionAt50!.isActive, true, "Session should be active");
+      assert.strictEqual(
+        sessionAt50!.isActive,
+        true,
+        "Session should be active"
+      );
       assert.strictEqual(
         sessionAt50!.diveNumber,
         51,

@@ -162,14 +162,18 @@ function getProgramId(): PublicKey {
   if (!_programId) {
     // Get env var and validate it's not empty
     let programIdStr = process.env.NEXT_PUBLIC_PROGRAM_ID;
-    if (!programIdStr || programIdStr.trim() === '') {
+    if (!programIdStr || programIdStr.trim() === "") {
       programIdStr = "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7";
     }
     try {
       _programId = new PublicKey(programIdStr);
     } catch (error) {
-      console.error(`[solanaHelpers] Invalid PROGRAM_ID: "${programIdStr}", using fallback`);
-      _programId = new PublicKey("9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7");
+      console.error(
+        `[solanaHelpers] Invalid PROGRAM_ID: "${programIdStr}", using fallback`
+      );
+      _programId = new PublicKey(
+        "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
+      );
     }
   }
   return _programId;

@@ -279,7 +279,9 @@ export class LocalGameChain implements GameChainPort {
    * Initialize game config (not supported in LocalGameChain)
    */
   async initGameConfig(): Promise<any> {
-    throw new Error('initGameConfig not supported in LocalGameChain - config is hardcoded');
+    throw new Error(
+      "initGameConfig not supported in LocalGameChain - config is hardcoded"
+    );
   }
 
   /**
@@ -287,9 +289,11 @@ export class LocalGameChain implements GameChainPort {
    */
   async getGameConfig(): Promise<GameConfigState | null> {
     return {
-      configPda: 'local_config',
-      admin: 'local_admin',
-      baseSurvivalPpm: Math.round(this.gameConfig.baseWinProbability * 1_000_000),
+      configPda: "local_config",
+      admin: "local_admin",
+      baseSurvivalPpm: Math.round(
+        this.gameConfig.baseWinProbability * 1_000_000
+      ),
       decayPerDivePpm: Math.round(this.gameConfig.decayConstant * 1_000_000),
       minSurvivalPpm: Math.round(this.gameConfig.minWinProbability * 1_000_000),
       treasureMultiplierNum: 19,

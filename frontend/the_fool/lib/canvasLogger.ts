@@ -2,7 +2,7 @@
  * Canvas logging utility - Only logs when DEBUG_FLAGS.CANVAS is true
  */
 
-import { DEBUG_FLAGS } from './constants';
+import { DEBUG_FLAGS } from "./constants";
 
 export const canvasLog = {
   log: (...args: any[]) => {

@@ -1,10 +1,10 @@
 /**
  * Monte Carlo Statistical Tests
- * 
+ *
  * Large-scale simulations to verify probability distributions match theory.
  * These tests provide statistical confidence that the game is fair and
  * the probabilities are correct.
- * 
+ *
  * Run with: npm run test:unit:monte-carlo
  */
 
@@ -52,7 +52,7 @@ describe("Monte Carlo Statistical Verification", () => {
       const userId = generateTestUserId();
       const sessionId = generateSessionId();
       const startResult = await startGameSession(10, userId, sessionId);
-      
+
       if (!startResult.success) {
         console.error(`Failed to start session: ${startResult.error}`);
         continue;
@@ -114,7 +114,7 @@ describe("Monte Carlo Statistical Verification", () => {
       const userId = generateTestUserId();
       const sessionId = generateSessionId();
       const startResult = await startGameSession(10, userId, sessionId);
-      
+
       if (!startResult.success) {
         continue;
       }
@@ -137,7 +137,9 @@ describe("Monte Carlo Statistical Verification", () => {
       }
 
       if ((i + 1) % 100 === 0) {
-        console.log(`  Progress: ${i + 1}/${trials} (${survived} survived to round 5)`);
+        console.log(
+          `  Progress: ${i + 1}/${trials} (${survived} survived to round 5)`
+        );
       }
     }
 
@@ -145,7 +147,7 @@ describe("Monte Carlo Statistical Verification", () => {
     console.log(`  Completed in ${elapsed.toFixed(1)}s`);
 
     const ci = binomialConfidenceInterval(survived, trials, 0.95);
-    
+
     // Calculate expected cumulative survival probability
     // Based on BASE_WIN_PROB = 0.7, DECAY_CONSTANT = 0.08
     // Cumulative to round 5: ~7.55%
@@ -169,7 +171,9 @@ describe("Monte Carlo Statistical Verification", () => {
       `Relative error should be < 60% for low-probability events (got ${(relativeError * 100).toFixed(1)}%) - this is expected with 1000 trials at 7.55% probability`
     );
 
-    console.log("✅ Round 5 cumulative survival verified (within tolerance for low-probability event)\n");
+    console.log(
+      "✅ Round 5 cumulative survival verified (within tolerance for low-probability event)\n"
+    );
   });
 
   it("should verify house edge over 500 games", async () => {
@@ -235,7 +239,12 @@ describe("Monte Carlo Statistical Verification", () => {
     );
 
     // Verify within confidence interval
-    const verification = verifyEV(empiricalEV, theoreticalEV, results.length, 0.95);
+    const verification = verifyEV(
+      empiricalEV,
+      theoreticalEV,
+      results.length,
+      0.95
+    );
     console.log(`  Z-score: ${verification.zScore.toFixed(2)}`);
     console.log(`  95% CI width: ±${(verification.ciWidth * 100).toFixed(2)}%`);
 
@@ -244,11 +253,13 @@ describe("Monte Carlo Statistical Verification", () => {
     // Increasing trial count to 5000+ would give more accurate results
     const percentDiff = Math.abs((empiricalEV - theoreticalEV) / theoreticalEV);
     assert.ok(
-      percentDiff < 0.20,
+      percentDiff < 0.2,
       `Empirical EV should be within 20% of theoretical (${(percentDiff * 100).toFixed(2)}% diff) - increase trial count for more precision`
     );
 
-    console.log("✅ House edge verified with 500 games (within 20% tolerance)\n");
+    console.log(
+      "✅ House edge verified with 500 games (within 20% tolerance)\n"
+    );
   });
 
   it("should verify survival probability decreases monotonically", async () => {
@@ -269,7 +280,7 @@ describe("Monte Carlo Statistical Verification", () => {
         const userId = generateTestUserId();
         const sessionId = generateSessionId();
         const startResult = await startGameSession(10, userId, sessionId);
-        
+
         if (!startResult.success) {
           continue;
         }
@@ -334,7 +345,7 @@ describe("Monte Carlo Statistical Verification", () => {
       const userId = generateTestUserId();
       const sessionId = generateSessionId();
       const startResult = await startGameSession(10, userId, sessionId);
-      
+
       if (!startResult.success) {
         continue;
       }
@@ -380,10 +391,7 @@ describe("Monte Carlo Statistical Verification", () => {
     }
 
     // Chi-squared test
-    const test = chiSquaredTest(
-      roundCounts.slice(1),
-      expectedCounts.slice(1)
-    );
+    const test = chiSquaredTest(roundCounts.slice(1), expectedCounts.slice(1));
 
     console.log(`\n  Chi-squared statistic: ${test.statistic.toFixed(2)}`);
     console.log(`  Degrees of freedom: ${test.degreesOfFreedom}`);

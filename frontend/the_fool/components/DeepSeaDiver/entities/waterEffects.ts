@@ -10,7 +10,7 @@ import type { GameObj, KAPLAYCtx } from "kaplay";
 export function createCaustics(
   k: KAPLAYCtx,
   lightLevel: number,
-  depth: number,
+  depth: number
 ): GameObj {
   const caustic = k.add([
     k.rect(k.width(), k.height()),
@@ -41,7 +41,7 @@ export function createCaustics(
 export function createFloatingParticle(
   k: KAPLAYCtx,
   _depth: number,
-  lightLevel: number,
+  lightLevel: number
 ): GameObj {
   const x = Math.random() * k.width();
   const y = Math.random() * k.height();
@@ -93,7 +93,7 @@ export function createLightShaft(
   k: KAPLAYCtx,
   x: number,
   width: number,
-  lightLevel: number,
+  lightLevel: number
 ): GameObj {
   const shaft = k.add([
     k.rect(width, k.height()),
@@ -146,10 +146,18 @@ export function createDustMote(k: KAPLAYCtx, lightLevel: number): GameObj {
     mote.opacity = (0.3 + Math.sin(mote.time) * 0.1) * lightLevel;
 
     // Wrap around
-    if (mote.pos.x < -10) { mote.pos.x = k.width() + 10; }
-    if (mote.pos.x > k.width() + 10) { mote.pos.x = -10; }
-    if (mote.pos.y < -10) { mote.pos.y = k.height() + 10; }
-    if (mote.pos.y > k.height() + 10) { mote.pos.y = -10; }
+    if (mote.pos.x < -10) {
+      mote.pos.x = k.width() + 10;
+    }
+    if (mote.pos.x > k.width() + 10) {
+      mote.pos.x = -10;
+    }
+    if (mote.pos.y < -10) {
+      mote.pos.y = k.height() + 10;
+    }
+    if (mote.pos.y > k.height() + 10) {
+      mote.pos.y = -10;
+    }
   });
 
   return mote;
@@ -161,7 +169,7 @@ export function createDustMote(k: KAPLAYCtx, lightLevel: number): GameObj {
 export function createSurfaceRipple(
   k: KAPLAYCtx,
   centerX: number,
-  surfaceY: number,
+  surfaceY: number
 ): GameObj {
   const ripple = k.add([
     k.circle(10),
@@ -196,7 +204,7 @@ export function createSurfaceRipple(
 export function createGodRays(
   k: KAPLAYCtx,
   count: number,
-  lightLevel: number,
+  lightLevel: number
 ): GameObj[] {
   const rays: GameObj[] = [];
 
@@ -216,7 +224,7 @@ export function createGodRays(
 export function createHazeLayer(
   k: KAPLAYCtx,
   depth: number,
-  yPos: number,
+  yPos: number
 ): GameObj {
   const haze = k.add([
     k.rect(k.width(), 200),
@@ -245,7 +253,7 @@ export function createHazeLayer(
 export function spawnWaterEffects(
   k: KAPLAYCtx,
   depth: number,
-  lightLevel: number,
+  lightLevel: number
 ): void {
   // Spawn floating particles
   k.loop(0.5, () => {

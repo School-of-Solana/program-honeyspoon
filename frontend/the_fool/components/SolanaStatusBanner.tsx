@@ -1,8 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Connection } from '@solana/web3.js';
-import { detectSolanaNetwork, getNetworkDisplayName, getNetworkBadgeColor } from '@/lib/utils/networkDetection';
+import { useEffect, useState } from "react";
+import { Connection } from "@solana/web3.js";
+import {
+  detectSolanaNetwork,
+  getNetworkDisplayName,
+  getNetworkBadgeColor,
+} from "@/lib/utils/networkDetection";
 
 /**
  * Banner that shows Solana connection status
@@ -14,26 +18,26 @@ export function SolanaStatusBanner() {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
   const [showBanner, setShowBanner] = useState(true);
-  
-  const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
-  const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8899';
-  
+
+  const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
+  const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8899";
+
   // Detect network from RPC URL
   const network = detectSolanaNetwork(rpcUrl);
   const networkName = getNetworkDisplayName(network);
   const badgeColor = getNetworkBadgeColor(network);
-  
+
   useEffect(() => {
     if (!useSolana) {
       setChecking(false);
       return;
     }
-    
+
     let mounted = true;
-    
+
     async function checkConnection() {
       try {
-        const connection = new Connection(rpcUrl, 'confirmed');
+        const connection = new Connection(rpcUrl, "confirmed");
         await connection.getVersion();
         if (mounted) {
           setConnected(true);
@@ -46,48 +50,48 @@ export function SolanaStatusBanner() {
         }
       }
     }
-    
+
     checkConnection();
-    
+
     // Check periodically
     const interval = setInterval(checkConnection, 10000);
-    
+
     return () => {
       mounted = false;
       clearInterval(interval);
     };
   }, [useSolana, rpcUrl]);
-  
+
   // Auto-hide success banner after 10 seconds
   useEffect(() => {
     if (connected && showBanner) {
       const timer = setTimeout(() => {
         setShowBanner(false);
       }, 10000); // 10 seconds
-      
+
       return () => clearTimeout(timer);
     }
   }, [connected, showBanner]);
-  
+
   // Add global border styling for network indication
   useEffect(() => {
     if (!useSolana || !connected) return;
-    
+
     // Add border to body
     document.body.style.border = `4px solid ${badgeColor}`;
-    document.body.style.boxSizing = 'border-box';
-    
+    document.body.style.boxSizing = "border-box";
+
     return () => {
       // Cleanup on unmount
-      document.body.style.border = '';
+      document.body.style.border = "";
     };
   }, [useSolana, connected, badgeColor]);
-  
+
   // Don't show anything if not in Solana mode
   if (!useSolana) {
     return null;
   }
-  
+
   // Show checking state
   if (checking) {
     return (
@@ -96,10 +100,10 @@ export function SolanaStatusBanner() {
       </div>
     );
   }
-  
+
   // Show error if not connected (persistent, no auto-hide)
   if (!connected) {
-    const isLocalhost = network === 'localhost';
+    const isLocalhost = network === "localhost";
     return (
       <div className="fixed top-0 left-0 right-0 bg-red-600 text-white text-center py-3 text-sm z-50 shadow-lg">
         <div className="container mx-auto px-4">
@@ -108,8 +112,12 @@ export function SolanaStatusBanner() {
           </p>
           {isLocalhost && (
             <p className="text-xs opacity-90">
-              Run <code className="bg-red-700 px-2 py-0.5 rounded">npm run setup</code> to start localnet, 
-              or switch to Local mode in .env.local (NEXT_PUBLIC_USE_SOLANA=false)
+              Run{" "}
+              <code className="bg-red-700 px-2 py-0.5 rounded">
+                npm run setup
+              </code>{" "}
+              to start localnet, or switch to Local mode in .env.local
+              (NEXT_PUBLIC_USE_SOLANA=false)
             </p>
           )}
           {!isLocalhost && (
@@ -121,18 +129,18 @@ export function SolanaStatusBanner() {
       </div>
     );
   }
-  
+
   // Show success banner only if showBanner is true (auto-hides after 10s)
   if (!showBanner) {
     return null;
   }
-  
+
   const bgStyle = {
-    backgroundColor: badgeColor
+    backgroundColor: badgeColor,
   };
-  
+
   return (
-    <div 
+    <div
       className="fixed top-0 left-0 right-0 text-white text-center py-2 text-xs z-50 transition-opacity duration-500"
       style={bgStyle}
     >

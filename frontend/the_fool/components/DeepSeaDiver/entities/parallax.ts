@@ -27,7 +27,7 @@ export function createLayerPart(
   scaleRange: [number, number],
   opacityRange: [number, number],
   zIndex: number,
-  yOffset: number = 0,
+  yOffset: number = 0
 ): GameObj {
   const container = k.add([k.pos(0, yOffset), k.z(zIndex)]);
 
@@ -38,7 +38,7 @@ export function createLayerPart(
       k.anchor("center"),
       k.scale(scaleRange[0] + Math.random() * (scaleRange[1] - scaleRange[0])),
       k.opacity(
-        opacityRange[0] + Math.random() * (opacityRange[1] - opacityRange[0]),
+        opacityRange[0] + Math.random() * (opacityRange[1] - opacityRange[0])
       ),
     ]);
   }

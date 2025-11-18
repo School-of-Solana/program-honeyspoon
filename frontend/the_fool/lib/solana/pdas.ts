@@ -1,8 +1,8 @@
 /**
  * PDA (Program Derived Address) derivation helpers
- * 
+ *
  * CRITICAL: These seeds MUST match the contract exactly!
- * 
+ *
  * Seeds used in contract (from states.rs):
  * - GameConfig: ["game_config"]
  * - HouseVault: ["house_vault", house_authority.key()]
@@ -40,10 +40,7 @@ export function getHouseVaultAddress(
   programId: PublicKey
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
-    [
-      Buffer.from(HOUSE_VAULT_SEED),
-      houseAuthority.toBuffer(),
-    ],
+    [Buffer.from(HOUSE_VAULT_SEED), houseAuthority.toBuffer()],
     programId
   );
 }
@@ -69,13 +66,9 @@ export function getSessionAddress(
   programId: PublicKey
 ): [PublicKey, number] {
   const indexBuf = u64ToBuffer(sessionIndex);
-  
+
   return PublicKey.findProgramAddressSync(
-    [
-      Buffer.from(SESSION_SEED),
-      user.toBuffer(),
-      indexBuf,
-    ],
+    [Buffer.from(SESSION_SEED), user.toBuffer(), indexBuf],
     programId
   );
 }
@@ -92,7 +85,7 @@ export function sessionIndexToBuffer(index: number | bigint): Buffer {
  * This is NOT cryptographically valid, just for in-memory simulation
  */
 export function mockPDA(prefix: string, ...keys: string[]): string {
-  return `${prefix}_${keys.join('_')}`;
+  return `${prefix}_${keys.join("_")}`;
 }
 
 /**

@@ -18,7 +18,7 @@ export function createPalmTree(
   x: number,
   y: number,
   scale: number = 3,
-  zIndex: number = 5,
+  zIndex: number = 5
 ): GameObj {
   const palm = k.add([
     k.sprite("palmtree"),

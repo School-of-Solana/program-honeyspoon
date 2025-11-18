@@ -47,7 +47,8 @@ const chain = getGameChain();
 // House authority - used for initializing vault
 // In Solana mode, reads from NEXT_PUBLIC_HOUSE_AUTHORITY env var
 // In LocalGameChain mode, uses a mock authority string
-const HOUSE_AUTHORITY = process.env.NEXT_PUBLIC_HOUSE_AUTHORITY || "house_authority_main";
+const HOUSE_AUTHORITY =
+  process.env.NEXT_PUBLIC_HOUSE_AUTHORITY || "house_authority_main";
 
 // Global house vault PDA (initialized on first use)
 let houseVaultPDA: string | null = null;
@@ -86,18 +87,18 @@ async function ensureHouseVault(): Promise<string> {
     console.log("[CHAIN] 🏠 House authority:", HOUSE_AUTHORITY);
 
     // Check if we're in Solana mode
-    const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
-    
+    const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
+
     let derivedVaultPDA: string;
-    
+
     if (useSolana) {
       // Solana mode: use proper PDA derivation
       const { PublicKey } = await import("@solana/web3.js");
       const { getHouseVaultAddress } = await import("@/lib/solana/pdas");
-      
+
       const programId = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID!);
       const houseAuthPubkey = new PublicKey(HOUSE_AUTHORITY);
-      
+
       const [vaultPda] = getHouseVaultAddress(houseAuthPubkey, programId);
       derivedVaultPDA = vaultPda.toBase58();
       console.log("[CHAIN] 🔑 Derived Solana vault PDA:", derivedVaultPDA);
@@ -134,7 +135,10 @@ async function ensureHouseVault(): Promise<string> {
     return houseVaultPDA;
   } catch (error) {
     console.error("[CHAIN] ❌ Failed to initialize house vault:", error);
-    console.error("[CHAIN] ❌ Error details:", error instanceof Error ? error.message : String(error));
+    console.error(
+      "[CHAIN] ❌ Error details:",
+      error instanceof Error ? error.message : String(error)
+    );
     throw new Error("Failed to initialize house vault");
   }
 }
@@ -187,15 +191,24 @@ export async function startGameSession(
 
     // Validate bet amount
     if (betAmount < GAME_CONFIG.minBet) {
-      console.log("[CHAIN] ❌ Bet below minimum:", { betAmount, minBet: GAME_CONFIG.minBet });
+      console.log("[CHAIN] ❌ Bet below minimum:", {
+        betAmount,
+        minBet: GAME_CONFIG.minBet,
+      });
       return { success: false, error: `Minimum bet is ${GAME_CONFIG.minBet}` };
     }
     if (betAmount > GAME_CONFIG.maxBet) {
-      console.log("[CHAIN] ❌ Bet above maximum:", { betAmount, maxBet: GAME_CONFIG.maxBet });
+      console.log("[CHAIN] ❌ Bet above maximum:", {
+        betAmount,
+        maxBet: GAME_CONFIG.maxBet,
+      });
       return { success: false, error: `Maximum bet is ${GAME_CONFIG.maxBet}` };
     }
     if (betAmount > userBalance) {
-      console.log("[CHAIN] ❌ Insufficient user balance:", { betAmount, userBalance });
+      console.log("[CHAIN] ❌ Insufficient user balance:", {
+        betAmount,
+        userBalance,
+      });
       return { success: false, error: "Insufficient balance" };
     }
 

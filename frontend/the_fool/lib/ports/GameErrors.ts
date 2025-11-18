@@ -248,13 +248,21 @@ export class GameError extends Error {
     }
 
     // Insufficient funds
-    if (message.includes("insufficient funds") || message.includes("Insufficient lamports")) {
+    if (
+      message.includes("insufficient funds") ||
+      message.includes("Insufficient lamports")
+    ) {
       return GameError.insufficientUserFunds(BigInt(0), BigInt(0));
     }
 
     // Account not found
-    if (message.includes("AccountNotFound") || message.includes("could not find account")) {
-      return GameError.internalError("Account not found - session may not exist");
+    if (
+      message.includes("AccountNotFound") ||
+      message.includes("could not find account")
+    ) {
+      return GameError.internalError(
+        "Account not found - session may not exist"
+      );
     }
 
     // Default to internal error

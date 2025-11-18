@@ -9,6 +9,7 @@
  * SECURITY: Top-up actions are server-side protected (only work when NODE_ENV !== 'production')
  */
 
+/* eslint-disable react-hooks/rules-of-hooks */
 import { useState } from "react";
 import { useChainWalletStore } from "@/lib/chainWalletStore";
 import { GAME_COLORS } from "@/lib/gameColors";
@@ -19,8 +20,8 @@ import {
 
 export default function DebugWalletPanel() {
   // Check if we're using Solana mode
-  const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
-  
+  const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
+
   // Hide panel completely if using real Solana
   if (useSolana) {
     return null;

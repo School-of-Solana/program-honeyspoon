@@ -34,7 +34,12 @@ interface ChainWalletState {
   // Actions
   setUserId: (userId: string) => void;
   refreshBalance: () => Promise<void>; // Fetch from server (fallback)
-  updateFromSSE: (data: { userBalance: number; houseVaultBalance: number; houseVaultReserved: number; timestamp: number }) => void;
+  updateFromSSE: (data: {
+    userBalance: number;
+    houseVaultBalance: number;
+    houseVaultReserved: number;
+    timestamp: number;
+  }) => void;
   setSSEConnected: (connected: boolean) => void;
 }
 
@@ -145,5 +150,7 @@ if (typeof window !== "undefined") {
   // Store interval ID for potential cleanup (though Next.js modules typically don't unmount)
   (window as any).__walletRefreshInterval = refreshInterval;
 
-  console.log("[WALLET STORE] ⏰ Auto-refresh fallback polling started (5s, only when SSE down)");
+  console.log(
+    "[WALLET STORE] ⏰ Auto-refresh fallback polling started (5s, only when SSE down)"
+  );
 }

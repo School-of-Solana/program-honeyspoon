@@ -1,11 +1,11 @@
 /**
  * Error Handling Contract Tests
- * 
+ *
  * These tests lock in the contract between:
  * 1. Server error messages (thrown by gameEngine.ts)
  * 2. Error parsing logic (parseServerError)
  * 3. Client error handling (page.tsx error categorization)
- * 
+ *
  * If ANY error message changes on the server, these tests will fail,
  * preventing silent breakage of client error handling.
  */
@@ -49,15 +49,16 @@ describe("Error Handling Contract", () => {
 
     it("should parse session ownership errors", () => {
       const error = parseServerError("Session does not belong to user");
-      
+
       assert.strictEqual(error.code, GameErrorCode.SESSION_NOT_OWNED);
       assert.strictEqual(error.category, ErrorCategory.SESSION);
     });
 
     it("should parse treasure mismatch errors", () => {
-      const message = "Treasure mismatch: Expected $20, received $25. Data corruption detected.";
+      const message =
+        "Treasure mismatch: Expected $20, received $25. Data corruption detected.";
       const error = parseServerError(message);
-      
+
       assert.strictEqual(error.code, GameErrorCode.TREASURE_MISMATCH);
       assert.strictEqual(error.category, ErrorCategory.VALIDATION);
       assert.strictEqual(error.details?.expected, "20");
@@ -65,9 +66,10 @@ describe("Error Handling Contract", () => {
     });
 
     it("should parse round mismatch errors", () => {
-      const message = "Round mismatch: Expected round 3, received 5. Please refresh.";
+      const message =
+        "Round mismatch: Expected round 3, received 5. Please refresh.";
       const error = parseServerError(message);
-      
+
       assert.strictEqual(error.code, GameErrorCode.ROUND_MISMATCH);
       assert.strictEqual(error.category, ErrorCategory.VALIDATION);
       assert.strictEqual(error.details?.expected, "3");
@@ -75,9 +77,10 @@ describe("Error Handling Contract", () => {
     });
 
     it("should parse cash-out mismatch errors", () => {
-      const message = "Cash-out mismatch: Session has $100, attempting to cash out $150";
+      const message =
+        "Cash-out mismatch: Session has $100, attempting to cash out $150";
       const error = parseServerError(message);
-      
+
       assert.strictEqual(error.code, GameErrorCode.CASHOUT_MISMATCH);
       assert.strictEqual(error.category, ErrorCategory.VALIDATION);
       assert.strictEqual(error.details?.sessionAmount, "100");
@@ -86,10 +89,22 @@ describe("Error Handling Contract", () => {
 
     it("should parse bet validation errors", () => {
       const testCases = [
-        { message: "Bet below minimum", expectedCode: GameErrorCode.BET_TOO_LOW },
-        { message: "Bet exceeds maximum", expectedCode: GameErrorCode.BET_TOO_HIGH },
-        { message: "Insufficient balance", expectedCode: GameErrorCode.INSUFFICIENT_BALANCE },
-        { message: "House cannot cover potential payout", expectedCode: GameErrorCode.HOUSE_LIMIT_EXCEEDED },
+        {
+          message: "Bet below minimum",
+          expectedCode: GameErrorCode.BET_TOO_LOW,
+        },
+        {
+          message: "Bet exceeds maximum",
+          expectedCode: GameErrorCode.BET_TOO_HIGH,
+        },
+        {
+          message: "Insufficient balance",
+          expectedCode: GameErrorCode.INSUFFICIENT_BALANCE,
+        },
+        {
+          message: "House cannot cover potential payout",
+          expectedCode: GameErrorCode.HOUSE_LIMIT_EXCEEDED,
+        },
       ];
 
       for (const { message, expectedCode } of testCases) {
@@ -104,11 +119,16 @@ describe("Error Handling Contract", () => {
     });
 
     it("should parse unknown errors", () => {
-      const error = parseServerError("Some completely unexpected error message");
-      
+      const error = parseServerError(
+        "Some completely unexpected error message"
+      );
+
       assert.strictEqual(error.code, GameErrorCode.UNKNOWN);
       assert.strictEqual(error.category, ErrorCategory.UNKNOWN);
-      assert.strictEqual(error.details?.originalMessage, "Some completely unexpected error message");
+      assert.strictEqual(
+        error.details?.originalMessage,
+        "Some completely unexpected error message"
+      );
     });
   });
 
@@ -168,16 +188,18 @@ describe("Error Handling Contract", () => {
     it("should recommend session reset for session errors", () => {
       const error = parseServerError("Invalid or inactive game session");
       const action = getErrorAction(error);
-      
+
       assert.strictEqual(action.type, "RESET_SESSION");
       assert.strictEqual(action.recoverable, true);
       assert.strictEqual(action.primaryLabel, "Start New Game");
     });
 
     it("should recommend support contact for validation errors", () => {
-      const error = parseServerError("Treasure mismatch: Expected $10, received $20");
+      const error = parseServerError(
+        "Treasure mismatch: Expected $10, received $20"
+      );
       const action = getErrorAction(error);
-      
+
       assert.strictEqual(action.type, "CONTACT_SUPPORT");
       assert.strictEqual(action.recoverable, false);
       assert.strictEqual(action.primaryLabel, "Reload Page");
@@ -186,7 +208,7 @@ describe("Error Handling Contract", () => {
     it("should recommend message display for fund errors", () => {
       const error = parseServerError("Insufficient balance");
       const action = getErrorAction(error);
-      
+
       assert.strictEqual(action.type, "SHOW_MESSAGE");
       assert.strictEqual(action.recoverable, true);
       assert.strictEqual(action.primaryLabel, "OK");
@@ -195,7 +217,7 @@ describe("Error Handling Contract", () => {
     it("should recommend page reload for unknown errors", () => {
       const error = parseServerError("Something went terribly wrong");
       const action = getErrorAction(error);
-      
+
       assert.strictEqual(action.type, "RELOAD_PAGE");
       assert.strictEqual(action.recoverable, false);
     });
@@ -204,7 +226,7 @@ describe("Error Handling Contract", () => {
   describe("Error Helper Functions", () => {
     it("should check error codes correctly", () => {
       const error = parseServerError("Invalid or inactive game session");
-      
+
       assert.strictEqual(
         isErrorCode(error, GameErrorCode.SESSION_INVALID),
         true
@@ -217,20 +239,34 @@ describe("Error Handling Contract", () => {
 
     it("should check error categories correctly", () => {
       const sessionError = parseServerError("Invalid session ID");
-      const validationError = parseServerError("Treasure mismatch: Expected $10, received $20");
-      
-      assert.strictEqual(isErrorCategory(sessionError, ErrorCategory.SESSION), true);
-      assert.strictEqual(isErrorCategory(sessionError, ErrorCategory.VALIDATION), false);
-      
-      assert.strictEqual(isErrorCategory(validationError, ErrorCategory.VALIDATION), true);
-      assert.strictEqual(isErrorCategory(validationError, ErrorCategory.SESSION), false);
+      const validationError = parseServerError(
+        "Treasure mismatch: Expected $10, received $20"
+      );
+
+      assert.strictEqual(
+        isErrorCategory(sessionError, ErrorCategory.SESSION),
+        true
+      );
+      assert.strictEqual(
+        isErrorCategory(sessionError, ErrorCategory.VALIDATION),
+        false
+      );
+
+      assert.strictEqual(
+        isErrorCategory(validationError, ErrorCategory.VALIDATION),
+        true
+      );
+      assert.strictEqual(
+        isErrorCategory(validationError, ErrorCategory.SESSION),
+        false
+      );
     });
   });
 
   describe("Error Messages", () => {
     it("should have user-friendly messages for all error codes", () => {
       const allCodes = Object.values(GameErrorCode);
-      
+
       for (const code of allCodes) {
         const message = ERROR_MESSAGES[code];
         assert.ok(
@@ -242,7 +278,7 @@ describe("Error Handling Contract", () => {
 
     it("should not expose technical details in user messages", () => {
       const allMessages = Object.values(ERROR_MESSAGES);
-      
+
       for (const message of allMessages) {
         assert.ok(
           !message.includes("undefined"),
@@ -280,7 +316,10 @@ describe("Error Handling Contract", () => {
       // All should parse without throwing
       for (const msg of serverMessages) {
         const error = parseServerError(msg);
-        assert.ok(error.code !== GameErrorCode.UNKNOWN, `Failed to parse: "${msg}"`);
+        assert.ok(
+          error.code !== GameErrorCode.UNKNOWN,
+          `Failed to parse: "${msg}"`
+        );
       }
     });
 
@@ -294,7 +333,10 @@ describe("Error Handling Contract", () => {
 
       for (const msg of serverMessages) {
         const error = parseServerError(msg);
-        assert.ok(error.code !== GameErrorCode.UNKNOWN, `Failed to parse: "${msg}"`);
+        assert.ok(
+          error.code !== GameErrorCode.UNKNOWN,
+          `Failed to parse: "${msg}"`
+        );
       }
     });
 
@@ -325,7 +367,7 @@ describe("Error Handling Contract", () => {
     it("CLIENT: handleDiveDeeper session check", () => {
       // Old logic: message.includes("session") || message.includes("inactive")
       // This should now be: isErrorCategory(error, ErrorCategory.SESSION)
-      
+
       const sessionMessages = [
         "Invalid or inactive game session",
         "Session does not belong to user",
@@ -344,10 +386,10 @@ describe("Error Handling Contract", () => {
     it("CLIENT: handleSurface treasure check", () => {
       // Old logic: message.includes("treasure")
       // This should now be: isErrorCode(error, GameErrorCode.TREASURE_MISMATCH)
-      
+
       const treasureMessage = "Treasure mismatch: Expected $10, received $20";
       const error = parseServerError(treasureMessage);
-      
+
       assert.strictEqual(error.code, GameErrorCode.TREASURE_MISMATCH);
       assert.strictEqual(
         getErrorAction(error).type,
@@ -361,7 +403,7 @@ describe("Error Handling Contract", () => {
     it("should support i18n key substitution", () => {
       // Error messages can be replaced with i18n keys
       const error = parseServerError("Invalid or inactive game session");
-      
+
       // In production, ERROR_MESSAGES could map to: "errors.session.invalid"
       // The message field is designed to be replaceable
       assert.ok(

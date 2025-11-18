@@ -1,9 +1,9 @@
 /**
  * Transaction History Mapping Tests
- * 
+ *
  * Tests the correctness of getTransactionHistory() mapping from
  * walletStore transactions to theme-specific shape.
- * 
+ *
  * Critical scenarios:
  * 1. Round/dive number mapping - metadata.diveNumber || metadata.roundNumber
  * 2. Profit field only on cashout transactions
@@ -21,10 +21,7 @@ import {
   generateSessionId,
   getTransactionHistory,
 } from "../../app/actions/gameActions";
-import {
-  resetWalletStore,
-  addTransaction,
-} from "../../lib/walletStore";
+import { resetWalletStore, addTransaction } from "../../lib/walletStore";
 
 describe("Transaction History Mapping", () => {
   let userId: string;
@@ -208,7 +205,11 @@ describe("Transaction History Mapping", () => {
       const lossTx = history.find((t) => t.type === "loss");
       const winTx = history.find((t) => t.type === "win");
 
-      assert.strictEqual(betTx?.diveNumber, undefined, "Bet has no dive number");
+      assert.strictEqual(
+        betTx?.diveNumber,
+        undefined,
+        "Bet has no dive number"
+      );
       assert.strictEqual(lossTx?.diveNumber, 3, "Loss mapped from roundNumber");
       assert.strictEqual(winTx?.diveNumber, 1, "Win mapped from diveNumber");
 
@@ -515,11 +516,7 @@ describe("Transaction History Mapping", () => {
 
       if (diveResult.survived) {
         // Cash out
-        await surfaceWithTreasure(
-          diveResult.totalTreasure,
-          sessionId,
-          userId
-        );
+        await surfaceWithTreasure(diveResult.totalTreasure, sessionId, userId);
       }
 
       const history = await getTransactionHistory(userId, 10);
@@ -548,7 +545,9 @@ describe("Transaction History Mapping", () => {
 
       console.log("✅ Real game flow transactions mapped correctly");
       console.log(`   Bet: $${betTx!.amount}`);
-      console.log(`   Cashout: $${cashoutTx!.amount} (profit: $${cashoutTx!.profit})`);
+      console.log(
+        `   Cashout: $${cashoutTx!.amount} (profit: $${cashoutTx!.profit})`
+      );
     });
 
     it("should correctly map loss transaction from real game flow", async () => {
@@ -588,7 +587,13 @@ describe("Transaction History Mapping", () => {
       // Survive 3 rounds
       let treasure = 10;
       for (let round = 1; round <= 3; round++) {
-        const result = await performDive(round, treasure, sessionId, userId, "15");
+        const result = await performDive(
+          round,
+          treasure,
+          sessionId,
+          userId,
+          "15"
+        );
         treasure = result.totalTreasure;
       }
 

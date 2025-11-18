@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { useGameChain } from '@/lib/hooks/useGameChain';
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useGameChain } from "@/lib/hooks/useGameChain";
 
 /**
  * Enhanced wallet button with wallet name and selector
- * 
+ *
  * Features:
  * - Shows wallet name (e.g., "Phantom") when connected
  * - Shows shortened address
  * - Click to open wallet selector modal
  * - Disconnect button when connected
- * 
+ *
  * Usage:
  * ```tsx
  * import { WalletButton } from '@/components/WalletButton';
- * 
+ *
  * function Header() {
  *   return <WalletButton />;
  * }
@@ -38,7 +38,7 @@ export function WalletButton() {
   };
 
   // Get wallet name (e.g., "Phantom", "Solflare")
-  const walletName = wallet.wallet?.adapter?.name || 'Unknown';
+  const walletName = wallet.wallet?.adapter?.name || "Unknown";
 
   if (connected && publicKey) {
     return (
@@ -48,8 +48,8 @@ export function WalletButton() {
           {/* Wallet Icon/Name */}
           <div className="flex items-center gap-2">
             {wallet.wallet?.adapter?.icon && (
-              <img 
-                src={wallet.wallet.adapter.icon} 
+              <img
+                src={wallet.wallet.adapter.icon}
                 alt={walletName}
                 className="w-5 h-5 rounded"
               />
@@ -58,10 +58,10 @@ export function WalletButton() {
               {walletName}
             </span>
           </div>
-          
+
           {/* Divider */}
           <div className="w-px h-4 bg-gray-600" />
-          
+
           {/* Address */}
           <span className="text-sm text-gray-400 font-mono">
             {shortenAddress(publicKey.toBase58())}
@@ -101,7 +101,7 @@ export function WalletButton() {
 
 /**
  * Wallet status indicator (read-only)
- * 
+ *
  * Shows wallet connection status without interaction
  */
 export function WalletStatus() {

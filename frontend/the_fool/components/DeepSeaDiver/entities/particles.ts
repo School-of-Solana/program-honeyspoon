@@ -15,7 +15,7 @@ import * as CONST from "../sceneConstants";
 export function createCoinParticle(
   k: KAPLAYCtx,
   x: number,
-  y: number,
+  y: number
 ): GameObj {
   const angle = Math.random() * Math.PI * 2;
   const speed = CONST.COIN.SPEED_MIN + Math.random() * CONST.COIN.SPEED_RANDOM;
@@ -49,7 +49,7 @@ export function createCoinParticle(
 export function createTreasureParticles(
   k: KAPLAYCtx,
   x: number,
-  y: number,
+  y: number
 ): void {
   for (let i = 0; i < CONST.SPAWN_RATES.PARTICLE_COUNT; i++) {
     const angle = (Math.PI * 2 * i) / CONST.SPAWN_RATES.PARTICLE_COUNT;

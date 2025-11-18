@@ -202,7 +202,7 @@ describe("Game State Transitions", () => {
 
       // Start
       const startResult = await startGame(50, userId, sessionId);
-    const actualSessionId = startResult.sessionId!;
+      const actualSessionId = startResult.sessionId!;
       if (!startResult.success) {
         console.log(`  Game ${game}: Failed to start (house limits)`);
         continue;

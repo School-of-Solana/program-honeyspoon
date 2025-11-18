@@ -1,41 +1,42 @@
 /**
  * Network Detection Utility
- * 
+ *
  * Detects which Solana network we're connected to based on RPC URL
  */
 
 export enum SolanaNetwork {
-  LOCALHOST = 'localhost',
-  DEVNET = 'devnet',
-  TESTNET = 'testnet',
-  MAINNET = 'mainnet-beta',
-  UNKNOWN = 'unknown'
+  LOCALHOST = "localhost",
+  DEVNET = "devnet",
+  TESTNET = "testnet",
+  MAINNET = "mainnet-beta",
+  UNKNOWN = "unknown",
 }
 
 /**
  * Detect which Solana network we're connected to
  */
 export function detectSolanaNetwork(rpcUrl?: string): SolanaNetwork {
-  const url = rpcUrl || process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8899';
-  
+  const url =
+    rpcUrl || process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8899";
+
   const urlLower = url.toLowerCase();
-  
-  if (urlLower.includes('localhost') || urlLower.includes('127.0.0.1')) {
+
+  if (urlLower.includes("localhost") || urlLower.includes("127.0.0.1")) {
     return SolanaNetwork.LOCALHOST;
   }
-  
-  if (urlLower.includes('devnet')) {
+
+  if (urlLower.includes("devnet")) {
     return SolanaNetwork.DEVNET;
   }
-  
-  if (urlLower.includes('testnet')) {
+
+  if (urlLower.includes("testnet")) {
     return SolanaNetwork.TESTNET;
   }
-  
-  if (urlLower.includes('mainnet')) {
+
+  if (urlLower.includes("mainnet")) {
     return SolanaNetwork.MAINNET;
   }
-  
+
   return SolanaNetwork.UNKNOWN;
 }
 
@@ -44,7 +45,7 @@ export function detectSolanaNetwork(rpcUrl?: string): SolanaNetwork {
  */
 export function canAirdrop(network?: SolanaNetwork): boolean {
   const net = network || detectSolanaNetwork();
-  
+
   // Only allow airdrops on localhost and devnet
   return net === SolanaNetwork.LOCALHOST || net === SolanaNetwork.DEVNET;
 }
@@ -54,18 +55,18 @@ export function canAirdrop(network?: SolanaNetwork): boolean {
  */
 export function getNetworkDisplayName(network?: SolanaNetwork): string {
   const net = network || detectSolanaNetwork();
-  
+
   switch (net) {
     case SolanaNetwork.LOCALHOST:
-      return 'Localhost';
+      return "Localhost";
     case SolanaNetwork.DEVNET:
-      return 'Devnet';
+      return "Devnet";
     case SolanaNetwork.TESTNET:
-      return 'Testnet';
+      return "Testnet";
     case SolanaNetwork.MAINNET:
-      return 'Mainnet';
+      return "Mainnet";
     default:
-      return 'Unknown Network';
+      return "Unknown Network";
   }
 }
 
@@ -74,17 +75,17 @@ export function getNetworkDisplayName(network?: SolanaNetwork): string {
  */
 export function getNetworkBadgeColor(network?: SolanaNetwork): string {
   const net = network || detectSolanaNetwork();
-  
+
   switch (net) {
     case SolanaNetwork.LOCALHOST:
-      return '#4CAF50'; // Green
+      return "#4CAF50"; // Green
     case SolanaNetwork.DEVNET:
-      return '#2196F3'; // Blue
+      return "#2196F3"; // Blue
     case SolanaNetwork.TESTNET:
-      return '#FF9800'; // Orange
+      return "#FF9800"; // Orange
     case SolanaNetwork.MAINNET:
-      return '#F44336'; // Red
+      return "#F44336"; // Red
     default:
-      return '#9E9E9E'; // Gray
+      return "#9E9E9E"; // Gray
   }
 }

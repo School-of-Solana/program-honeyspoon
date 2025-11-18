@@ -37,14 +37,23 @@ import {
 
 export default function Home() {
   // Fetch game config from blockchain
-  const { config: gameConfig, loading: configLoading, error: configError } = useGameConfig();
-  
+  const {
+    config: gameConfig,
+    loading: configLoading,
+    error: configError,
+  } = useGameConfig();
+
   // Use wallet integration hook (handles both Solana wallet and local userId)
-  const { userId: walletOrUserId, isWalletMode, walletConnected } = useWalletOrUserId();
-  
+  const {
+    userId: walletOrUserId,
+    isWalletMode,
+    walletConnected,
+  } = useWalletOrUserId();
+
   // Use game chain hook (provides wallet-connected chain instance)
-  const { chain: gameChain, connected: isChainWalletConnected } = useGameChain();
-  
+  const { chain: gameChain, connected: isChainWalletConnected } =
+    useGameChain();
+
   // Use Zustand store for userId and wallet balance
   const userIdFromStore = useChainWalletStore((state) => state.userId);
   const setUserId = useChainWalletStore((state) => state.setUserId);
@@ -63,7 +72,11 @@ export default function Home() {
   );
 
   // Use SSE for real-time updates
-  const { data: sseData, isConnected: sseConnected, error: sseError } = useWalletSSE(userIdFromStore);
+  const {
+    data: sseData,
+    isConnected: sseConnected,
+    error: sseError,
+  } = useWalletSSE(userIdFromStore);
 
   // Update store when SSE data arrives
   useEffect(() => {
@@ -309,18 +322,22 @@ export default function Home() {
 
     try {
       // Check if using Solana mode - if so, use client-side chain (wallet required for signing)
-      const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
+      const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
       let newSessionId = gameState.sessionId; // Default to current session ID
-      
+
       if (useSolana) {
         console.log("[GAME] 🔗 Using client-side Solana chain for transaction");
-        
+
         try {
           // Call chain directly on client (wallet will sign)
           const betLamports = solToLamports(betAmount);
-          const maxPayoutMultiplier = gameConfig?.MAX_PAYOUT_MULTIPLIER ?? GAME_CONFIG.MAX_PAYOUT_MULTIPLIER;
-          const maxPayoutLamports = solToLamports(betAmount * maxPayoutMultiplier);
-          
+          const maxPayoutMultiplier =
+            gameConfig?.MAX_PAYOUT_MULTIPLIER ??
+            GAME_CONFIG.MAX_PAYOUT_MULTIPLIER;
+          const maxPayoutLamports = solToLamports(
+            betAmount * maxPayoutMultiplier
+          );
+
           console.log("[GAME] 💰 Transaction parameters:", {
             betAmount: `${betAmount} SOL`,
             betLamports: betLamports.toString(),
@@ -328,15 +345,17 @@ export default function Home() {
             maxPayout: `${betAmount * maxPayoutMultiplier} SOL`,
             maxPayoutLamports: maxPayoutLamports.toString(),
           });
-          
+
           // Get vault PDA
           console.log("[GAME] 🔑 Deriving vault PDA...");
-          const { PublicKey } = await import('@solana/web3.js');
-          const { getHouseVaultAddress } = await import('@/lib/solana/pdas');
+          const { PublicKey } = await import("@solana/web3.js");
+          const { getHouseVaultAddress } = await import("@/lib/solana/pdas");
           const programId = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID!);
-          const houseAuthPubkey = new PublicKey(process.env.NEXT_PUBLIC_HOUSE_AUTHORITY!);
+          const houseAuthPubkey = new PublicKey(
+            process.env.NEXT_PUBLIC_HOUSE_AUTHORITY!
+          );
           const [vaultPda] = getHouseVaultAddress(houseAuthPubkey, programId);
-          
+
           console.log("[GAME] 🏦 Vault PDA derived:", vaultPda.toBase58());
           console.log("[GAME] 📝 Calling startSession with params:", {
             userPubkey: userId,
@@ -344,14 +363,14 @@ export default function Home() {
             maxPayoutLamports: maxPayoutLamports.toString(),
             houseVaultPda: vaultPda.toBase58(),
           });
-          
+
           const { sessionPda, state } = await gameChain.startSession({
             userPubkey: userId,
             betAmountLamports: betLamports,
             maxPayoutLamports: maxPayoutLamports,
             houseVaultPda: vaultPda.toBase58(),
           });
-          
+
           console.log("[GAME] ✅ Solana session started on-chain!", {
             sessionPda,
             currentTreasure: lamportsToSol(state.currentTreasure),
@@ -359,12 +378,11 @@ export default function Home() {
             diveNumber: state.diveNumber,
             status: state.status,
           });
-          
+
           // Store session ID for later use
           newSessionId = sessionPda;
-          
+
           console.log("[GAME] 📊 Session created with ID:", newSessionId);
-          
         } catch (error) {
           console.error("[GAME] ❌ Solana transaction failed:", error);
           console.error("[GAME] ❌ Error details:", {
@@ -373,7 +391,6 @@ export default function Home() {
           });
           throw error; // Re-throw to be caught by outer try-catch
         }
-        
       } else {
         // LocalGameChain mode - use server action
         console.log("[GAME] 🔗 Using server action for LocalGameChain");
@@ -391,7 +408,7 @@ export default function Home() {
         console.log("[GAME] ✅ Game started successfully", {
           sessionId: result.sessionId,
         });
-        
+
         // Store session ID for later use
         newSessionId = result.sessionId || gameState.sessionId;
       }
@@ -434,13 +451,13 @@ export default function Home() {
       console.error("[GAME] ❌ handleStartGame caught error:", error);
       const message = error instanceof Error ? error.message : "Unknown error";
       const stack = error instanceof Error ? error.stack : undefined;
-      
+
       console.error("[GAME] ❌ Error details:", {
         message,
         stack,
         type: error?.constructor?.name,
       });
-      
+
       showError(
         `Game start failed: ${message}`,
         "error",
@@ -484,30 +501,34 @@ export default function Home() {
         diveNumber: gameState.diveNumber,
         sessionId: gameState.sessionId.substring(0, 12) + "...",
       });
-      
+
       // For first dive, use initialBet as the value to multiply; subsequent dives use accumulated treasure
       const valueToMultiply =
         gameState.currentTreasure === 0
           ? gameState.initialBet
           : gameState.currentTreasure;
-      
-      const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
+
+      const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
       let result;
-      
+
       if (useSolana) {
         // Solana mode - call chain directly (wallet will sign)
         console.log("[GAME] 🔗 Solana mode: calling playRound on-chain...");
-        
+
         const { state, survived } = await gameChain.playRound({
           sessionPda: gameState.sessionId,
           userPubkey: gameState.userId,
         });
-        
+
         // Get dive stats and generate shipwreck for depth calculation
-        const { calculateDiveStats, generateShipwreck } = await import('@/lib/gameLogic');
+        const { calculateDiveStats, generateShipwreck } = await import(
+          "@/lib/gameLogic"
+        );
         const diveStats = calculateDiveStats(gameState.diveNumber);
-        const shipwreck = survived ? generateShipwreck(gameState.diveNumber, gameState.sessionId) : undefined;
-        
+        const shipwreck = survived
+          ? generateShipwreck(gameState.diveNumber, gameState.sessionId)
+          : undefined;
+
         // Convert chain result to DiveResult format
         result = {
           success: true,
@@ -523,7 +544,7 @@ export default function Home() {
           timestamp: Date.now(),
           shipwreck: shipwreck ? { ...shipwreck, discovered: true } : undefined,
         };
-        
+
         console.log("[GAME] ✅ On-chain playRound result:", {
           survived,
           newDiveNumber: state.diveNumber,
@@ -714,28 +735,28 @@ export default function Home() {
     playSound("SURFACE"); // Play splash sound
 
     try {
-      const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
+      const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
       let result;
-      
+
       if (useSolana) {
         // Solana mode - call chain directly (wallet will sign)
         console.log("[GAME] 🔗 Solana mode: calling cashOut on-chain...");
-        
+
         const { finalTreasureLamports, state } = await gameChain.cashOut({
           sessionPda: gameState.sessionId,
           userPubkey: gameState.userId,
         });
-        
+
         // Convert to expected format
         const finalAmount = lamportsToSol(finalTreasureLamports);
         const profit = finalAmount - gameState.initialBet;
-        
+
         result = {
           success: true,
           finalAmount,
           profit,
         };
-        
+
         console.log("[GAME] ✅ On-chain cashOut result:", {
           finalTreasureLamports: finalTreasureLamports.toString(),
           finalAmount,
@@ -810,9 +831,12 @@ export default function Home() {
       }
     } catch (error) {
       console.error("[GAME] ❌ Cash out error:", error);
-      console.error("[GAME] ❌ Error stack:", error instanceof Error ? error.stack : "No stack");
+      console.error(
+        "[GAME] ❌ Error stack:",
+        error instanceof Error ? error.stack : "No stack"
+      );
       console.error("[GAME] ❌ Error type:", error?.constructor?.name);
-      
+
       const message = error instanceof Error ? error.message : "Unknown error";
 
       // ✅ NEW: Use typed error parsing instead of string matching
@@ -1070,10 +1094,9 @@ export default function Home() {
               <p
                 style={{ fontSize: "8px", textAlign: "center", color: "#aaa" }}
               >
-                {gameConfig 
+                {gameConfig
                   ? `${(gameConfig.HOUSE_EDGE * 100).toFixed(0)}% House Edge - ${gameConfig.BASE_SURVIVAL_PROBABILITY * 100}% Start Chance`
-                  : `${(GAME_CONFIG.HOUSE_EDGE * 100).toFixed(0)}% House Edge - Loading config...`
-                }
+                  : `${(GAME_CONFIG.HOUSE_EDGE * 100).toFixed(0)}% House Edge - Loading config...`}
               </p>
             </div>
           </div>
@@ -1087,7 +1110,10 @@ export default function Home() {
             }`}
           >
             {/* Top HUD Bar - NES Style (Treasure Only) */}
-            <div className="absolute top-20 right-4 pointer-events-auto" style={{ width: "180px" }}>
+            <div
+              className="absolute top-20 right-4 pointer-events-auto"
+              style={{ width: "180px" }}
+            >
               {/* Treasure Panel */}
               <div
                 className="nes-container is-dark"

@@ -201,20 +201,23 @@ describe("House Wallet Race Conditions", () => {
   it("should handle multiple concurrent payouts", async () => {
     // Ensure fresh state
     resetWalletStore();
-    
+
     const users = [];
     const sessions = [];
 
     // Verify house has funds before starting
     const initialHouse = await getHouseStatus();
-    assert.ok(initialHouse.balance > 10000, `House should have funds, has ${initialHouse.balance}`);
+    assert.ok(
+      initialHouse.balance > 10000,
+      `House should have funds, has ${initialHouse.balance}`
+    );
 
     // Create 3 users and start games
     // Note: House reserves up to maxPotentialWin ($100k) per game
     // With $500k balance and 10% reserve, we can support ~4 concurrent games maximum
     const betAmount = 10;
     const numUsers = 3;
-    
+
     for (let i = 0; i < numUsers; i++) {
       const userId = `user${i}_${Date.now()}_${Math.random()}`;
       const sessionId = await generateSessionId();
@@ -223,20 +226,32 @@ describe("House Wallet Race Conditions", () => {
       sessions.push(sessionId);
 
       const houseBeforeGame = await getHouseStatus();
-      console.log(`Before game ${i}: balance=${houseBeforeGame.balance}, reserved=${houseBeforeGame.reservedFunds}, available=${houseBeforeGame.availableFunds}`);
-      
+      console.log(
+        `Before game ${i}: balance=${houseBeforeGame.balance}, reserved=${houseBeforeGame.reservedFunds}, available=${houseBeforeGame.availableFunds}`
+      );
+
       const startResult = await startGame(betAmount, userId, sessionId);
       if (!startResult.success) {
         const houseAfterFail = await getHouseStatus();
-        throw new Error(`Failed to start game for user ${i}: ${startResult.error}. House: balance=${houseAfterFail.balance}, reserved=${houseAfterFail.reservedFunds}, available=${houseAfterFail.availableFunds}`);
+        throw new Error(
+          `Failed to start game for user ${i}: ${startResult.error}. House: balance=${houseAfterFail.balance}, reserved=${houseAfterFail.reservedFunds}, available=${houseAfterFail.availableFunds}`
+        );
       }
-      
+
       // Use seed "30" to ensure survival (70% win rate means threshold=30, so roll >= 30 survives)
-      const diveResult = await performDive(1, betAmount, sessionId, userId, "30");
-      
+      const diveResult = await performDive(
+        1,
+        betAmount,
+        sessionId,
+        userId,
+        "30"
+      );
+
       // Verify the dive succeeded
       if (!diveResult.survived) {
-        throw new Error(`Dive failed for user ${i} with seed 30 - this should not happen`);
+        throw new Error(
+          `Dive failed for user ${i} with seed 30 - this should not happen`
+        );
       }
     }
 

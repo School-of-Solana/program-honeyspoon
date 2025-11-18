@@ -1,30 +1,30 @@
-'use client';
+"use client";
 
 /**
  * Solana Airdrop Panel
- * 
+ *
  * Shows network information and allows airdrops on localhost/devnet
  * when a Solana wallet is connected.
  */
 
-import { useState, useEffect } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { GAME_COLORS } from '@/lib/gameColors';
-import { airdropSol } from '@/app/actions/walletActions';
-import { useChainWalletStore } from '@/lib/chainWalletStore';
-import { 
-  detectSolanaNetwork, 
-  canAirdrop, 
+/* eslint-disable react-hooks/rules-of-hooks */
+import { useState, useEffect } from "react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { GAME_COLORS } from "@/lib/gameColors";
+import { airdropSol } from "@/app/actions/walletActions";
+import { useChainWalletStore } from "@/lib/chainWalletStore";
+import {
+  detectSolanaNetwork,
+  canAirdrop,
   getNetworkDisplayName,
   getNetworkBadgeColor,
-  SolanaNetwork 
-} from '@/lib/utils/networkDetection';
+  SolanaNetwork,
+} from "@/lib/utils/networkDetection";
 
 export function SolanaAirdropPanel() {
   // Check if we're using Solana mode
-  const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
-  
+  const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
+
   // Don't show if not using Solana
   if (!useSolana) {
     return null;
@@ -32,13 +32,15 @@ export function SolanaAirdropPanel() {
 
   const { publicKey, connected } = useWallet();
   const { connection } = useConnection();
-  
+
   // Get balances from Zustand store (updated via SSE)
   const userBalance = useChainWalletStore((state) => state.userBalance);
-  const houseVaultBalance = useChainWalletStore((state) => state.houseVaultBalance);
+  const houseVaultBalance = useChainWalletStore(
+    (state) => state.houseVaultBalance
+  );
   const isSSEConnected = useChainWalletStore((state) => state.isSSEConnected);
   const refreshBalance = useChainWalletStore((state) => state.refreshBalance);
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
   const [houseBalance, setHouseBalance] = useState<number | null>(null);
@@ -46,10 +48,10 @@ export function SolanaAirdropPanel() {
   const [isLoadingHouse, setIsLoadingHouse] = useState(false);
   const [isAirdropping, setIsAirdropping] = useState(false);
   const [isAirdroppingHouse, setIsAirdroppingHouse] = useState(false);
-  const [airdropAmount, setAirdropAmount] = useState('1');
-  const [houseAirdropAmount, setHouseAirdropAmount] = useState('500');
-  const [message, setMessage] = useState('');
-  const [houseMessage, setHouseMessage] = useState('');
+  const [airdropAmount, setAirdropAmount] = useState("1");
+  const [houseAirdropAmount, setHouseAirdropAmount] = useState("500");
+  const [message, setMessage] = useState("");
+  const [houseMessage, setHouseMessage] = useState("");
 
   // Sync user balance from store (SSE updates)
   useEffect(() => {
@@ -62,7 +64,7 @@ export function SolanaAirdropPanel() {
   useEffect(() => {
     setHouseBalance(houseVaultBalance);
   }, [houseVaultBalance]);
-  
+
   // Detect network
   const network = detectSolanaNetwork();
   const networkName = getNetworkDisplayName(network);
@@ -76,39 +78,39 @@ export function SolanaAirdropPanel() {
   // Handle airdrop
   const handleAirdrop = async () => {
     if (!publicKey) {
-      console.warn('[AIRDROP PANEL] ❌ No public key available');
+      console.warn("[AIRDROP PANEL] ❌ No public key available");
       return;
     }
 
-    console.log('[AIRDROP PANEL] 🚀 Starting airdrop request...', {
+    console.log("[AIRDROP PANEL] 🚀 Starting airdrop request...", {
       wallet: publicKey.toBase58(),
       amount: airdropAmount,
       network: networkName,
     });
 
     setIsAirdropping(true);
-    setMessage('');
+    setMessage("");
 
     try {
       const amount = parseFloat(airdropAmount);
       if (isNaN(amount) || amount <= 0) {
-        console.warn('[AIRDROP PANEL] ❌ Invalid amount:', airdropAmount);
-        setMessage('❌ Invalid amount');
+        console.warn("[AIRDROP PANEL] ❌ Invalid amount:", airdropAmount);
+        setMessage("❌ Invalid amount");
         setIsAirdropping(false);
         return;
       }
 
-      console.log('[AIRDROP PANEL] 📤 Calling airdropSol server action...', {
+      console.log("[AIRDROP PANEL] 📤 Calling airdropSol server action...", {
         wallet: publicKey.toBase58(),
         amount,
       });
 
       const result = await airdropSol(publicKey.toBase58(), amount);
 
-      console.log('[AIRDROP PANEL] 📥 Received airdrop result:', result);
+      console.log("[AIRDROP PANEL] 📥 Received airdrop result:", result);
 
       if (result.success) {
-        console.log('[AIRDROP PANEL] ✅ Airdrop successful!', {
+        console.log("[AIRDROP PANEL] ✅ Airdrop successful!", {
           signature: result.signature,
           newBalance: result.newBalance,
         });
@@ -116,23 +118,26 @@ export function SolanaAirdropPanel() {
         // Update balance
         if (result.newBalance !== undefined) {
           setBalance(result.newBalance);
-          console.log('[AIRDROP PANEL] 💰 Balance updated to:', result.newBalance);
+          console.log(
+            "[AIRDROP PANEL] 💰 Balance updated to:",
+            result.newBalance
+          );
         }
         // Trigger manual refresh to update all clients
-        console.log('[AIRDROP PANEL] 🔄 Triggering manual balance refresh...');
+        console.log("[AIRDROP PANEL] 🔄 Triggering manual balance refresh...");
         await refreshBalance();
       } else {
-        console.error('[AIRDROP PANEL] ❌ Airdrop failed:', result.error);
+        console.error("[AIRDROP PANEL] ❌ Airdrop failed:", result.error);
         setMessage(`❌ ${result.error}`);
       }
     } catch (error) {
-      console.error('[AIRDROP PANEL] ❌ Exception during airdrop:', error);
+      console.error("[AIRDROP PANEL] ❌ Exception during airdrop:", error);
       setMessage(`❌ Failed: ${error}`);
     } finally {
       setIsAirdropping(false);
-      console.log('[AIRDROP PANEL] 🏁 Airdrop process completed');
+      console.log("[AIRDROP PANEL] 🏁 Airdrop process completed");
       // Clear message after 5 seconds
-      setTimeout(() => setMessage(''), 5000);
+      setTimeout(() => setMessage(""), 5000);
     }
   };
 
@@ -140,39 +145,42 @@ export function SolanaAirdropPanel() {
   const handleHouseAirdrop = async () => {
     const houseAuthority = process.env.NEXT_PUBLIC_HOUSE_AUTHORITY;
     if (!houseAuthority) {
-      console.warn('[AIRDROP PANEL] ❌ No house authority configured');
+      console.warn("[AIRDROP PANEL] ❌ No house authority configured");
       return;
     }
 
-    console.log('[AIRDROP PANEL] 🚀 Starting house airdrop request...', {
+    console.log("[AIRDROP PANEL] 🚀 Starting house airdrop request...", {
       wallet: houseAuthority,
       amount: houseAirdropAmount,
       network: networkName,
     });
 
     setIsAirdroppingHouse(true);
-    setHouseMessage('');
+    setHouseMessage("");
 
     try {
       const amount = parseFloat(houseAirdropAmount);
       if (isNaN(amount) || amount <= 0) {
-        console.warn('[AIRDROP PANEL] ❌ Invalid house airdrop amount:', houseAirdropAmount);
-        setHouseMessage('❌ Invalid amount');
+        console.warn(
+          "[AIRDROP PANEL] ❌ Invalid house airdrop amount:",
+          houseAirdropAmount
+        );
+        setHouseMessage("❌ Invalid amount");
         setIsAirdroppingHouse(false);
         return;
       }
 
-      console.log('[AIRDROP PANEL] 📤 Calling airdropSol for house wallet...', {
+      console.log("[AIRDROP PANEL] 📤 Calling airdropSol for house wallet...", {
         wallet: houseAuthority,
         amount,
       });
 
       const result = await airdropSol(houseAuthority, amount);
 
-      console.log('[AIRDROP PANEL] 📥 Received house airdrop result:', result);
+      console.log("[AIRDROP PANEL] 📥 Received house airdrop result:", result);
 
       if (result.success) {
-        console.log('[AIRDROP PANEL] ✅ House airdrop successful!', {
+        console.log("[AIRDROP PANEL] ✅ House airdrop successful!", {
           signature: result.signature,
           newBalance: result.newBalance,
         });
@@ -180,23 +188,29 @@ export function SolanaAirdropPanel() {
         // Update balance
         if (result.newBalance !== undefined) {
           setHouseBalance(result.newBalance);
-          console.log('[AIRDROP PANEL] 🏦 House balance updated to:', result.newBalance);
+          console.log(
+            "[AIRDROP PANEL] 🏦 House balance updated to:",
+            result.newBalance
+          );
         }
         // Trigger manual refresh to update all clients
-        console.log('[AIRDROP PANEL] 🔄 Triggering manual balance refresh...');
+        console.log("[AIRDROP PANEL] 🔄 Triggering manual balance refresh...");
         await refreshBalance();
       } else {
-        console.error('[AIRDROP PANEL] ❌ House airdrop failed:', result.error);
+        console.error("[AIRDROP PANEL] ❌ House airdrop failed:", result.error);
         setHouseMessage(`❌ ${result.error}`);
       }
     } catch (error) {
-      console.error('[AIRDROP PANEL] ❌ Exception during house airdrop:', error);
+      console.error(
+        "[AIRDROP PANEL] ❌ Exception during house airdrop:",
+        error
+      );
       setHouseMessage(`❌ Failed: ${error}`);
     } finally {
       setIsAirdroppingHouse(false);
-      console.log('[AIRDROP PANEL] 🏁 House airdrop process completed');
+      console.log("[AIRDROP PANEL] 🏁 House airdrop process completed");
       // Clear message after 5 seconds
-      setTimeout(() => setHouseMessage(''), 5000);
+      setTimeout(() => setHouseMessage(""), 5000);
     }
   };
 
@@ -209,7 +223,7 @@ export function SolanaAirdropPanel() {
     <div
       className="fixed bottom-4 left-4 z-50"
       style={{
-        maxWidth: '400px',
+        maxWidth: "400px",
       }}
     >
       {/* Toggle Button */}
@@ -218,8 +232,8 @@ export function SolanaAirdropPanel() {
           onClick={() => setIsOpen(true)}
           className="nes-btn is-primary"
           style={{
-            fontSize: '10px',
-            padding: '12px 16px',
+            fontSize: "10px",
+            padding: "12px 16px",
           }}
         >
           🌐 NETWORK
@@ -232,10 +246,10 @@ export function SolanaAirdropPanel() {
           className="nes-container is-dark with-title"
           style={{
             backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
-            fontSize: '8px',
+            fontSize: "8px",
           }}
         >
-          <p className="title" style={{ fontSize: '10px' }}>
+          <p className="title" style={{ fontSize: "10px" }}>
             🌐 NETWORK INFO
           </p>
 
@@ -244,11 +258,11 @@ export function SolanaAirdropPanel() {
             onClick={() => setIsOpen(false)}
             className="nes-btn is-error"
             style={{
-              position: 'absolute',
-              top: '8px',
-              right: '8px',
-              fontSize: '8px',
-              padding: '4px 8px',
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+              fontSize: "8px",
+              padding: "4px 8px",
             }}
           >
             ✕
@@ -257,64 +271,78 @@ export function SolanaAirdropPanel() {
           {/* Network Badge */}
           <div
             className="nes-container is-rounded"
-            style={{ 
-              marginBottom: '12px',
-              backgroundColor: networkColor + '20',
+            style={{
+              marginBottom: "12px",
+              backgroundColor: networkColor + "20",
               borderColor: networkColor,
             }}
           >
-            <div style={{ marginBottom: '8px' }}>
-              <strong>Network:</strong>{' '}
-              <span style={{ color: networkColor, fontWeight: 'bold' }}>
+            <div style={{ marginBottom: "8px" }}>
+              <strong>Network:</strong>{" "}
+              <span style={{ color: networkColor, fontWeight: "bold" }}>
                 {networkName}
               </span>
             </div>
-            <div style={{ fontSize: '7px', opacity: 0.7, marginBottom: '4px' }}>
-              {network === SolanaNetwork.MAINNET && '⚠️ Using real SOL!'}
-              {network === SolanaNetwork.LOCALHOST && '🔧 Local test network'}
-              {network === SolanaNetwork.DEVNET && '🧪 Solana Devnet'}
-              {network === SolanaNetwork.TESTNET && '🧪 Solana Testnet'}
+            <div style={{ fontSize: "7px", opacity: 0.7, marginBottom: "4px" }}>
+              {network === SolanaNetwork.MAINNET && "⚠️ Using real SOL!"}
+              {network === SolanaNetwork.LOCALHOST && "🔧 Local test network"}
+              {network === SolanaNetwork.DEVNET && "🧪 Solana Devnet"}
+              {network === SolanaNetwork.TESTNET && "🧪 Solana Testnet"}
             </div>
-            <div style={{ fontSize: '7px', opacity: 0.7, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ 
-                display: 'inline-block',
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: isSSEConnected ? '#4CAF50' : '#FF5722',
-              }} />
-              {isSSEConnected ? '🟢 Real-time updates active' : '🔴 Polling fallback mode'}
+            <div
+              style={{
+                fontSize: "7px",
+                opacity: 0.7,
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-block",
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  backgroundColor: isSSEConnected ? "#4CAF50" : "#FF5722",
+                }}
+              />
+              {isSSEConnected
+                ? "🟢 Real-time updates active"
+                : "🔴 Polling fallback mode"}
             </div>
           </div>
 
           {/* User Wallet Balance */}
           <div
             className="nes-container is-rounded"
-            style={{ marginBottom: '12px' }}
+            style={{ marginBottom: "12px" }}
           >
-            <div style={{ marginBottom: '8px' }}>
+            <div style={{ marginBottom: "8px" }}>
               <strong>💰 YOUR WALLET</strong>
             </div>
             {publicKey && (
               <>
                 <div
                   style={{
-                    marginBottom: '4px',
-                    fontSize: '7px',
+                    marginBottom: "4px",
+                    fontSize: "7px",
                     opacity: 0.7,
-                    wordBreak: 'break-all',
+                    wordBreak: "break-all",
                   }}
                 >
                   {publicKey.toBase58().substring(0, 20)}...
                 </div>
                 <div
                   style={{
-                    fontSize: '16px',
-                    fontWeight: 'bold',
+                    fontSize: "16px",
+                    fontWeight: "bold",
                     color: GAME_COLORS.TREASURE_GOLD,
                   }}
                 >
-                  {isLoading ? 'Loading...' : `${balance?.toFixed(4) || '0.0000'} SOL`}
+                  {isLoading
+                    ? "Loading..."
+                    : `${balance?.toFixed(4) || "0.0000"} SOL`}
                 </div>
               </>
             )}
@@ -323,31 +351,36 @@ export function SolanaAirdropPanel() {
           {/* House Wallet Balance */}
           <div
             className="nes-container is-rounded"
-            style={{ marginBottom: '12px', backgroundColor: 'rgba(76, 175, 80, 0.1)' }}
+            style={{
+              marginBottom: "12px",
+              backgroundColor: "rgba(76, 175, 80, 0.1)",
+            }}
           >
-            <div style={{ marginBottom: '8px' }}>
+            <div style={{ marginBottom: "8px" }}>
               <strong>🏦 HOUSE WALLET</strong>
             </div>
             {process.env.NEXT_PUBLIC_HOUSE_AUTHORITY && (
               <>
                 <div
                   style={{
-                    marginBottom: '4px',
-                    fontSize: '7px',
+                    marginBottom: "4px",
+                    fontSize: "7px",
                     opacity: 0.7,
-                    wordBreak: 'break-all',
+                    wordBreak: "break-all",
                   }}
                 >
                   {process.env.NEXT_PUBLIC_HOUSE_AUTHORITY.substring(0, 20)}...
                 </div>
                 <div
                   style={{
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    color: '#4CAF50',
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                    color: "#4CAF50",
                   }}
                 >
-                  {isLoadingHouse ? 'Loading...' : `${houseBalance?.toFixed(4) || '0.0000'} SOL`}
+                  {isLoadingHouse
+                    ? "Loading..."
+                    : `${houseBalance?.toFixed(4) || "0.0000"} SOL`}
                 </div>
               </>
             )}
@@ -358,17 +391,17 @@ export function SolanaAirdropPanel() {
             <div
               className="nes-container is-rounded"
               style={{
-                marginBottom: '12px',
-                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                marginBottom: "12px",
+                backgroundColor: "rgba(33, 150, 243, 0.1)",
               }}
             >
-              <div style={{ marginBottom: '8px' }}>
+              <div style={{ marginBottom: "8px" }}>
                 <strong>💧 AIRDROP TO YOUR WALLET</strong>
               </div>
 
               {/* Amount Input */}
-              <div style={{ marginBottom: '8px' }}>
-                <label style={{ fontSize: '8px', opacity: 0.7 }}>
+              <div style={{ marginBottom: "8px" }}>
+                <label style={{ fontSize: "8px", opacity: 0.7 }}>
                   Amount (SOL):
                 </label>
                 <input
@@ -381,9 +414,9 @@ export function SolanaAirdropPanel() {
                   max="5"
                   step="0.5"
                   style={{
-                    fontSize: '10px',
-                    padding: '4px',
-                    marginTop: '4px',
+                    fontSize: "10px",
+                    padding: "4px",
+                    marginTop: "4px",
                   }}
                 />
               </div>
@@ -392,20 +425,20 @@ export function SolanaAirdropPanel() {
               <button
                 onClick={handleAirdrop}
                 disabled={isAirdropping || !publicKey}
-                className={`nes-btn ${isAirdropping || !publicKey ? 'is-disabled' : 'is-primary'} w-full`}
-                style={{ fontSize: '8px', padding: '8px', marginBottom: '8px' }}
+                className={`nes-btn ${isAirdropping || !publicKey ? "is-disabled" : "is-primary"} w-full`}
+                style={{ fontSize: "8px", padding: "8px", marginBottom: "8px" }}
               >
-                {isAirdropping ? '💧 REQUESTING...' : '💧 REQUEST AIRDROP'}
+                {isAirdropping ? "💧 REQUESTING..." : "💧 REQUEST AIRDROP"}
               </button>
 
               {/* Message */}
               {message && (
                 <div
                   style={{
-                    fontSize: '7px',
-                    textAlign: 'center',
-                    padding: '4px',
-                    wordBreak: 'break-word',
+                    fontSize: "7px",
+                    textAlign: "center",
+                    padding: "4px",
+                    wordBreak: "break-word",
                   }}
                 >
                   {message}
@@ -414,10 +447,10 @@ export function SolanaAirdropPanel() {
 
               <div
                 style={{
-                  fontSize: '6px',
+                  fontSize: "6px",
                   opacity: 0.5,
-                  textAlign: 'center',
-                  marginTop: '4px',
+                  textAlign: "center",
+                  marginTop: "4px",
                 }}
               >
                 Free SOL for testing (max 5 SOL per request)
@@ -430,17 +463,17 @@ export function SolanaAirdropPanel() {
             <div
               className="nes-container is-rounded"
               style={{
-                marginBottom: '12px',
-                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                marginBottom: "12px",
+                backgroundColor: "rgba(76, 175, 80, 0.1)",
               }}
             >
-              <div style={{ marginBottom: '8px' }}>
+              <div style={{ marginBottom: "8px" }}>
                 <strong>💧 AIRDROP TO HOUSE WALLET</strong>
               </div>
 
               {/* Amount Input */}
-              <div style={{ marginBottom: '8px' }}>
-                <label style={{ fontSize: '8px', opacity: 0.7 }}>
+              <div style={{ marginBottom: "8px" }}>
+                <label style={{ fontSize: "8px", opacity: 0.7 }}>
                   Amount (SOL):
                 </label>
                 <input
@@ -453,9 +486,9 @@ export function SolanaAirdropPanel() {
                   max="1000"
                   step="10"
                   style={{
-                    fontSize: '10px',
-                    padding: '4px',
-                    marginTop: '4px',
+                    fontSize: "10px",
+                    padding: "4px",
+                    marginTop: "4px",
                   }}
                 />
               </div>
@@ -464,20 +497,20 @@ export function SolanaAirdropPanel() {
               <button
                 onClick={handleHouseAirdrop}
                 disabled={isAirdroppingHouse}
-                className={`nes-btn ${isAirdroppingHouse ? 'is-disabled' : 'is-success'} w-full`}
-                style={{ fontSize: '8px', padding: '8px', marginBottom: '8px' }}
+                className={`nes-btn ${isAirdroppingHouse ? "is-disabled" : "is-success"} w-full`}
+                style={{ fontSize: "8px", padding: "8px", marginBottom: "8px" }}
               >
-                {isAirdroppingHouse ? '💧 REQUESTING...' : '💧 FUND HOUSE'}
+                {isAirdroppingHouse ? "💧 REQUESTING..." : "💧 FUND HOUSE"}
               </button>
 
               {/* Message */}
               {houseMessage && (
                 <div
                   style={{
-                    fontSize: '7px',
-                    textAlign: 'center',
-                    padding: '4px',
-                    wordBreak: 'break-word',
+                    fontSize: "7px",
+                    textAlign: "center",
+                    padding: "4px",
+                    wordBreak: "break-word",
                   }}
                 >
                   {houseMessage}
@@ -486,13 +519,14 @@ export function SolanaAirdropPanel() {
 
               <div
                 style={{
-                  fontSize: '6px',
+                  fontSize: "6px",
                   opacity: 0.5,
-                  textAlign: 'center',
-                  marginTop: '4px',
+                  textAlign: "center",
+                  marginTop: "4px",
                 }}
               >
-                Fund the house to enable larger payouts (max 1000 SOL per request)
+                Fund the house to enable larger payouts (max 1000 SOL per
+                request)
               </div>
             </div>
           )}
@@ -502,11 +536,11 @@ export function SolanaAirdropPanel() {
             <div
               className="nes-container is-rounded"
               style={{
-                marginBottom: '12px',
-                backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                marginBottom: "12px",
+                backgroundColor: "rgba(244, 67, 54, 0.1)",
               }}
             >
-              <div style={{ fontSize: '7px', textAlign: 'center' }}>
+              <div style={{ fontSize: "7px", textAlign: "center" }}>
                 ⚠️ Airdrops are only available on Localhost and Devnet networks.
               </div>
             </div>
@@ -515,10 +549,10 @@ export function SolanaAirdropPanel() {
           {/* Info */}
           <div
             style={{
-              marginTop: '12px',
-              fontSize: '6px',
+              marginTop: "12px",
+              fontSize: "6px",
               opacity: 0.5,
-              textAlign: 'center',
+              textAlign: "center",
             }}
           >
             Balance updates automatically every 5 seconds.

@@ -20,7 +20,7 @@ export function createCrab(
   startY: number,
   direction: number = 1,
   speed: number = 30,
-  zIndex: number = 5,
+  zIndex: number = 5
 ): GameObj {
   const crab = k.add([
     k.sprite("crab", { anim: "walk" }),

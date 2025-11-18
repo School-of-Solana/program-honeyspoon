@@ -1,8 +1,8 @@
 /**
  * Solana Account Data Parsers
- * 
+ *
  * Functions to deserialize on-chain account data into TypeScript types.
- * 
+ *
  * CRITICAL: Parsing logic MUST match the on-chain account layouts exactly!
  * See: anchor_project/the_fool/programs/dive_game/src/states.rs
  */
@@ -20,15 +20,15 @@ export type SessionStatus = "Active" | "Lost" | "CashedOut";
  * Matches: pub struct GameSession in states.rs
  */
 export interface SessionAccount {
-  user: PublicKey;           // Pubkey
-  houseVault: PublicKey;     // Pubkey
-  status: SessionStatus;     // enum SessionStatus
-  betAmount: BN;             // u64
-  currentTreasure: BN;       // u64
-  maxPayout: BN;             // u64
-  diveNumber: number;        // u16
-  bump: number;              // u8
-  rngSeed: Buffer;           // [u8; 32]
+  user: PublicKey; // Pubkey
+  houseVault: PublicKey; // Pubkey
+  status: SessionStatus; // enum SessionStatus
+  betAmount: BN; // u64
+  currentTreasure: BN; // u64
+  maxPayout: BN; // u64
+  diveNumber: number; // u16
+  bump: number; // u8
+  rngSeed: Buffer; // [u8; 32]
 }
 
 /**
@@ -37,9 +37,9 @@ export interface SessionAccount {
  */
 export interface HouseVaultAccount {
   houseAuthority: PublicKey; // Pubkey
-  locked: boolean;           // bool
-  totalReserved: BN;         // u64
-  bump: number;              // u8
+  locked: boolean; // bool
+  totalReserved: BN; // u64
+  bump: number; // u8
 }
 
 /**
@@ -47,22 +47,22 @@ export interface HouseVaultAccount {
  * Matches: pub struct GameConfig in states.rs
  */
 export interface GameConfigAccount {
-  admin: PublicKey;                 // Pubkey
-  baseSurvivalPpm: number;          // u32
-  decayPerDivePpm: number;          // u32
-  minSurvivalPpm: number;           // u32
-  treasureMultiplierNum: number;    // u16
-  treasureMultiplierDen: number;    // u16
-  maxPayoutMultiplier: number;      // u16
-  maxDives: number;                 // u16
-  minBet: BN;                       // u64
-  maxBet: BN;                       // u64
-  bump: number;                     // u8
+  admin: PublicKey; // Pubkey
+  baseSurvivalPpm: number; // u32
+  decayPerDivePpm: number; // u32
+  minSurvivalPpm: number; // u32
+  treasureMultiplierNum: number; // u16
+  treasureMultiplierDen: number; // u16
+  maxPayoutMultiplier: number; // u16
+  maxDives: number; // u16
+  minBet: BN; // u64
+  maxBet: BN; // u64
+  bump: number; // u8
 }
 
 /**
  * Parse GameSession account data
- * 
+ *
  * Layout:
  * - [0..8]    discriminator (8 bytes)
  * - [8..40]   user (Pubkey, 32 bytes)
@@ -75,7 +75,9 @@ export interface GameConfigAccount {
  * - [99..100] bump (u8, 1 byte)
  * - [100..132] rng_seed ([u8; 32], 32 bytes)
  */
-export function parseSessionData(dataInput: Uint8Array | Buffer): SessionAccount {
+export function parseSessionData(
+  dataInput: Uint8Array | Buffer
+): SessionAccount {
   const data = Buffer.from(dataInput);
   let offset = 8; // skip 8-byte discriminator
 
@@ -87,14 +89,10 @@ export function parseSessionData(dataInput: Uint8Array | Buffer): SessionAccount
 
   const statusVariant = data.readUInt8(offset);
   offset += 1;
-  
+
   // SessionStatus enum variants: Active = 0, Lost = 1, CashedOut = 2
   const status: SessionStatus =
-    statusVariant === 0 
-      ? "Active" 
-      : statusVariant === 1 
-        ? "Lost" 
-        : "CashedOut";
+    statusVariant === 0 ? "Active" : statusVariant === 1 ? "Lost" : "CashedOut";
 
   const betAmount = new BN(data.slice(offset, offset + 8), "le");
   offset += 8;
@@ -129,7 +127,7 @@ export function parseSessionData(dataInput: Uint8Array | Buffer): SessionAccount
 
 /**
  * Parse HouseVault account data
- * 
+ *
  * Layout:
  * - [0..8]    discriminator (8 bytes)
  * - [8..40]   house_authority (Pubkey, 32 bytes)
@@ -165,7 +163,7 @@ export function parseHouseVaultData(
 
 /**
  * Parse GameConfig account data
- * 
+ *
  * Layout:
  * - [0..8]     discriminator (8 bytes)
  * - [8..40]    admin (Pubkey, 32 bytes)
