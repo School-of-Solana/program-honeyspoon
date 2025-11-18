@@ -426,7 +426,7 @@ export default function Home() {
           diveNumber: 1,
           treasure: betAmount,
           depth: 0,
-          sessionId: result.sessionId, // Log the new session ID
+          sessionId: newSessionId, // Log the new session ID
         });
       }, 500);
     } catch (error) {
@@ -476,24 +476,68 @@ export default function Home() {
       // Wait for diving animation (2.5 seconds for scene transition + animation)
       await new Promise((resolve) => setTimeout(resolve, 2500));
 
-      // STEP 2: Call server to determine result
+      // STEP 2: Call server or blockchain to determine result
       const requestId = crypto.randomUUID();
-      console.log("[GAME] 🎲 Calling server for dive result...", {
+      console.log("[GAME] 🎲 Calling for dive result...", {
         requestId,
         diveNumber: gameState.diveNumber,
         sessionId: gameState.sessionId.substring(0, 12) + "...",
       });
+      
       // For first dive, use initialBet as the value to multiply; subsequent dives use accumulated treasure
       const valueToMultiply =
         gameState.currentTreasure === 0
           ? gameState.initialBet
           : gameState.currentTreasure;
-      const result = await performDive(
-        gameState.diveNumber,
-        valueToMultiply,
-        gameState.sessionId,
-        gameState.userId
-      );
+      
+      const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
+      let result;
+      
+      if (useSolana) {
+        // Solana mode - call chain directly (wallet will sign)
+        console.log("[GAME] 🔗 Solana mode: calling playRound on-chain...");
+        
+        const { state, survived } = await gameChain.playRound({
+          sessionPda: gameState.sessionId,
+          userPubkey: gameState.userId,
+        });
+        
+        // Get dive stats and generate shipwreck for depth calculation
+        const { calculateDiveStats, generateShipwreck } = await import('@/lib/gameLogic');
+        const diveStats = calculateDiveStats(gameState.diveNumber);
+        const shipwreck = survived ? generateShipwreck(gameState.diveNumber, gameState.sessionId) : undefined;
+        
+        // Convert chain result to DiveResult format
+        result = {
+          success: true,
+          randomRoll: 0, // Not exposed by chain
+          threshold: 0, // Not exposed by chain
+          survived,
+          newTreasureValue: lamportsToSol(state.currentTreasure),
+          totalTreasure: lamportsToSol(state.currentTreasure),
+          diveNumber: state.diveNumber,
+          depth: diveStats.depth,
+          survivalProbability: 0.7, // Approximate - not exposed by chain
+          multiplier: 1.5, // Approximate - not exposed by chain
+          timestamp: Date.now(),
+          shipwreck: shipwreck ? { ...shipwreck, discovered: true } : undefined,
+        };
+        
+        console.log("[GAME] ✅ On-chain playRound result:", {
+          survived,
+          newDiveNumber: state.diveNumber,
+          treasure: lamportsToSol(state.currentTreasure),
+        });
+      } else {
+        // LocalGameChain mode - use server action
+        console.log("[GAME] 🔗 LocalGameChain mode: using server action...");
+        result = await performDive(
+          gameState.diveNumber,
+          valueToMultiply,
+          gameState.sessionId,
+          gameState.userId
+        );
+      }
 
       console.log(`[GAME] 📊 Server response`, {
         requestId,
