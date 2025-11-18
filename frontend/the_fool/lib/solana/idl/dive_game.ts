@@ -60,6 +60,49 @@ export type DiveGame = {
       "args": []
     },
     {
+      "name": "clean_expired_session",
+      "discriminator": [
+        198,
+        119,
+        17,
+        15,
+        128,
+        185,
+        80,
+        231
+      ],
+      "accounts": [
+        {
+          "name": "crank",
+          "docs": [
+            "The crank/keeper calling this instruction",
+            "Receives the rent as incentive"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "house_vault",
+          "docs": [
+            "The house vault to release funds to"
+          ],
+          "writable": true,
+          "relations": [
+            "session"
+          ]
+        },
+        {
+          "name": "session",
+          "docs": [
+            "The expired session to clean up",
+            "Account closes automatically and rent goes to crank"
+          ],
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "init_config",
       "discriminator": [
         23,
@@ -266,11 +309,8 @@ export type DiveGame = {
           ]
         },
         {
-          "name": "slot_hashes",
-          "docs": [
-            "SlotHashes sysvar for per-round entropy"
-          ],
-          "address": "SysvarS1otHashes111111111111111111111111111"
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": []
@@ -481,6 +521,19 @@ export type DiveGame = {
       ]
     },
     {
+      "name": "SessionCleanedEvent",
+      "discriminator": [
+        237,
+        15,
+        33,
+        222,
+        164,
+        153,
+        148,
+        218
+      ]
+    },
+    {
       "name": "SessionLostEvent",
       "discriminator": [
         195,
@@ -575,6 +628,11 @@ export type DiveGame = {
       "code": 6010,
       "name": "InvalidSlotHash",
       "msg": "Could not retrieve valid slot hash from SlotHashes sysvar"
+    },
+    {
+      "code": 6011,
+      "name": "SessionNotExpired",
+      "msg": "Session has not expired yet - cannot clean up"
     }
   ],
   "types": [
@@ -732,6 +790,15 @@ export type DiveGame = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "last_active_slot",
+            "docs": [
+              "Phase 2: Activity tracking for timeout-based cleanup",
+              "Slot number when session was last active",
+              "Updated on: start_session, play_round (if survived), cash_out"
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -840,6 +907,34 @@ export type DiveGame = {
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionCleanedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "session",
+            "type": "pubkey"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "crank",
+            "type": "pubkey"
+          },
+          {
+            "name": "released_amount",
+            "type": "u64"
+          },
+          {
+            "name": "slots_inactive",
+            "type": "u64"
           }
         ]
       }
@@ -1001,6 +1096,49 @@ export const IDL: DiveGame = {
       "args": []
     },
     {
+      "name": "clean_expired_session",
+      "discriminator": [
+        198,
+        119,
+        17,
+        15,
+        128,
+        185,
+        80,
+        231
+      ],
+      "accounts": [
+        {
+          "name": "crank",
+          "docs": [
+            "The crank/keeper calling this instruction",
+            "Receives the rent as incentive"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "house_vault",
+          "docs": [
+            "The house vault to release funds to"
+          ],
+          "writable": true,
+          "relations": [
+            "session"
+          ]
+        },
+        {
+          "name": "session",
+          "docs": [
+            "The expired session to clean up",
+            "Account closes automatically and rent goes to crank"
+          ],
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "init_config",
       "discriminator": [
         23,
@@ -1207,11 +1345,8 @@ export const IDL: DiveGame = {
           ]
         },
         {
-          "name": "slot_hashes",
-          "docs": [
-            "SlotHashes sysvar for per-round entropy"
-          ],
-          "address": "SysvarS1otHashes111111111111111111111111111"
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": []
@@ -1422,6 +1557,19 @@ export const IDL: DiveGame = {
       ]
     },
     {
+      "name": "SessionCleanedEvent",
+      "discriminator": [
+        237,
+        15,
+        33,
+        222,
+        164,
+        153,
+        148,
+        218
+      ]
+    },
+    {
       "name": "SessionLostEvent",
       "discriminator": [
         195,
@@ -1516,6 +1664,11 @@ export const IDL: DiveGame = {
       "code": 6010,
       "name": "InvalidSlotHash",
       "msg": "Could not retrieve valid slot hash from SlotHashes sysvar"
+    },
+    {
+      "code": 6011,
+      "name": "SessionNotExpired",
+      "msg": "Session has not expired yet - cannot clean up"
     }
   ],
   "types": [
@@ -1673,6 +1826,15 @@ export const IDL: DiveGame = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "last_active_slot",
+            "docs": [
+              "Phase 2: Activity tracking for timeout-based cleanup",
+              "Slot number when session was last active",
+              "Updated on: start_session, play_round (if survived), cash_out"
+            ],
+            "type": "u64"
           }
         ]
       }
@@ -1781,6 +1943,34 @@ export const IDL: DiveGame = {
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SessionCleanedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "session",
+            "type": "pubkey"
+          },
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "crank",
+            "type": "pubkey"
+          },
+          {
+            "name": "released_amount",
+            "type": "u64"
+          },
+          {
+            "name": "slots_inactive",
+            "type": "u64"
           }
         ]
       }

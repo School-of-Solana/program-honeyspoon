@@ -2,6 +2,13 @@
  * Game constants and configuration
  */
 
+// Debug flags
+export const DEBUG_FLAGS = {
+  CANVAS: false, // Set to true to enable canvas debug logging
+  GAME: false, // Set to true to enable game logic debug logging
+  WALLET: false, // Set to true to enable wallet debug logging
+} as const;
+
 // Core game math (FIXED - provably fair)
 // CRITICAL: These values MUST match LocalGameChain.gameConfig
 export const GAME_CONFIG = {

@@ -450,6 +450,9 @@ export class SolanaGameChain implements GameChainPort {
     // Build instruction data
     const data = buildPlayRoundData();
 
+    // Instructions sysvar for proper on-chain RNG (contains transaction recent blockhash)
+    const INSTRUCTIONS_SYSVAR = new PublicKey("Sysvar1nstructions1111111111111111111111111");
+
     // Build instruction
     const instruction = new TransactionInstruction({
       keys: [
@@ -457,6 +460,7 @@ export class SolanaGameChain implements GameChainPort {
         { pubkey: configPda, isSigner: false, isWritable: false },
         { pubkey: sessionPubkey, isSigner: false, isWritable: true },
         { pubkey: session.houseVault, isSigner: false, isWritable: true },
+        { pubkey: INSTRUCTIONS_SYSVAR, isSigner: false, isWritable: false },
       ],
       programId: PROGRAM_ID,
       data,
@@ -505,6 +509,7 @@ export class SolanaGameChain implements GameChainPort {
         { pubkey: userPubkey, isSigner: true, isWritable: true },
         { pubkey: sessionPubkey, isSigner: false, isWritable: true },
         { pubkey: sessionBefore.houseVault, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ],
       programId: PROGRAM_ID,
       data,

@@ -4,7 +4,9 @@ use crate::game_math;
 use crate::rng;
 use crate::states::*;
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::sysvar::instructions::{load_current_index_checked, load_instruction_at_checked};
+use anchor_lang::solana_program::sysvar::instructions::{
+    load_current_index_checked, load_instruction_at_checked,
+};
 pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
     let config = &ctx.accounts.config;
     let session = &mut ctx.accounts.session;
@@ -27,7 +29,7 @@ pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
     let instructions_sysvar = &ctx.accounts.instructions_sysvar;
     let current_index = load_current_index_checked(instructions_sysvar)?;
     let current_ix = load_instruction_at_checked(current_index as usize, instructions_sysvar)?;
-    
+
     // Use the recent blockhash from the transaction for entropy
     // Combined with session PDA and dive number for uniqueness
     let entropy_seed = [

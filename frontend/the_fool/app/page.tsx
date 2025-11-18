@@ -646,6 +646,8 @@ export default function Home() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
+      console.error("[GAME] ❌ Dive error:", error);
+      console.error("[GAME] ❌ Error message:", message);
 
       // ✅ NEW: Use typed error parsing instead of string matching
       const gameError = parseServerError(message);
