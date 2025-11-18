@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { Connection } from '@solana/web3.js';
+import { detectSolanaNetwork, getNetworkDisplayName, getNetworkBadgeColor } from '@/lib/utils/networkDetection';
 
 /**
  * Banner that shows Solana connection status
- * Warns users if localnet is not running when in Solana mode
+ * Warns users if network is not running when in Solana mode
  */
 export function SolanaStatusBanner() {
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -13,6 +14,11 @@ export function SolanaStatusBanner() {
   
   const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
   const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8899';
+  
+  // Detect network from RPC URL
+  const network = detectSolanaNetwork(rpcUrl);
+  const networkName = getNetworkDisplayName(network);
+  const badgeColor = getNetworkBadgeColor(network);
   
   useEffect(() => {
     if (!useSolana) {
@@ -65,25 +71,40 @@ export function SolanaStatusBanner() {
   
   // Show error if not connected
   if (!connected) {
+    const isLocalhost = network === 'localhost';
     return (
       <div className="fixed top-0 left-0 right-0 bg-red-600 text-white text-center py-3 text-sm z-50 shadow-lg">
         <div className="container mx-auto px-4">
           <p className="font-bold mb-1">
-            ⚠️ Solana Localnet Not Running
+            ⚠️ Solana {networkName} Not Connected
           </p>
-          <p className="text-xs opacity-90">
-            Run <code className="bg-red-700 px-2 py-0.5 rounded">npm run setup</code> to start localnet, 
-            or switch to Local mode in .env.local (NEXT_PUBLIC_USE_SOLANA=false)
-          </p>
+          {isLocalhost && (
+            <p className="text-xs opacity-90">
+              Run <code className="bg-red-700 px-2 py-0.5 rounded">npm run setup</code> to start localnet, 
+              or switch to Local mode in .env.local (NEXT_PUBLIC_USE_SOLANA=false)
+            </p>
+          )}
+          {!isLocalhost && (
+            <p className="text-xs opacity-90">
+              Cannot connect to {rpcUrl}. Check your network connection.
+            </p>
+          )}
         </div>
       </div>
     );
   }
   
-  // Show success banner (can be dismissed)
+  // Show success banner with dynamic network name and color
+  const bgStyle = {
+    backgroundColor: badgeColor
+  };
+  
   return (
-    <div className="fixed top-0 left-0 right-0 bg-green-600 text-white text-center py-2 text-xs z-50">
-      ✅ Connected to Solana Localnet ({rpcUrl})
+    <div 
+      className="fixed top-0 left-0 right-0 text-white text-center py-2 text-xs z-50"
+      style={bgStyle}
+    >
+      ✅ Connected to Solana {networkName} ({rpcUrl})
     </div>
   );
 }
