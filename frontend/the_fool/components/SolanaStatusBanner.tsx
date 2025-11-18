@@ -6,11 +6,14 @@ import { detectSolanaNetwork, getNetworkDisplayName, getNetworkBadgeColor } from
 
 /**
  * Banner that shows Solana connection status
- * Warns users if network is not running when in Solana mode
+ * - Shows temporary banner on initial connection (auto-hides after 10s)
+ * - Adds persistent colored border around page to indicate network
+ * - Warns users if network is not running when in Solana mode
  */
 export function SolanaStatusBanner() {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(true);
+  const [showBanner, setShowBanner] = useState(true);
   
   const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
   const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8899';
@@ -55,6 +58,31 @@ export function SolanaStatusBanner() {
     };
   }, [useSolana, rpcUrl]);
   
+  // Auto-hide success banner after 10 seconds
+  useEffect(() => {
+    if (connected && showBanner) {
+      const timer = setTimeout(() => {
+        setShowBanner(false);
+      }, 10000); // 10 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [connected, showBanner]);
+  
+  // Add global border styling for network indication
+  useEffect(() => {
+    if (!useSolana || !connected) return;
+    
+    // Add border to body
+    document.body.style.border = `4px solid ${badgeColor}`;
+    document.body.style.boxSizing = 'border-box';
+    
+    return () => {
+      // Cleanup on unmount
+      document.body.style.border = '';
+    };
+  }, [useSolana, connected, badgeColor]);
+  
   // Don't show anything if not in Solana mode
   if (!useSolana) {
     return null;
@@ -69,7 +97,7 @@ export function SolanaStatusBanner() {
     );
   }
   
-  // Show error if not connected
+  // Show error if not connected (persistent, no auto-hide)
   if (!connected) {
     const isLocalhost = network === 'localhost';
     return (
@@ -94,14 +122,18 @@ export function SolanaStatusBanner() {
     );
   }
   
-  // Show success banner with dynamic network name and color
+  // Show success banner only if showBanner is true (auto-hides after 10s)
+  if (!showBanner) {
+    return null;
+  }
+  
   const bgStyle = {
     backgroundColor: badgeColor
   };
   
   return (
     <div 
-      className="fixed top-0 left-0 right-0 text-white text-center py-2 text-xs z-50"
+      className="fixed top-0 left-0 right-0 text-white text-center py-2 text-xs z-50 transition-opacity duration-500"
       style={bgStyle}
     >
       ✅ Connected to Solana {networkName} ({rpcUrl})
