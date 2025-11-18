@@ -14,6 +14,7 @@ import BN from "bn.js";
 
 
 
+
 export const PROGRAM_ID = new PublicKey(
   "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
 );
@@ -388,10 +389,10 @@ export function parseSessionData(dataInput: Buffer | Uint8Array): ParsedSessionD
 }
 
 export interface ParsedHouseVaultData {
-  authority: PublicKey;
-  gameKeeper: PublicKey;  // New field
+  houseAuthority: PublicKey;
+  gameKeeper: PublicKey;
   totalReserved: BN;
-  isLocked: boolean;
+  locked: boolean;
   bump: number;
 }
 
@@ -399,13 +400,13 @@ export function parseHouseVaultData(dataInput: Buffer | Uint8Array): ParsedHouse
   const data = Buffer.from(dataInput);
   let offset = 8; 
 
-  const authority = new PublicKey(data.subarray(offset, offset + 32));
+  const houseAuthority = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
 
-  const gameKeeper = new PublicKey(data.subarray(offset, offset + 32));  // Parse game_keeper
+  const gameKeeper = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
 
-  const isLocked = data.readUInt8(offset) === 1;
+  const locked = data.readUInt8(offset) === 1;
   offset += 1;
 
   const totalReserved = new BN(data.subarray(offset, offset + 8), "le");
@@ -414,10 +415,10 @@ export function parseHouseVaultData(dataInput: Buffer | Uint8Array): ParsedHouse
   const bump = data.readUInt8(offset);
 
   return {
-    authority,
+    houseAuthority,
     gameKeeper,
     totalReserved,
-    isLocked,
+    locked,
     bump,
   };
 }
@@ -463,6 +464,9 @@ export function parseConfigData(dataInput: Buffer | Uint8Array): ParsedConfigDat
 
   const maxDives = data.readUInt16LE(offset);
   offset += 2;
+  
+  // No padding needed here - we have 3*u32 (12 bytes) + 4*u16 (8 bytes) = 20 bytes after admin
+  // Next field is u64 at offset 8 + 32 + 20 = 60, which is already 4-byte aligned (u64 only needs 8-byte alignment)
 
   const minBet = new BN(data.subarray(offset, offset + 8), "le");
   offset += 8;

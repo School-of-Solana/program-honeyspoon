@@ -204,6 +204,9 @@ function parseHouseVaultData(dataInput: Uint8Array): {
 
   const houseAuthority = new PublicKey(data.slice(offset, offset + 32));
   offset += 32;
+  
+  // Skip game_keeper field (32 bytes) - added in latest version
+  offset += 32;
 
   const locked = data.readUInt8(offset) === 1;
   offset += 1;
