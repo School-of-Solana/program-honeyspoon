@@ -40,13 +40,13 @@ VALIDATOR_LOG="/tmp/dive-validator.log"
 FRONTEND_LOG="/tmp/dive-frontend.log"
 
 # Parse arguments
-CLEAN_START=false
+CLEAN_START=true  # Default to clean start
 USE_LOCAL=false
 SHOW_HELP=false
 
 for arg in "$@"; do
     case $arg in
-        --clean) CLEAN_START=true ;;
+        --no-clean) CLEAN_START=false ;;  # Allow opting out of clean start
         --local) USE_LOCAL=true ;;
         --help|-h) SHOW_HELP=true ;;
         *) echo -e "${RED}Unknown argument: $arg${NC}"; exit 1 ;;
@@ -65,25 +65,25 @@ USAGE:
     ./dev.sh [OPTIONS]
 
 OPTIONS:
-    --clean     Clean restart (stops everything, cleans ledger, rebuilds)
+    --no-clean  Skip clean restart (reuse existing validator state)
     --local     Use LocalGameChain instead of real Solana blockchain
     --help, -h  Show this help message
 
 WHAT IT DOES:
-    1. Checks if validator is running
-    2. Starts/restarts validator if needed
-    3. Builds and deploys Anchor program (if changed)
-    4. Initializes game config and house vault (idempotent)
+    1. ALWAYS does a clean restart (stops validator, cleans ledger)
+    2. Starts fresh validator
+    3. Builds and deploys Anchor program
+    4. Initializes game config and house vault
     5. Updates frontend .env.local
     6. Starts Next.js dev server
     7. Shows live logs in a split view
 
 EXAMPLES:
-    # First time setup or daily development:
+    # Normal usage (clean start - DEFAULT):
     ./dev.sh
 
-    # Something broke? Clean restart:
-    ./dev.sh --clean
+    # Reuse existing validator state (faster, but may have stale data):
+    ./dev.sh --no-clean
 
     # Test without blockchain:
     ./dev.sh --local
@@ -112,7 +112,7 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo -e "${CYAN}Project: ${NC}$PROJECT_ROOT"
 echo -e "${CYAN}Mode:    ${NC}$([ "$USE_LOCAL" = true ] && echo "LocalGameChain (No Solana)" || echo "Solana Localnet")"
-echo -e "${CYAN}Clean:   ${NC}$([ "$CLEAN_START" = true ] && echo "Yes" || echo "No")"
+echo -e "${CYAN}Clean:   ${NC}$([ "$CLEAN_START" = true ] && echo "Yes (DEFAULT)" || echo "No (--no-clean)")"
 echo ""
 
 ################################################################################
@@ -415,7 +415,8 @@ echo "   4. Start playing!"
 echo ""
 echo -e "${YELLOW}💡 Tips:${NC}"
 echo "   • Press Ctrl+C to stop"
-echo "   • Run './dev.sh --clean' for a clean restart"
+echo "   • Clean restart is DEFAULT (always fresh state)"
+echo "   • Run './dev.sh --no-clean' to reuse existing validator state"
 echo "   • Run './dev.sh --local' to test without Solana"
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
