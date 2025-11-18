@@ -281,7 +281,6 @@ function parseSessionData(dataInput: Uint8Array): {
   maxPayout: BN;
   diveNumber: number;
   bump: number;
-  rngSeed: Buffer;
 } {
   
   const data = Buffer.from(dataInput);
@@ -314,8 +313,6 @@ function parseSessionData(dataInput: Uint8Array): {
   const bump = data.readUInt8(offset);
   offset += 1;
 
-  const rngSeed = data.slice(offset, offset + 32);
-
   return {
     user,
     houseVault,
@@ -325,7 +322,6 @@ function parseSessionData(dataInput: Uint8Array): {
     maxPayout,
     diveNumber,
     bump,
-    rngSeed,
   };
 }
 
@@ -825,7 +821,6 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           betAmount.toString()
         );
         expect(sessionData.diveNumber).to.equal(1);
-        expect(sessionData.rngSeed.length).to.equal(32);
 
         
         const expectedMaxPayout = betAmount.muln(100);
@@ -3232,7 +3227,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         expect.fail("Session account not found after start_session");
       }
       const sessionData1 = parseSessionData(sessionAccount1.data);
-      const rngSeed = sessionData1.rngSeed.toString("hex");
+      // const rngSeed = sessionData1.rngSeed.toString("hex"); // Removed in Phase 1
 
       
       const clock = svm.getClock();
@@ -3262,7 +3257,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         const sessionData2 = parseSessionData(sessionAccount2.data);
 
         
-        expect(sessionData2.rngSeed.toString("hex")).to.equal(rngSeed);
+        // expect(sessionData2.rngSeed.toString("hex")).to.equal(rngSeed); // Removed in Phase 1
 
         
         
@@ -4508,7 +4503,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
     });
 
-    it("should not change rngSeed across play_round calls", () => {
+    it.skip("should not change rngSeed across play_round calls (removed in Phase 1)", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
@@ -4582,7 +4577,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       }
     });
 
-    it("should generate different rngSeed for different sessionIndex of same user", () => {
+    it.skip("should generate different rngSeed for different sessionIndex (removed in Phase 1)", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 

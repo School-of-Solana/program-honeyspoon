@@ -60,16 +60,16 @@ mod tests {
         }
     }
     #[rstest]
-    #[case(1, 700_000)] 
-    #[case(2, 692_000)] 
-    #[case(5, 668_000)] 
-    #[case(10, 628_000)] 
-    #[case(20, 548_000)] 
-    #[case(50, 308_000)] 
-    #[case(100, 50_000)] 
-    #[case(180, 50_000)] 
-    #[case(200, 50_000)] 
-    #[case(1000, 50_000)] 
+    #[case(1, 700_000)]
+    #[case(2, 692_000)]
+    #[case(5, 668_000)]
+    #[case(10, 628_000)]
+    #[case(20, 548_000)]
+    #[case(50, 308_000)]
+    #[case(100, 50_000)]
+    #[case(180, 50_000)]
+    #[case(200, 50_000)]
+    #[case(1000, 50_000)]
     fn test_survival_probability_specific_dives(#[case] dive: u16, #[case] expected_bps: u32) {
         let config = test_config();
         let prob = survival_probability_bps(&config, dive);
@@ -112,12 +112,12 @@ mod tests {
         let _ = survival_probability_bps(&config, dive);
     }
     #[rstest]
-    #[case(1_000_000, 1, 1_900_000)] 
-    #[case(1_000_000, 2, 3_610_000)] 
-    #[case(1_000_000, 5, 24_760_990)] 
-    #[case(1_000_000, 10, 100_000_000)] 
-    #[case(10_000_000, 1, 19_000_000)] 
-    #[case(500_000, 3, 3_429_500)] 
+    #[case(1_000_000, 1, 1_900_000)]
+    #[case(1_000_000, 2, 3_610_000)]
+    #[case(1_000_000, 5, 24_760_990)]
+    #[case(1_000_000, 10, 100_000_000)]
+    #[case(10_000_000, 1, 19_000_000)]
+    #[case(500_000, 3, 3_429_500)]
     fn test_treasure_for_dive_specific_values(
         #[case] bet: u64,
         #[case] dive: u16,
@@ -158,10 +158,10 @@ mod tests {
         }
     }
     #[rstest]
-    #[case(1_000_000, 100_000_000)] 
-    #[case(10_000_000, 1_000_000_000)] 
-    #[case(100_000_000, 10_000_000_000)] 
-    #[case(1, 100)] 
+    #[case(1_000_000, 100_000_000)]
+    #[case(10_000_000, 1_000_000_000)]
+    #[case(100_000_000, 10_000_000_000)]
+    #[case(1, 100)]
     fn test_max_payout_for_bet_values(#[case] bet: u64, #[case] expected: u64) {
         let config = test_config();
         let max = max_payout_for_bet(&config, bet);
@@ -179,9 +179,9 @@ mod tests {
         assert!(max > 0);
     }
     #[rstest]
-    #[case(0, 1_000_000, 1_000_000)] 
-    #[case(1, 0, 0)] 
-    #[case(5, 0, 0)] 
+    #[case(0, 1_000_000, 1_000_000)]
+    #[case(1, 0, 0)]
+    #[case(5, 0, 0)]
     fn test_treasure_edge_cases(#[case] dive: u16, #[case] bet: u64, #[case] expected: u64) {
         let config = test_config();
         let treasure = treasure_for_dive(&config, bet, dive);
@@ -203,9 +203,9 @@ mod tests {
         assert!(max > 0);
     }
     #[rstest]
-    #[case(1_000_000, 8)] 
-    #[case(10_000_000, 8)] 
-    #[case(100, 8)] 
+    #[case(1_000_000, 8)]
+    #[case(10_000_000, 8)]
+    #[case(100, 8)]
     fn test_max_dives_for_bet(#[case] bet: u64, #[case] expected_approx: u16) {
         let config = test_config();
         let max_dive = max_dives_for_bet(&config, bet);
@@ -341,7 +341,7 @@ mod tests {
         let bet = 1_000_000u64;
         let max_dive = max_dives_for_bet(&config, bet);
         let max_payout = max_payout_for_bet(&config, bet) as u128;
-        let mut prob_survive_all = 1_000_000u128; 
+        let mut prob_survive_all = 1_000_000u128;
         for d in 1..=max_dive {
             let p = survival_probability_bps(&config, d) as u128;
             prob_survive_all = prob_survive_all * p / 1_000_000;
@@ -349,10 +349,7 @@ mod tests {
         let ev = prob_survive_all * max_payout / 1_000_000;
         // With current config: 19/10 multiplier reaches 100x cap at dive 8
         // Cumulative survival prob ~4.1% × 100x = ~4.14x EV
-        assert!(
-            ev > 0,
-            "EV should be positive (EV={ev}, bet={bet})"
-        );
+        assert!(ev > 0, "EV should be positive (EV={ev}, bet={bet})");
         // Current config gives player advantage - should be rebalanced in production
         assert!(
             ev > bet as u128,
@@ -363,12 +360,12 @@ mod tests {
     fn test_treasure_no_panic_on_realistic_bets() {
         let config = test_config();
         let sol_amounts = [
-            100_000,        
-            1_000_000,      
-            10_000_000,     
-            100_000_000,    
-            1_000_000_000,  
-            10_000_000_000, 
+            100_000,
+            1_000_000,
+            10_000_000,
+            100_000_000,
+            1_000_000_000,
+            10_000_000_000,
         ];
         for bet in sol_amounts {
             for dive in 0..=200 {

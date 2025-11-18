@@ -21,4 +21,6 @@ pub enum GameError {
     InvalidConfig,
     #[msg("Maximum number of dives reached")]
     MaxDivesReached,
+    #[msg("Could not retrieve valid slot hash from SlotHashes sysvar")]
+    InvalidSlotHash,
 }

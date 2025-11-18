@@ -1,16 +1,16 @@
-use anchor_lang::prelude::*;
-use anchor_lang::system_program;
 use crate::errors::GameError;
 use crate::events::SessionCashedOutEvent;
 use crate::states::*;
+use anchor_lang::prelude::*;
+use anchor_lang::system_program;
 pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
     let session = &mut ctx.accounts.session;
     let house_vault = &mut ctx.accounts.house_vault;
     let clock = Clock::get()?;
-    
+
     // Use helper method to ensure session is active
     session.ensure_active()?;
-    
+
     require!(!house_vault.locked, GameError::HouseLocked);
     require!(
         session.current_treasure > session.bet_amount,
@@ -38,11 +38,11 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
         signer_seeds,
     );
     system_program::transfer(cpi_ctx, session.current_treasure)?;
-    
+
     // Use helper methods for fund release and state transition
     house_vault.release(session.max_payout)?;
     session.mark_cashed_out()?;
-    
+
     emit!(SessionCashedOutEvent {
         session: session.key(),
         user: session.user,

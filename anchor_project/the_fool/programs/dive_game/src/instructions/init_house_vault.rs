@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
 use crate::events::InitializeHouseVaultEvent;
 use crate::states::*;
+use anchor_lang::prelude::*;
 pub fn init_house_vault(ctx: Context<InitializeHouseVault>, locked: bool) -> Result<()> {
     let house_vault = &mut ctx.accounts.house_vault;
     let clock = Clock::get()?;

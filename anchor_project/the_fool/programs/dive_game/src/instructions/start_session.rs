@@ -1,10 +1,9 @@
-use anchor_lang::prelude::*;
-use anchor_lang::system_program;
 use crate::errors::GameError;
 use crate::events::SessionStartedEvent;
 use crate::game_math;
-use crate::rng;
 use crate::states::*;
+use anchor_lang::prelude::*;
+use anchor_lang::system_program;
 pub fn start_session(
     ctx: Context<StartSession>,
     bet_amount: u64,
@@ -32,20 +31,18 @@ pub fn start_session(
         .ok_or(GameError::Overflow)?;
     require!(available >= max_payout, GameError::InsufficientVaultBalance);
     house_vault.reserve(max_payout)?;
-    let mut seed_material = [0u8; 32];
-    seed_material[0..8].copy_from_slice(&clock.slot.to_le_bytes());
-    seed_material[8..16].copy_from_slice(&clock.unix_timestamp.to_le_bytes());
-    seed_material[16..32].copy_from_slice(&session.key().to_bytes()[0..16]);
-    let rng_seed = rng::generate_seed(&seed_material, &session.key());
+
+    // Phase 1 RNG Security: No longer generate or store RNG seed
+    // Each round will use fresh entropy from SlotHashes sysvar
+
     session.user = ctx.accounts.user.key();
     session.house_vault = house_vault.key();
     session.status = SessionStatus::Active;
     session.bet_amount = bet_amount;
-    session.current_treasure = bet_amount; 
+    session.current_treasure = bet_amount;
     session.max_payout = max_payout;
     session.dive_number = 1;
     session.bump = ctx.bumps.session;
-    session.rng_seed = rng_seed; 
     emit!(SessionStartedEvent {
         session: session.key(),
         user: session.user,

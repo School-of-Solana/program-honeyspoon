@@ -247,13 +247,16 @@ export function createStartSessionInstruction(
 export function createPlayRoundInstruction(
   player: PublicKey,
   sessionPDA: PublicKey,
-  configPDA: PublicKey
+  configPDA: PublicKey,
+  houseVaultPDA: PublicKey
 ): TransactionInstruction {
   return new TransactionInstruction({
     keys: [
-      { pubkey: player, isSigner: true, isWritable: false },
-      { pubkey: sessionPDA, isSigner: false, isWritable: true },
+      { pubkey: player, isSigner: true, isWritable: true },
       { pubkey: configPDA, isSigner: false, isWritable: false },
+      { pubkey: sessionPDA, isSigner: false, isWritable: true },
+      { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+      { pubkey: SYSVAR_SLOT_HASHES_PUBKEY, isSigner: false, isWritable: false },
     ],
     programId: PROGRAM_ID,
     data: buildPlayRoundData(),
@@ -896,3 +899,8 @@ export function getConfigData(
   if (!account) return null;
   return parseConfigData(Buffer.from(account.data));
 }
+
+// SlotHashes sysvar public key
+export const SYSVAR_SLOT_HASHES_PUBKEY = new PublicKey(
+  "SysvarS1otHashes111111111111111111111111111"
+);

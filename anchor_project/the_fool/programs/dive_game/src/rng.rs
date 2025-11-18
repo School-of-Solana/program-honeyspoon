@@ -145,7 +145,7 @@ mod tests {
             }
         }
         let expected_per_bucket = num_samples as f64 / NUM_BUCKETS as f64;
-        let tolerance = expected_per_bucket * 0.5; 
+        let tolerance = expected_per_bucket * 0.5;
         for (i, &count) in counts.iter().enumerate() {
             let diff = (count as f64 - expected_per_bucket).abs();
             assert!(
@@ -196,12 +196,7 @@ mod tests {
     }
     #[test]
     fn test_extreme_values() {
-        let extreme_seeds = [
-            [0u8; 32],
-            [255u8; 32],
-            [170u8; 32], 
-            [85u8; 32],  
-        ];
+        let extreme_seeds = [[0u8; 32], [255u8; 32], [170u8; 32], [85u8; 32]];
         for seed in &extreme_seeds {
             for dive in [0, 1, 100, 1000, u16::MAX].iter() {
                 let roll = random_roll_bps(seed, *dive);

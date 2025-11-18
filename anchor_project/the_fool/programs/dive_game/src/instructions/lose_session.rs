@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
 use crate::events::SessionLostEvent;
 use crate::states::*;
+use anchor_lang::prelude::*;
 pub fn lose_session(ctx: Context<LoseSession>) -> Result<()> {
     let session = &mut ctx.accounts.session;
     let house_vault = &mut ctx.accounts.house_vault;

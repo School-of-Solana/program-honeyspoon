@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::states::*;
+use anchor_lang::prelude::*;
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default)]
 pub struct GameConfigParams {
     pub base_survival_ppm: Option<u32>,
@@ -26,7 +26,7 @@ pub fn init_config(ctx: Context<InitializeConfig>, params: GameConfigParams) -> 
     config.min_bet = params.min_bet.unwrap_or(defaults.7);
     config.max_bet = params.max_bet.unwrap_or(defaults.8);
     config.bump = ctx.bumps.config;
-    
+
     // Validate all config parameters using centralized validation
     config.validate()?;
     msg!("Game config initialized:");
@@ -91,7 +91,7 @@ mod tests {
             decay_per_dive_ppm: 5_000,
             min_survival_ppm: 100_000,
             treasure_multiplier_num: 11,
-            treasure_multiplier_den: 0, 
+            treasure_multiplier_den: 0,
             max_payout_multiplier: 100,
             max_dives: 200,
             min_bet: 1,
@@ -104,9 +104,9 @@ mod tests {
     fn test_config_validation_inverted_probabilities() {
         let config = GameConfig {
             admin: Pubkey::default(),
-            base_survival_ppm: 100_000, 
+            base_survival_ppm: 100_000,
             decay_per_dive_ppm: 5_000,
-            min_survival_ppm: 990_000, 
+            min_survival_ppm: 990_000,
             treasure_multiplier_num: 11,
             treasure_multiplier_den: 10,
             max_payout_multiplier: 100,
@@ -121,7 +121,7 @@ mod tests {
     fn test_config_validation_probability_exceeds_100_percent() {
         let config = GameConfig {
             admin: Pubkey::default(),
-            base_survival_ppm: 1_500_000, 
+            base_survival_ppm: 1_500_000,
             decay_per_dive_ppm: 5_000,
             min_survival_ppm: 100_000,
             treasure_multiplier_num: 11,
@@ -145,8 +145,8 @@ mod tests {
             treasure_multiplier_den: 10,
             max_payout_multiplier: 100,
             max_dives: 200,
-            min_bet: 1000, 
-            max_bet: 100,  
+            min_bet: 1000,
+            max_bet: 100,
             bump: 0,
         };
         assert!(config.validate().is_err());
@@ -161,7 +161,7 @@ mod tests {
             treasure_multiplier_num: 11,
             treasure_multiplier_den: 10,
             max_payout_multiplier: 100,
-            max_dives: 0, 
+            max_dives: 0,
             min_bet: 1,
             max_bet: 0,
             bump: 0,
