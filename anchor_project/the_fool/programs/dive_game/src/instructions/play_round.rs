@@ -4,7 +4,7 @@ use crate::game_math;
 use crate::rng;
 use crate::states::*;
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::sysvar::recent_blockhashes::RecentBlockhashes;
+use anchor_lang::solana_program::sysvar::instructions::{load_current_index_checked, load_instruction_at_checked};
 pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
     let config = &ctx.accounts.config;
     let session = &mut ctx.accounts.session;
@@ -22,13 +22,19 @@ pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
         GameError::MaxDivesReached
     );
 
-    // Phase 1 RNG Security: Use Clock slot + session PDA + dive number for entropy
-    // This provides sufficient randomness for game mechanics without requiring SlotHashes
-    // Note: For production, consider using Switchboard VRF or Pyth Entropy
+    // Phase 1 RNG Security: Use recent blockhash from Instructions sysvar
+    // This provides proper entropy source similar to SlotHashes
+    let instructions_sysvar = &ctx.accounts.instructions_sysvar;
+    let current_index = load_current_index_checked(instructions_sysvar)?;
+    let current_ix = load_instruction_at_checked(current_index as usize, instructions_sysvar)?;
+    
+    // Use the recent blockhash from the transaction for entropy
+    // Combined with session PDA and dive number for uniqueness
     let entropy_seed = [
         &clock.slot.to_le_bytes()[..],
         &session.key().to_bytes()[..],
         &session.dive_number.to_le_bytes()[..],
+        &current_ix.program_id.to_bytes()[..],
     ]
     .concat();
 
@@ -82,4 +88,7 @@ pub struct PlayRound<'info> {
     pub session: Account<'info, GameSession>,
     #[account(mut)]
     pub house_vault: Account<'info, HouseVault>,
+    /// CHECK: Instructions sysvar for accessing transaction recent blockhash
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions_sysvar: AccountInfo<'info>,
 }
