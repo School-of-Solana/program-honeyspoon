@@ -130,6 +130,71 @@ This document outlines a phased approach to refactor and enhance the Deep Sea Di
 - `tests/litesvm/test-helpers.ts`
 - `tests/litesvm/game.ts`
 
+
+### Phase 2: Session Lifecycle & Solvency Features - **COMPLETE**
+**Completed:** November 18, 2025
+
+**Summary:** Implemented activity tracking and timeout-based cleanup to prevent capital lock in abandoned sessions.
+
+#### Problem Solved
+**Before:**
+- Sessions could be abandoned forever
+- Reserved funds locked permanently
+- No way to clean up inactive sessions
+- House vault slowly becomes unusable
+
+**After:**
+- Activity tracking via `last_active_slot` field
+- Permissionless cleanup after 1 hour timeout (9,000 slots)
+- Crank receives rent as cleanup incentive
+- Automated cleanup prevents capital lock
+
+#### Changes Made
+
+**Program Changes:**
+- **`states.rs`:**
+  - Added `last_active_slot: u64` field to GameSession
+  - Updated test_session helper to include field
+- **`start_session.rs`:** Initialize `last_active_slot = clock.slot`
+- **`play_round.rs`:** Update `last_active_slot` on successful round
+- **`cash_out.rs`:** Update `last_active_slot` before closing
+- **`errors.rs`:** Added `SessionNotExpired` error
+- **`events.rs`:** Added `SessionCleanedEvent`
+- **`clean_expired_session.rs`:** New instruction for cleanup
+  - Timeout: 9,000 slots (~1 hour)
+  - Permissionless (anyone can crank)
+  - Releases reserved funds
+  - Sends rent to crank
+  - Only cleans Active sessions
+- **`lib.rs`:** Exported clean_expired_session instruction
+
+**Test Changes:**
+- **`states.rs`:** Updated test_session helper
+- **`game.ts`:** Added `lastActiveSlot` to parser
+
+**Test Results:**
+- Rust Unit Tests: 119/119 passing (100%)
+- LiteSVM Integration: 62/62 passing (100%, 10 pending)
+- **0 failing tests** ✅
+
+**Account Size Impact:**
+- Added: 8 bytes for last_active_slot
+- Before (Phase 1): 100 bytes
+- After (Phase 2): 108 bytes per session
+
+**Files Modified:**
+- `programs/dive_game/src/states.rs`
+- `programs/dive_game/src/instructions/start_session.rs`
+- `programs/dive_game/src/instructions/play_round.rs`
+- `programs/dive_game/src/instructions/cash_out.rs`
+- `programs/dive_game/src/instructions/clean_expired_session.rs` (new)
+- `programs/dive_game/src/instructions/mod.rs`
+- `programs/dive_game/src/errors.rs`
+- `programs/dive_game/src/events.rs`
+- `programs/dive_game/src/lib.rs`
+- `tests/litesvm/game.ts`
+
+---
 ---
 
 ### Critical Issues Discovered
