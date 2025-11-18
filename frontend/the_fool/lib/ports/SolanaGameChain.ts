@@ -515,15 +515,21 @@ export class SolanaGameChain implements GameChainPort {
     // Send transaction with wallet
     await this.sendTransaction([instruction]);
     
-    // Fetch updated session state
-    const state = await this.getSession(params.sessionPda);
-    if (!state) {
-      throw GameError.invalidSession();
-    }
-    
+    // Session is now closed and account no longer exists
+    // Return a "cashed out" state for UI purposes
     return {
       finalTreasureLamports: treasureBeforeCashout,
-      state,
+      state: {
+        sessionPda: params.sessionPda,
+        user: sessionBefore.user.toBase58(),
+        houseVault: sessionBefore.houseVault.toBase58(),
+        status: SessionStatus.CashedOut,
+        betAmount: BigInt(sessionBefore.betAmount.toString()),
+        currentTreasure: BigInt(0),
+        maxPayout: BigInt(sessionBefore.maxPayout.toString()),
+        diveNumber: sessionBefore.diveNumber,
+        bump: sessionBefore.bump,
+      },
     };
   }
 
