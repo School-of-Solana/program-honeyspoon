@@ -177,7 +177,8 @@ if [ "$USE_LOCAL" = false ]; then
     else
         echo -e "${BLUE}🚀 Starting validator...${NC}"
         cd "$ANCHOR_DIR"
-        solana-test-validator --reset > "$VALIDATOR_LOG" 2>&1 &
+        # Filter out repetitive slot status logs
+        solana-test-validator --reset 2>&1 | grep -v "Processed Slot:" > "$VALIDATOR_LOG" &
         VALIDATOR_PID=$!
         echo -e "${CYAN}   PID: $VALIDATOR_PID${NC}"
         cd "$PROJECT_ROOT"
