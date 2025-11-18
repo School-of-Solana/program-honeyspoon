@@ -49,12 +49,22 @@ export function getGameChain(): GameChainPort {
 
   // Check environment variable for Solana
   const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
-  const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL;
-  const houseAuthority = process.env.NEXT_PUBLIC_HOUSE_AUTHORITY;
+  const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL?.trim();
+  const houseAuthority = process.env.NEXT_PUBLIC_HOUSE_AUTHORITY?.trim();
 
-  if (useSolana && rpcUrl && houseAuthority) {
+  // Validate that env vars are not empty strings
+  const hasValidRpcUrl = rpcUrl && rpcUrl.length > 0;
+  const hasValidHouseAuthority = houseAuthority && houseAuthority.length > 0;
+
+  if (useSolana && hasValidRpcUrl && hasValidHouseAuthority) {
     console.log("[GameChain] Using SolanaGameChain with RPC:", rpcUrl);
-    gameChainInstance = createSolanaGameChain(rpcUrl, houseAuthority);
+    try {
+      gameChainInstance = createSolanaGameChain(rpcUrl, houseAuthority);
+    } catch (error) {
+      console.error("[GameChain] Failed to create SolanaGameChain:", error);
+      console.warn("[GameChain] Falling back to LocalGameChain");
+      gameChainInstance = new LocalGameChain();
+    }
   } else {
     if (useSolana) {
       console.warn(

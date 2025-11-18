@@ -156,19 +156,37 @@ import {
 import { lamportsToSol, solToLamports } from "../utils/lamports";
 
 // Program ID from environment
-export const PROGRAM_ID = new PublicKey(
-  process.env.NEXT_PUBLIC_PROGRAM_ID ||
-    "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
-);
+// Using lazy initialization to avoid build-time instantiation issues
+let _programId: PublicKey | undefined;
+function getProgramId(): PublicKey {
+  if (!_programId) {
+    // Get env var and validate it's not empty
+    let programIdStr = process.env.NEXT_PUBLIC_PROGRAM_ID;
+    if (!programIdStr || programIdStr.trim() === '') {
+      programIdStr = "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7";
+    }
+    try {
+      _programId = new PublicKey(programIdStr);
+    } catch (error) {
+      console.error(`[solanaHelpers] Invalid PROGRAM_ID: "${programIdStr}", using fallback`);
+      _programId = new PublicKey("9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7");
+    }
+  }
+  return _programId;
+}
+
+// Export using a getter property that calls getProgramId
+// This ensures no PublicKey is instantiated at module load time
+export { getProgramId as PROGRAM_ID };
 
 // PDA helper wrappers that return just the address (not tuple)
 export function getConfigPDA(): PublicKey {
-  const [pda] = getGameConfigAddress(PROGRAM_ID);
+  const [pda] = getGameConfigAddress(getProgramId());
   return pda;
 }
 
 export function getHouseVaultPDA(houseAuthority: PublicKey): PublicKey {
-  const [pda] = getHouseVaultAddress(houseAuthority, PROGRAM_ID);
+  const [pda] = getHouseVaultAddress(houseAuthority, getProgramId());
   return pda;
 }
 
@@ -176,7 +194,7 @@ export function getSessionPDA(
   user: PublicKey,
   sessionIndex: bigint | number
 ): PublicKey {
-  const [pda] = getSessionAddress(user, sessionIndex, PROGRAM_ID);
+  const [pda] = getSessionAddress(user, sessionIndex, getProgramId());
   return pda;
 }
 

@@ -242,7 +242,7 @@ export class SolanaGameChain implements GameChainPort {
         { pubkey: configPda, isSigner: false, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ],
-      programId: PROGRAM_ID,
+      programId: PROGRAM_ID(),
       data,
     });
 
@@ -297,7 +297,7 @@ export class SolanaGameChain implements GameChainPort {
         { pubkey: vaultPda, isSigner: false, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ],
-      programId: PROGRAM_ID,
+      programId: PROGRAM_ID(),
       data,
     });
 
@@ -323,7 +323,7 @@ export class SolanaGameChain implements GameChainPort {
         { pubkey: authorityPubkey, isSigner: true, isWritable: true },
         { pubkey: vaultPubkey, isSigner: false, isWritable: true },
       ],
-      programId: PROGRAM_ID,
+      programId: PROGRAM_ID(),
       data,
     });
 
@@ -402,7 +402,7 @@ export class SolanaGameChain implements GameChainPort {
         { pubkey: sessionPda, isSigner: false, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ],
-      programId: PROGRAM_ID,
+      programId: PROGRAM_ID(),
       data,
     });
 
@@ -459,7 +459,7 @@ export class SolanaGameChain implements GameChainPort {
         { pubkey: sessionPubkey, isSigner: false, isWritable: true },
         { pubkey: session.houseVault, isSigner: false, isWritable: true },
       ],
-      programId: PROGRAM_ID,
+      programId: PROGRAM_ID(),
       data,
     });
 
@@ -508,7 +508,7 @@ export class SolanaGameChain implements GameChainPort {
         { pubkey: sessionBefore.houseVault, isSigner: false, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ],
-      programId: PROGRAM_ID,
+      programId: PROGRAM_ID(),
       data,
     });
 
@@ -557,7 +557,7 @@ export class SolanaGameChain implements GameChainPort {
         { pubkey: sessionPubkey, isSigner: false, isWritable: true },
         { pubkey: session.houseVault, isSigner: false, isWritable: true },
       ],
-      programId: PROGRAM_ID,
+      programId: PROGRAM_ID(),
       data,
     });
 
@@ -620,10 +620,22 @@ export function createSolanaGameChain(
   houseAuthority: string,
   wallet?: WalletAdapter
 ): SolanaGameChain {
+  // Validate houseAuthority is a valid base58 string
+  if (!houseAuthority || houseAuthority.trim() === '') {
+    throw new Error('[createSolanaGameChain] houseAuthority is required and cannot be empty');
+  }
+  
+  let houseAuthorityPubkey: PublicKey;
+  try {
+    houseAuthorityPubkey = new PublicKey(houseAuthority);
+  } catch (error) {
+    throw new Error(`[createSolanaGameChain] Invalid houseAuthority: "${houseAuthority}". Must be a valid base58 public key.`);
+  }
+  
   return new SolanaGameChain({
     rpcUrl,
     commitment: "confirmed",
-    houseAuthority: new PublicKey(houseAuthority),
+    houseAuthority: houseAuthorityPubkey,
     wallet,
   });
 }
