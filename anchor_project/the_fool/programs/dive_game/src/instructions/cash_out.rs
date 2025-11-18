@@ -54,6 +54,13 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
         final_dive_number: session.dive_number,
         timestamp: clock.unix_timestamp,
     });
+
+    // Manually close the session account by transferring its rent to user
+    // This avoids the "from must not carry data" error from Anchor's close constraint
+    let session_lamports = session.to_account_info().lamports();
+    **session.to_account_info().try_borrow_mut_lamports()? = 0;
+    **ctx.accounts.user.to_account_info().try_borrow_mut_lamports()? += session_lamports;
+
     Ok(())
 }
 #[derive(Accounts)]
@@ -64,7 +71,6 @@ pub struct CashOut<'info> {
         mut,
         has_one = user,
         has_one = house_vault,
-        close = user,
     )]
     pub session: Account<'info, GameSession>,
     #[account(mut)]

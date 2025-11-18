@@ -5,6 +5,8 @@ pub fn init_house_vault(ctx: Context<InitializeHouseVault>, locked: bool) -> Res
     let house_vault = &mut ctx.accounts.house_vault;
     let clock = Clock::get()?;
     house_vault.house_authority = ctx.accounts.house_authority.key();
+    // Default keeper to authority, can be changed later via separate instruction if needed
+    house_vault.game_keeper = ctx.accounts.house_authority.key();
     house_vault.locked = locked;
     house_vault.total_reserved = 0;
     house_vault.bump = ctx.bumps.house_vault;

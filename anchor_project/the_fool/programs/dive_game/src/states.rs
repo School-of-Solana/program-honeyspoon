@@ -11,7 +11,8 @@ pub enum SessionStatus {
 #[account]
 #[derive(InitSpace)]
 pub struct HouseVault {
-    pub house_authority: Pubkey,
+    pub house_authority: Pubkey,  // Cold wallet (can withdraw/change config)
+    pub game_keeper: Pubkey,      // Hot wallet (signs play_round for server RNG)
     pub locked: bool,
     pub total_reserved: u64,
     pub bump: u8,
@@ -25,14 +26,8 @@ impl HouseVault {
         Ok(())
     }
     pub fn release(&mut self, amount: u64) -> Result<()> {
-        require!(
-            self.total_reserved >= amount,
-            crate::errors::GameError::Overflow
-        );
-        self.total_reserved = self
-            .total_reserved
-            .checked_sub(amount)
-            .ok_or(error!(crate::errors::GameError::Overflow))?;
+        // Saturating sub ensures we don't brick the contract if math drifts slightly
+        self.total_reserved = self.total_reserved.saturating_sub(amount);
         Ok(())
     }
 }

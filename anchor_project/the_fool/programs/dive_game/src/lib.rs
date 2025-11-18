@@ -24,8 +24,8 @@ pub mod dive_game {
     ) -> Result<()> {
         instructions::start_session(ctx, bet_amount, session_index)
     }
-    pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
-        instructions::play_round(ctx)
+    pub fn play_round(ctx: Context<PlayRound>, server_seed: u64) -> Result<()> {
+        instructions::play_round(ctx, server_seed)
     }
     pub fn lose_session(ctx: Context<LoseSession>) -> Result<()> {
         instructions::lose_session(ctx)
@@ -38,5 +38,8 @@ pub mod dive_game {
     }
     pub fn clean_expired_session(ctx: Context<CleanExpired>) -> Result<()> {
         instructions::clean_expired_session::clean_expired_session(ctx)
+    }
+    pub fn withdraw_house(ctx: Context<WithdrawHouse>, amount: u64) -> Result<()> {
+        instructions::withdraw_house(ctx, amount)
     }
 }

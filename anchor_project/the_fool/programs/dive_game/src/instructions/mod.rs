@@ -14,3 +14,5 @@ pub mod toggle_house_lock;
 pub use toggle_house_lock::*;
 pub mod clean_expired_session;
 pub use clean_expired_session::*;
+pub mod withdraw_house;
+pub use withdraw_house::*;
