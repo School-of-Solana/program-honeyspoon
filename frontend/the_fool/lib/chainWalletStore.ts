@@ -2,12 +2,13 @@
  * Chain Wallet Store (Zustand - READ-ONLY)
  *
  * This store provides READ-ONLY access to wallet balances.
- * It fetches data from server actions (which query blockchain/localStorage).
+ * It receives real-time updates via SSE (Server-Sent Events) with polling fallback.
  *
  * SECURITY: Client CANNOT modify balances - only server can update them.
  *
  * Architecture:
- * - Client: Zustand store polls server every 2s
+ * - Primary: SSE push updates from server (real-time)
+ * - Fallback: Polling every 5s if SSE fails
  * - Server: gameEngine.ts modifies balances through blockchain operations
  * - Source of truth: LocalGameChain (dev) or SolanaGameChain (prod)
  */
@@ -25,13 +26,16 @@ interface ChainWalletState {
   houseVaultBalance: number; // in SOL
   houseVaultReserved: number; // in SOL
 
-  // Loading state
+  // Connection state
   isLoading: boolean;
+  isSSEConnected: boolean; // SSE connection status
   lastUpdated: number | null;
 
   // Actions
   setUserId: (userId: string) => void;
-  refreshBalance: () => Promise<void>; // Fetch from server
+  refreshBalance: () => Promise<void>; // Fetch from server (fallback)
+  updateFromSSE: (data: { userBalance: number; houseVaultBalance: number; houseVaultReserved: number; timestamp: number }) => void;
+  setSSEConnected: (connected: boolean) => void;
 }
 
 export const useChainWalletStore = create<ChainWalletState>()(
@@ -43,6 +47,7 @@ export const useChainWalletStore = create<ChainWalletState>()(
       houseVaultBalance: 0,
       houseVaultReserved: 0,
       isLoading: false,
+      isSSEConnected: false,
       lastUpdated: null,
 
       // Set current user ID
@@ -96,6 +101,24 @@ export const useChainWalletStore = create<ChainWalletState>()(
           set({ isLoading: false });
         }
       },
+
+      // Update from SSE push notification
+      updateFromSSE: (data) => {
+        console.log("[WALLET STORE] 📨 SSE update received:", data);
+        set({
+          userBalance: data.userBalance,
+          houseVaultBalance: data.houseVaultBalance,
+          houseVaultReserved: data.houseVaultReserved,
+          lastUpdated: data.timestamp,
+          isLoading: false,
+        });
+      },
+
+      // Update SSE connection status
+      setSSEConnected: (connected) => {
+        console.log("[WALLET STORE] 🔌 SSE connection status:", connected);
+        set({ isSSEConnected: connected });
+      },
     }),
     {
       name: "chain-wallet-store",
@@ -107,13 +130,14 @@ export const useChainWalletStore = create<ChainWalletState>()(
   )
 );
 
-// Auto-refresh balance every 5 seconds (reduced from 2s to minimize server load)
-// Note: This runs once on module load and persists for the lifetime of the app
-// In a typical Next.js app, this is fine as the module stays loaded
+// Auto-refresh balance every 5 seconds as FALLBACK if SSE is not connected
+// SSE is the primary method for updates
 if (typeof window !== "undefined") {
   const refreshInterval = setInterval(() => {
     const store = useChainWalletStore.getState();
-    if (store.userId && !store.isLoading) {
+    // Only poll if SSE is NOT connected (fallback mode)
+    if (store.userId && !store.isLoading && !store.isSSEConnected) {
+      console.log("[WALLET STORE] 🔄 Polling fallback (SSE disconnected)");
       store.refreshBalance();
     }
   }, 5000);
@@ -121,5 +145,5 @@ if (typeof window !== "undefined") {
   // Store interval ID for potential cleanup (though Next.js modules typically don't unmount)
   (window as any).__walletRefreshInterval = refreshInterval;
 
-  console.log("[WALLET STORE] ⏰ Auto-refresh interval started (5s)");
+  console.log("[WALLET STORE] ⏰ Auto-refresh fallback polling started (5s, only when SSE down)");
 }

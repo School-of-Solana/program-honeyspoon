@@ -92,6 +92,8 @@ export function useUserBalance() {
     let mounted = true;
     
     async function fetchBalance() {
+      if (!publicKey) return;
+      
       setLoading(true);
       try {
         const bal = await chain.getUserBalance(publicKey.toBase58());

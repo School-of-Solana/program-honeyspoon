@@ -27,7 +27,7 @@ import {
   GameConfigState,
   SessionHandle,
 } from "./GameChainPort";
-import { GameError } from "./GameErrors";
+import { GameError, GameErrorCode } from "./GameErrors";
 import {
   PROGRAM_ID,
   getConfigPDA,
@@ -140,7 +140,7 @@ export class SolanaGameChain implements GameChainPort {
   ): Promise<string> {
     if (!this.wallet || !this.wallet.publicKey) {
       throw new GameError(
-        "WALLET_NOT_CONNECTED",
+        GameErrorCode.WALLET_NOT_CONNECTED,
         "Wallet not connected. Please connect your wallet to perform this action."
       );
     }

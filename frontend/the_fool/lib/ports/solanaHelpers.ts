@@ -82,14 +82,18 @@ export function getSessionPDA(
   player: PublicKey,
   sessionIndex: BN | bigint | number
 ): PublicKey {
-  const indexBuffer = Buffer.allocUnsafe(8);
+  // Convert to bigint
   const indexBig = typeof sessionIndex === "bigint" 
     ? sessionIndex 
     : BigInt(sessionIndex.toString());
-  indexBuffer.writeBigUInt64LE(indexBig);
+  
+  // Use DataView for browser compatibility (no writeBigUInt64LE in browser Buffer)
+  const indexBuffer = new Uint8Array(8);
+  const view = new DataView(indexBuffer.buffer);
+  view.setBigUint64(0, indexBig, true); // true = little-endian
   
   const [pda] = PublicKey.findProgramAddressSync(
-    [Buffer.from(SESSION_SEED), player.toBuffer(), indexBuffer],
+    [Buffer.from(SESSION_SEED), player.toBuffer(), Buffer.from(indexBuffer)],
     PROGRAM_ID
   );
   return pda;

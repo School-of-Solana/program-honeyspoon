@@ -45,8 +45,9 @@ import crypto from "crypto";
 const chain = getGameChain();
 
 // House authority - used for initializing vault
-// In production, this would be an actual Solana pubkey
-const HOUSE_AUTHORITY = "house_authority_main";
+// In Solana mode, reads from NEXT_PUBLIC_HOUSE_AUTHORITY env var
+// In LocalGameChain mode, uses a mock authority string
+const HOUSE_AUTHORITY = process.env.NEXT_PUBLIC_HOUSE_AUTHORITY || "house_authority_main";
 
 // Global house vault PDA (initialized on first use)
 let houseVaultPDA: string | null = null;
@@ -60,8 +61,9 @@ const GAME_CONFIG: GameConfig = {
   minWinProbability: LIB_CONFIG.MIN_WIN_PROB,
   minBet: LIB_CONFIG.MIN_BET,
   maxBet: LIB_CONFIG.MAX_BET,
-  maxPotentialWin: 100000, // Server-only config (not in client constants)
-  maxRounds: 50, // Server-only config (not in client constants)
+  // Max payout = MAX_BET * MAX_PAYOUT_MULTIPLIER (10 SOL * 100x = 1000 SOL max)
+  maxPotentialWin: LIB_CONFIG.MAX_BET * LIB_CONFIG.MAX_PAYOUT_MULTIPLIER,
+  maxRounds: LIB_CONFIG.MAX_DIVES, // Use MAX_DIVES from client config
 };
 
 // Validation: Ensure sync in development
@@ -81,13 +83,30 @@ async function ensureHouseVault(): Promise<string> {
   try {
     console.log("[CHAIN] 🏦 ensureHouseVault() called");
     console.log("[CHAIN] 📊 Current cached PDA:", houseVaultPDA || "(null)");
+    console.log("[CHAIN] 🏠 House authority:", HOUSE_AUTHORITY);
 
-    // Import PDA derivation function
-    const { mockHouseVaultPDA } = await import("@/lib/solana/pdas");
-
-    // Derive the vault PDA
-    const derivedVaultPDA = mockHouseVaultPDA(HOUSE_AUTHORITY);
-    console.log("[CHAIN] 🔑 Derived vault PDA:", derivedVaultPDA);
+    // Check if we're in Solana mode
+    const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
+    
+    let derivedVaultPDA: string;
+    
+    if (useSolana) {
+      // Solana mode: use proper PDA derivation
+      const { PublicKey } = await import("@solana/web3.js");
+      const { getHouseVaultAddress } = await import("@/lib/solana/pdas");
+      
+      const programId = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID!);
+      const houseAuthPubkey = new PublicKey(HOUSE_AUTHORITY);
+      
+      const [vaultPda] = getHouseVaultAddress(houseAuthPubkey, programId);
+      derivedVaultPDA = vaultPda.toBase58();
+      console.log("[CHAIN] 🔑 Derived Solana vault PDA:", derivedVaultPDA);
+    } else {
+      // LocalGameChain mode: use mock PDA
+      const { mockHouseVaultPDA } = await import("@/lib/solana/pdas");
+      derivedVaultPDA = mockHouseVaultPDA(HOUSE_AUTHORITY);
+      console.log("[CHAIN] 🔑 Derived mock vault PDA:", derivedVaultPDA);
+    }
 
     // Check if vault already exists (even if we have a cached PDA)
     console.log("[CHAIN] 🔍 Checking if vault exists...");
@@ -115,6 +134,7 @@ async function ensureHouseVault(): Promise<string> {
     return houseVaultPDA;
   } catch (error) {
     console.error("[CHAIN] ❌ Failed to initialize house vault:", error);
+    console.error("[CHAIN] ❌ Error details:", error instanceof Error ? error.message : String(error));
     throw new Error("Failed to initialize house vault");
   }
 }
@@ -157,14 +177,25 @@ export async function startGameSession(
     const houseReserved = lamportsToSol(houseVault.totalReserved);
     const houseAvailable = houseBalance - houseReserved;
 
+    console.log("[CHAIN] 💰 Wallet balances:", {
+      userBalance,
+      houseBalance,
+      houseReserved,
+      houseAvailable,
+      betAmount,
+    });
+
     // Validate bet amount
     if (betAmount < GAME_CONFIG.minBet) {
+      console.log("[CHAIN] ❌ Bet below minimum:", { betAmount, minBet: GAME_CONFIG.minBet });
       return { success: false, error: `Minimum bet is ${GAME_CONFIG.minBet}` };
     }
     if (betAmount > GAME_CONFIG.maxBet) {
+      console.log("[CHAIN] ❌ Bet above maximum:", { betAmount, maxBet: GAME_CONFIG.maxBet });
       return { success: false, error: `Maximum bet is ${GAME_CONFIG.maxBet}` };
     }
     if (betAmount > userBalance) {
+      console.log("[CHAIN] ❌ Insufficient user balance:", { betAmount, userBalance });
       return { success: false, error: "Insufficient balance" };
     }
 
@@ -175,8 +206,22 @@ export async function startGameSession(
       GAME_CONFIG
     );
 
+    console.log("[CHAIN] 🎰 Payout calculation:", {
+      betAmount,
+      maxRounds: GAME_CONFIG.maxRounds,
+      maxPayoutMultiplier: GAME_CONFIG.maxPayoutMultiplier,
+      calculatedMaxPayout: maxPayout,
+      houseAvailable,
+      canCover: maxPayout <= houseAvailable,
+    });
+
     // Validate house can cover max payout
     if (maxPayout > houseAvailable) {
+      console.log("[CHAIN] ❌ House cannot cover payout:", {
+        maxPayout,
+        houseAvailable,
+        shortfall: maxPayout - houseAvailable,
+      });
       return {
         success: false,
         error: "House cannot cover maximum potential payout. Please bet less.",

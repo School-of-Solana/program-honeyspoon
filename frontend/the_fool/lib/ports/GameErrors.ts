@@ -34,6 +34,9 @@ export enum GameErrorCode {
 
   // ===== Additional frontend-only error codes =====
 
+  /** Wallet not connected */
+  WALLET_NOT_CONNECTED = "WALLET_NOT_CONNECTED",
+
   /** User wallet has insufficient funds */
   INSUFFICIENT_USER_FUNDS = "INSUFFICIENT_USER_FUNDS",
 

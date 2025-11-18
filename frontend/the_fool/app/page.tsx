@@ -5,7 +5,7 @@ import OceanScene from "@/components/DeepSeaDiver/OceanScene";
 import DebugPanel from "@/components/DebugWalletPanel";
 import { GameErrorBoundary } from "@/components/DeepSeaDiver/GameErrorBoundary";
 import { WalletMultiButton } from "@/components/WalletMultiButton";
-import { SolanaModeIndicator } from "@/components/SolanaModeIndicator";
+
 import { SolanaAirdropPanel } from "@/components/SolanaAirdropPanel";
 import { calculateDiveStats } from "@/lib/gameLogic";
 import {
@@ -19,9 +19,14 @@ import {
 import type { GameState, DiveStats } from "@/lib/types";
 import { GAME_CONFIG } from "@/lib/constants";
 import { GAME_COLORS } from "@/lib/gameColors";
+import { useGameConfig } from "@/lib/hooks/useGameConfig";
+import { useWalletOrUserId } from "@/lib/hooks/useWalletOrUserId";
+import { useWalletSSE } from "@/lib/hooks/useWalletSSE";
+import { useGameChain } from "@/lib/hooks/useGameChain";
 import { playSound, getSoundManager } from "@/lib/soundManager";
 import { useGameStore } from "@/lib/gameStore";
 import { useChainWalletStore } from "@/lib/chainWalletStore";
+import { solToLamports, lamportsToSol } from "@/lib/utils/lamports";
 import {
   parseServerError,
   getErrorAction,
@@ -31,11 +36,23 @@ import {
 } from "@/lib/errorTypes";
 
 export default function Home() {
+  // Fetch game config from blockchain
+  const { config: gameConfig, loading: configLoading, error: configError } = useGameConfig();
+  
+  // Use wallet integration hook (handles both Solana wallet and local userId)
+  const { userId: walletOrUserId, isWalletMode, walletConnected } = useWalletOrUserId();
+  
+  // Use game chain hook (provides wallet-connected chain instance)
+  const { chain: gameChain, connected: isChainWalletConnected } = useGameChain();
+  
   // Use Zustand store for userId and wallet balance
   const userIdFromStore = useChainWalletStore((state) => state.userId);
   const setUserId = useChainWalletStore((state) => state.setUserId);
   const userBalance = useChainWalletStore((state) => state.userBalance);
   const refreshBalance = useChainWalletStore((state) => state.refreshBalance);
+  const updateFromSSE = useChainWalletStore((state) => state.updateFromSSE);
+  const setSSEConnected = useChainWalletStore((state) => state.setSSEConnected);
+  const isSSEConnected = useChainWalletStore((state) => state.isSSEConnected);
   const lastUpdated = useChainWalletStore((state) => state.lastUpdated);
   const houseVaultBalance = useChainWalletStore(
     (state) => state.houseVaultBalance
@@ -43,6 +60,21 @@ export default function Home() {
   const houseVaultReserved = useChainWalletStore(
     (state) => state.houseVaultReserved
   );
+
+  // Use SSE for real-time updates
+  const { data: sseData, isConnected: sseConnected, error: sseError } = useWalletSSE(userIdFromStore);
+
+  // Update store when SSE data arrives
+  useEffect(() => {
+    if (sseData) {
+      updateFromSSE(sseData);
+    }
+  }, [sseData, updateFromSSE]);
+
+  // Update SSE connection status in store
+  useEffect(() => {
+    setSSEConnected(sseConnected);
+  }, [sseConnected, setSSEConnected]);
 
   // Convert nullable userId to non-null for GameState compatibility
   const userId = userIdFromStore || "";
@@ -122,7 +154,8 @@ export default function Home() {
     setGameState((prev) => ({ ...prev, walletBalance: userBalance }));
   }, [userBalance]);
 
-  const betAmount = GAME_CONFIG.FIXED_BET; // Fixed bet amount for simplified gameplay
+  // Use config from blockchain, fallback to hardcoded if loading
+  const betAmount = gameConfig?.FIXED_BET ?? GAME_CONFIG.FIXED_BET;
   const [isProcessing, setIsProcessing] = useState(false);
   const [showBettingCard, setShowBettingCard] = useState(true);
   const [showHUD, setShowHUD] = useState(false);
@@ -274,28 +307,99 @@ export default function Home() {
     setIsProcessing(true);
 
     try {
-      // Start game on server (validates wallet, places bet)
-      const result = await startGame(betAmount, userId, gameState.sessionId);
+      // Check if using Solana mode - if so, use client-side chain (wallet required for signing)
+      const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
+      
+      if (useSolana) {
+        console.log("[GAME] 🔗 Using client-side Solana chain for transaction");
+        
+        try {
+          // Call chain directly on client (wallet will sign)
+          const betLamports = solToLamports(betAmount);
+          const maxPayoutMultiplier = gameConfig?.MAX_PAYOUT_MULTIPLIER ?? GAME_CONFIG.MAX_PAYOUT_MULTIPLIER;
+          const maxPayoutLamports = solToLamports(betAmount * maxPayoutMultiplier);
+          
+          console.log("[GAME] 💰 Transaction parameters:", {
+            betAmount: `${betAmount} SOL`,
+            betLamports: betLamports.toString(),
+            maxPayoutMultiplier,
+            maxPayout: `${betAmount * maxPayoutMultiplier} SOL`,
+            maxPayoutLamports: maxPayoutLamports.toString(),
+          });
+          
+          // Get vault PDA
+          console.log("[GAME] 🔑 Deriving vault PDA...");
+          const { PublicKey } = await import('@solana/web3.js');
+          const { getHouseVaultAddress } = await import('@/lib/solana/pdas');
+          const programId = new PublicKey(process.env.NEXT_PUBLIC_PROGRAM_ID!);
+          const houseAuthPubkey = new PublicKey(process.env.NEXT_PUBLIC_HOUSE_AUTHORITY!);
+          const [vaultPda] = getHouseVaultAddress(houseAuthPubkey, programId);
+          
+          console.log("[GAME] 🏦 Vault PDA derived:", vaultPda.toBase58());
+          console.log("[GAME] 📝 Calling startSession with params:", {
+            userPubkey: userId,
+            betLamports: betLamports.toString(),
+            maxPayoutLamports: maxPayoutLamports.toString(),
+            houseVaultPda: vaultPda.toBase58(),
+          });
+          
+          const { sessionPda, state } = await gameChain.startSession({
+            userPubkey: userId,
+            betAmountLamports: betLamports,
+            maxPayoutLamports: maxPayoutLamports,
+            houseVaultPda: vaultPda.toBase58(),
+          });
+          
+          console.log("[GAME] ✅ Solana session started on-chain!", {
+            sessionPda,
+            currentTreasure: lamportsToSol(state.currentTreasure),
+            currentTreasureLamports: state.currentTreasure.toString(),
+            roundNumber: state.roundNumber,
+            status: state.status,
+          });
+          
+          // Update game state with on-chain session
+          setGameState({
+            ...gameState,
+            sessionId: sessionPda,
+            status: "active" as const,
+            roundNumber: 0,
+            currentTreasure: lamportsToSol(state.currentTreasure),
+            walletBalance: gameState.walletBalance - betAmount,
+          });
+          
+          console.log("[GAME] 📊 Game state updated after session start");
+          
+        } catch (error) {
+          console.error("[GAME] ❌ Solana transaction failed:", error);
+          console.error("[GAME] ❌ Error details:", {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          });
+          throw error; // Re-throw to be caught by outer try-catch
+        }
+        
+      } else {
+        // LocalGameChain mode - use server action
+        console.log("[GAME] 🔗 Using server action for LocalGameChain");
+        const result = await startGame(betAmount, userId, gameState.sessionId);
 
-      if (!result.success) {
-        showError(
-          result.error || "Failed to start game. Please try again.",
-          "error"
-        );
-        setIsProcessing(false);
-        return;
+        if (!result.success) {
+          showError(
+            result.error || "Failed to start game. Please try again.",
+            "error"
+          );
+          setIsProcessing(false);
+          return;
+        }
+
+        console.log("[GAME] ✅ Game started successfully", {
+          sessionId: result.sessionId,
+        });
       }
 
-      console.log("[GAME] ✅ Game started successfully", {
-        sessionId: result.sessionId,
-      });
-
-      // Update wallet balance
-      const walletInfo = await getWalletInfo(userId);
-      console.log("[GAME] 💰 Wallet updated", {
-        newBalance: walletInfo.balance,
-        totalWagered: walletInfo.totalWagered,
-      });
+      // Refresh balance (SSE will handle this, but force update just in case)
+      await refreshBalance();
 
       // Hide betting card with animation
       setShowBettingCard(false);
@@ -329,7 +433,16 @@ export default function Home() {
         });
       }, 500);
     } catch (error) {
+      console.error("[GAME] ❌ handleStartGame caught error:", error);
       const message = error instanceof Error ? error.message : "Unknown error";
+      const stack = error instanceof Error ? error.stack : undefined;
+      
+      console.error("[GAME] ❌ Error details:", {
+        message,
+        stack,
+        type: error?.constructor?.name,
+      });
+      
       showError(
         `Game start failed: ${message}`,
         "error",
@@ -674,9 +787,6 @@ export default function Home() {
           <WalletMultiButton />
         </div>
 
-        {/* Mode Indicator - Top Left (Dev Only) */}
-        <SolanaModeIndicator />
-
         {/* Full-screen Ocean Canvas */}
         <div
           className="absolute inset-0 w-full h-full"
@@ -862,8 +972,10 @@ export default function Home() {
               <p
                 style={{ fontSize: "8px", textAlign: "center", color: "#aaa" }}
               >
-                {(GAME_CONFIG.HOUSE_EDGE * 100).toFixed(0)}% House Edge -
-                Infinite Depths
+                {gameConfig 
+                  ? `${(gameConfig.HOUSE_EDGE * 100).toFixed(0)}% House Edge - ${gameConfig.BASE_SURVIVAL_PROBABILITY * 100}% Start Chance`
+                  : `${(GAME_CONFIG.HOUSE_EDGE * 100).toFixed(0)}% House Edge - Loading config...`
+                }
               </p>
             </div>
           </div>

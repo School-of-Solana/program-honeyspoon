@@ -6,33 +6,33 @@
 // CRITICAL: These values MUST match LocalGameChain.gameConfig
 export const GAME_CONFIG = {
   // === Core Gameplay ===
-  FIXED_BET: 0.1, // SOL - Fixed bet amount for simplified gameplay
-  BASE_SURVIVAL_PROBABILITY: 0.7, // 70% at dive 1 (matches on-chain config)
-  DECAY_CONSTANT: 0.08, // -8% per dive (matches on-chain decay_per_dive_ppm: 8000 / 100000)
-  MIN_WIN_PROB: 0.05, // 5% minimum win probability floor (matches on-chain min_survival_ppm)
+  FIXED_BET: 0.1 as number, // SOL - Fixed bet amount for simplified gameplay
+  BASE_SURVIVAL_PROBABILITY: 0.7 as number, // 70% at dive 1 (matches on-chain config)
+  DECAY_CONSTANT: 0.08 as number, // -8% per dive (matches on-chain decay_per_dive_ppm: 8000 / 100000)
+  MIN_WIN_PROB: 0.05 as number, // 5% minimum win probability floor (matches on-chain min_survival_ppm)
 
   // === Treasure Multipliers ===
-  TREASURE_MULTIPLIER: 1.9, // 1.9x multiplier per dive (for 5% house edge)
-  HOUSE_EDGE: 0.05, // 5% house edge (built into treasure multiplier)
+  TREASURE_MULTIPLIER: 1.9 as number, // 1.9x multiplier per dive (for 5% house edge)
+  HOUSE_EDGE: 0.05 as number, // 5% house edge (built into treasure multiplier)
 
   // === Limits ===
-  MAX_PAYOUT_MULTIPLIER: 100, // Maximum payout is 100x bet (0.1 SOL bet = 10 SOL max)
-  MAX_DIVES: 50, // Maximum number of dives (safety limit)
+  MAX_PAYOUT_MULTIPLIER: 100 as number, // Maximum payout is 100x bet (0.1 SOL bet = 10 SOL max)
+  MAX_DIVES: 50 as number, // Maximum number of dives (safety limit)
 
   // === Display ===
-  LAMPORTS_PER_SOL: 1_000_000_000, // For conversions
-  INITIAL_WALLET_BALANCE: 1000, // Starting wallet balance (SOL) for LOCAL mode only
+  LAMPORTS_PER_SOL: 1_000_000_000 as number, // For conversions
+  INITIAL_WALLET_BALANCE: 1000 as number, // Starting wallet balance (SOL) for LOCAL mode only
 
   // === Legacy/Deprecated (keeping for compatibility) ===
-  TARGET_EV: 0.95, // 0.95 EV every round (player-friendly)
-  BASE_WIN_PROB: 0.7, // Alias for BASE_SURVIVAL_PROBABILITY
-  MIN_BET: 0.1, // Updated to match FIXED_BET
-  MAX_BET: 10, // Updated: 100x min bet
-  STARTING_DEPTH: 0, // Surface level
-  DEPTH_PER_DIVE: 50, // Meters deeper per round
-  MAX_VISUAL_DEPTH: 2000, // Visual cap for rendering
-  SESSION_TIMEOUT_MS: 30 * 60 * 1000, // 30 minutes (sessions expire after inactivity)
-} as const;
+  TARGET_EV: 0.95 as number, // 0.95 EV every round (player-friendly)
+  BASE_WIN_PROB: 0.7 as number, // Alias for BASE_SURVIVAL_PROBABILITY
+  MIN_BET: 0.1 as number, // Updated to match FIXED_BET
+  MAX_BET: 10 as number, // Updated: 100x min bet
+  STARTING_DEPTH: 0 as number, // Surface level
+  DEPTH_PER_DIVE: 50 as number, // Meters deeper per round
+  MAX_VISUAL_DEPTH: 2000 as number, // Visual cap for rendering
+  SESSION_TIMEOUT_MS: (30 * 60 * 1000) as number, // 30 minutes (sessions expire after inactivity)
+};
 
 // Depth zones with visual themes
 export const DEPTH_ZONES = {

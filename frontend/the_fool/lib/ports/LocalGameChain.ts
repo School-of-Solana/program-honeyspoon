@@ -20,6 +20,7 @@ import {
   GameSessionState,
   HouseVaultState,
   SessionHandle,
+  GameConfigState,
 } from "./GameChainPort";
 import { GameError } from "./GameErrors";
 import { mockHouseVaultPDA, mockSessionPDA } from "../solana/pdas";
@@ -270,6 +271,35 @@ export class LocalGameChain implements GameChainPort {
     const wallets = this.loadWallets();
     wallets[vaultPda] = balance.toString();
     this.saveWallets(wallets);
+  }
+
+  // ===== Config Methods =====
+
+  /**
+   * Initialize game config (not supported in LocalGameChain)
+   */
+  async initGameConfig(): Promise<any> {
+    throw new Error('initGameConfig not supported in LocalGameChain - config is hardcoded');
+  }
+
+  /**
+   * Get game config (returns hardcoded local config)
+   */
+  async getGameConfig(): Promise<GameConfigState | null> {
+    return {
+      configPda: 'local_config',
+      admin: 'local_admin',
+      baseSurvivalPpm: Math.round(this.gameConfig.baseWinProbability * 1_000_000),
+      decayPerDivePpm: Math.round(this.gameConfig.decayConstant * 1_000_000),
+      minSurvivalPpm: Math.round(this.gameConfig.minWinProbability * 1_000_000),
+      treasureMultiplierNum: 19,
+      treasureMultiplierDen: 10,
+      maxPayoutMultiplier: 100,
+      maxDives: 50,
+      minBet: BigInt(100_000_000), // 0.1 SOL
+      maxBet: BigInt(10_000_000_000), // 10 SOL
+      bump: 0,
+    };
   }
 
   // ===== Contract instruction implementations =====

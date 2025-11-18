@@ -49,6 +49,17 @@ export function getHouseVaultAddress(
 }
 
 /**
+ * Helper: Convert u64 to little-endian buffer (browser-compatible)
+ */
+function u64ToBuffer(value: number | bigint): Buffer {
+  const bigValue = BigInt(value);
+  const arr = new Uint8Array(8);
+  const view = new DataView(arr.buffer);
+  view.setBigUint64(0, bigValue, true); // true = little-endian
+  return Buffer.from(arr);
+}
+
+/**
  * Derive the game session PDA
  * Seeds: ["session", user.key(), session_index.to_le_bytes()]
  */
@@ -57,8 +68,7 @@ export function getSessionAddress(
   sessionIndex: bigint | number,
   programId: PublicKey
 ): [PublicKey, number] {
-  const indexBuf = Buffer.alloc(8);
-  indexBuf.writeBigUInt64LE(BigInt(sessionIndex));
+  const indexBuf = u64ToBuffer(sessionIndex);
   
   return PublicKey.findProgramAddressSync(
     [
@@ -74,9 +84,7 @@ export function getSessionAddress(
  * Helper: Convert session index to buffer for PDA derivation
  */
 export function sessionIndexToBuffer(index: number | bigint): Buffer {
-  const buf = Buffer.alloc(8);
-  buf.writeBigUInt64LE(BigInt(index));
-  return buf;
+  return u64ToBuffer(index);
 }
 
 /**

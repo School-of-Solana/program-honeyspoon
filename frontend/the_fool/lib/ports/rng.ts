@@ -61,13 +61,14 @@ export function deriveRoundRoll(
   sessionPda?: string
 ): number {
   // Build seed material: seed || dive_number || session_pda
-  const buffer = Buffer.alloc(64);
+  const buffer = new Uint8Array(64);
 
   // First 32 bytes: VRF seed
   buffer.set(seed, 0);
 
-  // Next 8 bytes: dive number (little-endian u64)
-  buffer.writeBigUInt64LE(BigInt(diveNumber), 32);
+  // Next 8 bytes: dive number (little-endian u64) - use DataView for browser compatibility
+  const view = new DataView(buffer.buffer);
+  view.setBigUint64(32, BigInt(diveNumber), true); // true = little-endian
 
   // Optionally mix in session PDA for extra uniqueness
   if (sessionPda) {
@@ -78,10 +79,11 @@ export function deriveRoundRoll(
   }
 
   // Hash with keccak256 (matching Solana's keccak)
-  const hash = createHash("sha256").update(buffer).digest(); // Note: using sha256 as keccak256 substitute
+  const hash = createHash("sha256").update(Buffer.from(buffer)).digest(); // Note: using sha256 as keccak256 substitute
 
-  // Extract first 8 bytes as u64
-  const randU64 = hash.readBigUInt64LE(0);
+  // Extract first 8 bytes as u64 - use DataView for browser compatibility
+  const hashView = new DataView(hash.buffer, hash.byteOffset);
+  const randU64 = hashView.getBigUint64(0, true); // true = little-endian
 
   // Modulo to get basis points [0, 1000000)
   const rollBps = Number(randU64 % BigInt(1_000_000));
