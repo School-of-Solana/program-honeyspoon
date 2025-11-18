@@ -21,6 +21,19 @@ pub fn random_roll_from_slots(slot_hash: &[u8; 32], session_pda: &Pubkey, dive_n
     let seed = generate_seed(slot_hash, session_pda);
     random_roll_bps(&seed, dive_number)
 }
+
+/// Generate a random roll from arbitrary entropy bytes  
+/// Used with Instructions sysvar for proper on-chain RNG
+pub fn random_roll_from_entropy(entropy: &[u8], dive_number: u16) -> u32 {
+    let mut seed_material = entropy.to_vec();
+    seed_material.extend_from_slice(&dive_number.to_le_bytes());
+    let hash = hashv(&[&seed_material]);
+    let mut buf = [0u8; 8];
+    buf.copy_from_slice(&hash.to_bytes()[0..8]);
+    let rand_u64 = u64::from_le_bytes(buf);
+    (rand_u64 % 1_000_000) as u32
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
