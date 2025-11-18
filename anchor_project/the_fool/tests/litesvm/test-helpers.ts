@@ -10,11 +10,6 @@ import {
 import type { Signer } from "@solana/web3.js";
 import BN from "bn.js";
 
-
-
-
-
-
 export const PROGRAM_ID = new PublicKey(
   "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
 );
@@ -29,10 +24,6 @@ export const TEST_AMOUNTS = {
   MEDIUM: 1,
   LARGE: 10,
 };
-
-
-
-
 
 export function getConfigPDA(): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
@@ -62,10 +53,6 @@ export function getSessionPDA(
   );
 }
 
-
-
-
-
 export function lamports(sol: number): BN {
   return new BN(Math.round(sol * LAMPORTS_PER_SOL));
 }
@@ -76,16 +63,12 @@ export function sol(lamports: BN | bigint): number {
   return lamportsBN.toNumber() / LAMPORTS_PER_SOL;
 }
 
-
-
-
-
 export function serializeOption<T>(value: T | null, size: number): Buffer {
   if (value === null) {
-    return Buffer.from([0]); 
+    return Buffer.from([0]);
   }
   const buffer = Buffer.alloc(1 + size);
-  buffer.writeUInt8(1, 0); 
+  buffer.writeUInt8(1, 0);
 
   if (typeof value === "number") {
     if (size === 2) {
@@ -100,10 +83,6 @@ export function serializeOption<T>(value: T | null, size: number): Buffer {
 
   return buffer;
 }
-
-
-
-
 
 export interface BuildAndSendTxParams {
   svm: LiteSVM;
@@ -121,10 +100,6 @@ export function buildAndSendTx(params: BuildAndSendTxParams) {
 
   return svm.sendTransaction(tx);
 }
-
-
-
-
 
 export interface GameConfigParams {
   baseSurvivalPpm?: number | null;
@@ -196,10 +171,6 @@ export function buildWithdrawHouseData(amount: BN): Buffer {
   const amountBytes = amount.toArrayLike(Buffer, "le", 8);
   return Buffer.concat([discriminator, amountBytes]);
 }
-
-
-
-
 
 export function createInitConfigInstruction(
   admin: PublicKey,
@@ -326,10 +297,6 @@ export function createWithdrawHouseInstruction(
   });
 }
 
-
-
-
-
 export interface ParsedSessionData {
   user: PublicKey;
   houseVault: PublicKey;
@@ -342,9 +309,11 @@ export interface ParsedSessionData {
   lastActiveSlot: BN;
 }
 
-export function parseSessionData(dataInput: Buffer | Uint8Array): ParsedSessionData {
+export function parseSessionData(
+  dataInput: Buffer | Uint8Array
+): ParsedSessionData {
   const data = Buffer.from(dataInput);
-  let offset = 8; 
+  let offset = 8;
 
   const user = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
@@ -396,9 +365,11 @@ export interface ParsedHouseVaultData {
   bump: number;
 }
 
-export function parseHouseVaultData(dataInput: Buffer | Uint8Array): ParsedHouseVaultData {
+export function parseHouseVaultData(
+  dataInput: Buffer | Uint8Array
+): ParsedHouseVaultData {
   const data = Buffer.from(dataInput);
-  let offset = 8; 
+  let offset = 8;
 
   const houseAuthority = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
@@ -437,9 +408,11 @@ export interface ParsedConfigData {
   bump: number;
 }
 
-export function parseConfigData(dataInput: Buffer | Uint8Array): ParsedConfigData {
+export function parseConfigData(
+  dataInput: Buffer | Uint8Array
+): ParsedConfigData {
   const data = Buffer.from(dataInput);
-  let offset = 8; 
+  let offset = 8;
 
   const admin = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
@@ -464,7 +437,7 @@ export function parseConfigData(dataInput: Buffer | Uint8Array): ParsedConfigDat
 
   const maxDives = data.readUInt16LE(offset);
   offset += 2;
-  
+
   // No padding needed here - we have 3*u32 (12 bytes) + 4*u16 (8 bytes) = 20 bytes after admin
   // Next field is u64 at offset 8 + 32 + 20 = 60, which is already 4-byte aligned (u64 only needs 8-byte alignment)
 
@@ -490,10 +463,6 @@ export function parseConfigData(dataInput: Buffer | Uint8Array): ParsedConfigDat
     bump,
   };
 }
-
-
-
-
 
 export interface GameFixture {
   svm: LiteSVM;
@@ -529,7 +498,6 @@ export function createBasicFixture(
   } = params;
 
   if (!skipInit) {
-    
     const configIx = createInitConfigInstruction(
       authority.publicKey,
       configPDA,
@@ -541,7 +509,6 @@ export function createBasicFixture(
       signers: [authority],
     });
 
-    
     const vaultIx = createInitHouseVaultInstruction(
       authority.publicKey,
       houseVaultPDA,
@@ -553,17 +520,14 @@ export function createBasicFixture(
       signers: [authority],
     });
 
-    
     if (fundVault) {
       svm.airdrop(houseVaultPDA, BigInt(fundVault.toString()));
     }
   }
 
-  
   const player = new Keypair();
   svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-  
   const sessionIndex = new BN(0);
   const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
 
@@ -611,10 +575,6 @@ export function startGameSession(params: StartGameSessionParams): void {
   });
 }
 
-
-
-
-
 export function logTransactionFailure(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
     console.log(`\n❌ Transaction failed: ${context}`);
@@ -630,7 +590,6 @@ export function logTransactionFailure(result: any, context: string): void {
   }
 }
 
-
 export function logAccountStates(
   svm: LiteSVM,
   configPDA: PublicKey,
@@ -640,7 +599,6 @@ export function logAccountStates(
 ): void {
   console.log(`\n📊 Account States - ${context}`);
 
-  
   const configData = getConfigData(svm, configPDA);
   if (configData) {
     console.log("Config:");
@@ -659,7 +617,6 @@ export function logAccountStates(
     console.log("Config: NOT FOUND");
   }
 
-  
   const vaultAccount = svm.getAccount(houseVaultPDA);
   const vaultData = getVaultData(svm, houseVaultPDA);
   if (vaultAccount && vaultData) {
@@ -683,7 +640,6 @@ export function logAccountStates(
     console.log("House Vault: NOT FOUND");
   }
 
-  
   const playerAccount = svm.getAccount(playerPubkey);
   if (playerAccount) {
     console.log("Player:");
@@ -701,25 +657,16 @@ export function expectTxSuccess(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
     logTransactionFailure(result, context);
   }
-  
 }
 
-export function expectTxFailure(result: any, context: string): void {
-  
-}
+export function expectTxFailure(result: any, context: string): void {}
 
 export function expectTxFailedWith(result: any, errorCode: string): void {
-  
   if (result && result.logs) {
     const logs: string[] = result.logs;
     const errorLog = logs.find((l) => l.includes(errorCode));
-    
   }
 }
-
-
-
-
 
 export interface TestContext {
   svm: LiteSVM;
@@ -905,10 +852,6 @@ export function loseSession(
     signers: [player],
   });
 }
-
-
-
-
 
 export function getSessionData(
   svm: LiteSVM,

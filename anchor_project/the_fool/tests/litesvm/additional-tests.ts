@@ -204,7 +204,7 @@ function parseHouseVaultData(dataInput: Uint8Array): {
 
   const houseAuthority = new PublicKey(data.slice(offset, offset + 32));
   offset += 32;
-  
+
   // Skip game_keeper field (32 bytes) - added in latest version
   offset += 32;
 
@@ -380,17 +380,25 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       svm.sendTransaction(vaultTx);
 
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
-      
+
       // Verify setup succeeded
       const vaultAcc = svm.getAccount(houseVaultPDA);
       if (!vaultAcc) {
         throw new Error("Vault not initialized in beforeEach!");
       }
       const vaultInfo = parseHouseVaultData(vaultAcc.data);
-      console.log("BeforeEach - Vault house_authority:", vaultInfo.houseAuthority.toBase58());
-      console.log("BeforeEach - Authority public key:", authority.publicKey.toBase58());
+      console.log(
+        "BeforeEach - Vault house_authority:",
+        vaultInfo.houseAuthority.toBase58()
+      );
+      console.log(
+        "BeforeEach - Authority public key:",
+        authority.publicKey.toBase58()
+      );
       if (!vaultInfo.houseAuthority.equals(authority.publicKey)) {
-        throw new Error(`Vault authority mismatch! Vault has ${vaultInfo.houseAuthority.toBase58()} but expected ${authority.publicKey.toBase58()}`);
+        throw new Error(
+          `Vault authority mismatch! Vault has ${vaultInfo.houseAuthority.toBase58()} but expected ${authority.publicKey.toBase58()}`
+        );
       }
     });
 
@@ -460,7 +468,10 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       const result = svm.sendTransaction(tx);
       if (result?.constructor?.name === "FailedTransactionMetadata") {
-        logTransactionFailure(result, "Start session with minimum bet (0.1 SOL)");
+        logTransactionFailure(
+          result,
+          "Start session with minimum bet (0.1 SOL)"
+        );
       }
       expect(result?.constructor?.name).to.equal("TransactionMetadata");
     });
@@ -986,7 +997,8 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
         keys: [
           { pubkey: crank.publicKey, isSigner: true, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },{ pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
         ],
         programId: PROGRAM_ID,
         data: cleanData,
@@ -1046,7 +1058,8 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
         keys: [
           { pubkey: crank.publicKey, isSigner: true, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },{ pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
         ],
         programId: PROGRAM_ID,
         data: cleanData,
@@ -1113,7 +1126,8 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
         keys: [
           { pubkey: crank.publicKey, isSigner: true, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },{ pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
         ],
         programId: PROGRAM_ID,
         data: cleanData,
@@ -1176,7 +1190,8 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
         keys: [
           { pubkey: crank.publicKey, isSigner: true, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },{ pubkey: sessionPDA, isSigner: false, isWritable: true },
+          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: sessionPDA, isSigner: false, isWritable: true },
         ],
         programId: PROGRAM_ID,
         data: cleanData,
@@ -1261,7 +1276,8 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
           keys: [
             { pubkey: crank.publicKey, isSigner: true, isWritable: true },
             { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-            { pubkey: houseVaultPDA, isSigner: false, isWritable: true },{ pubkey: sessionPDA, isSigner: false, isWritable: true },
+            { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+            { pubkey: sessionPDA, isSigner: false, isWritable: true },
           ],
           programId: PROGRAM_ID,
           data: cleanData,

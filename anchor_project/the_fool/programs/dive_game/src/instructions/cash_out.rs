@@ -23,16 +23,16 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
         vault_balance >= session.current_treasure,
         GameError::InsufficientVaultBalance
     );
-    
+
     // Manual lamport transfer from vault to user
     // Cannot use system_program::transfer() because vault has data
     let vault_lamports = house_vault.to_account_info().lamports();
     let user_lamports = ctx.accounts.user.lamports();
-    
+
     **house_vault.to_account_info().try_borrow_mut_lamports()? = vault_lamports
         .checked_sub(session.current_treasure)
         .ok_or(GameError::Overflow)?;
-    
+
     **ctx.accounts.user.try_borrow_mut_lamports()? = user_lamports
         .checked_add(session.current_treasure)
         .ok_or(GameError::Overflow)?;
