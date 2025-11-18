@@ -309,6 +309,7 @@ export default function Home() {
     try {
       // Check if using Solana mode - if so, use client-side chain (wallet required for signing)
       const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
+      let newSessionId = gameState.sessionId; // Default to current session ID
       
       if (useSolana) {
         console.log("[GAME] 🔗 Using client-side Solana chain for transaction");
@@ -354,21 +355,14 @@ export default function Home() {
             sessionPda,
             currentTreasure: lamportsToSol(state.currentTreasure),
             currentTreasureLamports: state.currentTreasure.toString(),
-            roundNumber: state.roundNumber,
+            diveNumber: state.diveNumber,
             status: state.status,
           });
           
-          // Update game state with on-chain session
-          setGameState({
-            ...gameState,
-            sessionId: sessionPda,
-            status: "active" as const,
-            roundNumber: 0,
-            currentTreasure: lamportsToSol(state.currentTreasure),
-            walletBalance: gameState.walletBalance - betAmount,
-          });
+          // Store session ID for later use
+          newSessionId = sessionPda;
           
-          console.log("[GAME] 📊 Game state updated after session start");
+          console.log("[GAME] 📊 Session created with ID:", newSessionId);
           
         } catch (error) {
           console.error("[GAME] ❌ Solana transaction failed:", error);
@@ -396,6 +390,9 @@ export default function Home() {
         console.log("[GAME] ✅ Game started successfully", {
           sessionId: result.sessionId,
         });
+        
+        // Store session ID for later use
+        newSessionId = result.sessionId || gameState.sessionId;
       }
 
       // Refresh balance (SSE will handle this, but force update just in case)
@@ -416,10 +413,10 @@ export default function Home() {
           initialBet: betAmount,
           depth: 0,
           oxygenLevel: 100,
-          sessionId: result.sessionId!, // ✅ Use new PDA session ID from server
+          sessionId: newSessionId, // ✅ Use new session ID (from either Solana or LocalGameChain)
           userId: gameState.userId,
           discoveredShipwrecks: [],
-          walletBalance: walletInfo.balance,
+          walletBalance: (gameState.walletBalance ?? 0) - betAmount,
         });
         setShowHUD(true);
         setLastShipwreck(undefined);

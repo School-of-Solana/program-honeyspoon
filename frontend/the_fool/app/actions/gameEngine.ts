@@ -209,7 +209,6 @@ export async function startGameSession(
     console.log("[CHAIN] 🎰 Payout calculation:", {
       betAmount,
       maxRounds: GAME_CONFIG.maxRounds,
-      maxPayoutMultiplier: GAME_CONFIG.maxPayoutMultiplier,
       calculatedMaxPayout: maxPayout,
       houseAvailable,
       canCover: maxPayout <= houseAvailable,
