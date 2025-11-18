@@ -71,6 +71,7 @@ pub struct StartSession<'info> {
         has_one = house_authority,
     )]
     pub house_vault: Account<'info, HouseVault>,
+    /// CHECK: This account is validated by the has_one constraint on house_vault
     pub house_authority: UncheckedAccount<'info>,
     #[account(
         init,

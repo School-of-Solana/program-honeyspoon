@@ -271,10 +271,7 @@ export function createCashOutInstruction(
     keys: [
       { pubkey: player, isSigner: true, isWritable: true },
       { pubkey: sessionPDA, isSigner: false, isWritable: true },
-      { pubkey: configPDA, isSigner: false, isWritable: false },
       { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-      { pubkey: authority, isSigner: false, isWritable: false },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     programId: PROGRAM_ID,
     data: buildCashOutData(),

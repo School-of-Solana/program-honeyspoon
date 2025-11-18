@@ -23,14 +23,21 @@ const __dirname = path.dirname(__filename);
 function logTransactionFailure(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
     console.log(`\n❌ Transaction failed: ${context}`);
-    if (result.logs) {
-      console.log("Transaction logs:");
-      result.logs.forEach((log: string, i: number) => {
-        console.log(`  [${i}] ${log}`);
-      });
+    
+    // LiteSVM FailedTransactionMetadata has .err() and .meta() methods
+    if (typeof result.err === 'function') {
+      const err = result.err();
+      console.log("Error:", err?.toString() || JSON.stringify(err, null, 2));
     }
-    if (result.err) {
-      console.log("Error details:", JSON.stringify(result.err, null, 2));
+    
+    if (typeof result.meta === 'function') {
+      const meta = result.meta();
+      if (meta?.logMessages) {
+        console.log("Transaction logs:");
+        meta.logMessages.forEach((log: string, i: number) => {
+          console.log(`  [${i}] ${log}`);
+        });
+      }
     }
   }
 }
@@ -118,7 +125,7 @@ function logAccountStates(
 
 
 const PROGRAM_ID = new PublicKey(
-  "7f56Kmapmckgg8avSnqJvCUjtfDKVovENtzfvhSTEQ6h"
+  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
 );
 
 const HOUSE_VAULT_SEED = "house_vault";
@@ -126,8 +133,8 @@ const SESSION_SEED = "session";
 const GAME_CONFIG_SEED = "game_config";
 
 const TEST_AMOUNTS = {
-  TINY: 0.01, 
-  SMALL: 0.1,
+  TINY: 0.1,  // Must be >= default min_bet (100_000_000 lamports = 0.1 SOL)
+  SMALL: 0.2,
   MEDIUM: 1,
   LARGE: 10,
 };
@@ -1330,15 +1337,18 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           startTx.recentBlockhash = svm.latestBlockhash();
           startTx.add(startIx);
           startTx.sign(player);
-          svm.sendTransaction(startTx);
+          const result = svm.sendTransaction(startTx);
 
-          sessions.push({
-            player,
-            sessionPDA,
-            betAmount,
-            maxPayout,
-            active: true,
-          });
+          // Only push to sessions if transaction succeeded
+          if (result?.constructor?.name === "TransactionMetadata") {
+            sessions.push({
+              player,
+              sessionPDA,
+              betAmount,
+              maxPayout,
+              active: true,
+            });
+          }
         }
 
         
@@ -2296,7 +2306,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const minBet = new BN(10_000_000); 
+      const minBet = new BN(100_000_000); // 0.1 SOL - matches default min_bet 
       const data = buildStartSessionData(minBet, new BN(0));
 
       const instruction = new TransactionInstruction({
@@ -2325,14 +2335,18 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       if (result?.constructor?.name === "FailedTransactionMetadata") {
         logTransactionFailure(result, "Test transaction");
       }
-      expect(result).to.not.be.null;
+      
+      // Check if transaction succeeded
+      if (result?.constructor?.name !== "TransactionMetadata") {
+        expect.fail("Transaction failed to create session");
+      }
 
       const sessionAccount = svm.getAccount(sessionPDA);
       expect(sessionAccount).to.not.be.null;
       if (!sessionAccount) return;
       const sessionData = parseSessionData(sessionAccount.data);
-      expect(sessionData.betAmount.toString()).to.equal("10000000"); 
-      expect(sessionData.maxPayout.toString()).to.equal("1000000000"); 
+      expect(sessionData.betAmount.toString()).to.equal("100000000"); // 0.1 SOL
+      expect(sessionData.maxPayout.toString()).to.equal("10000000000"); // 100 * 0.1 SOL
     });
 
     it("should handle large bet amount (0.5 SOL - max)", () => {
@@ -3334,7 +3348,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = new BN(10_000_000); 
+      const betAmount = new BN(100_000_000); // 0.1 SOL - matches default min_bet
 
       
       const startData = buildStartSessionData(betAmount, new BN(0));
@@ -3368,9 +3382,9 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const sessionData = parseSessionData(sessionAccount.data);
 
       
-      expect(sessionData.betAmount.toString()).to.equal("10000000"); 
-      expect(sessionData.currentTreasure.toString()).to.equal("10000000");
-      expect(sessionData.maxPayout.toString()).to.equal("1000000000"); 
+      expect(sessionData.betAmount.toString()).to.equal("100000000"); // 0.1 SOL
+      expect(sessionData.currentTreasure.toString()).to.equal("100000000");
+      expect(sessionData.maxPayout.toString()).to.equal("10000000000"); // 100 * 0.1 SOL
 
       
       
@@ -6654,7 +6668,6 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         const startIx = new TransactionInstruction({
           keys: [
             { pubkey: player.publicKey, isSigner: true, isWritable: true },
-            { pubkey: sessionPDA, isSigner: false, isWritable: true },
             { pubkey: configPDA, isSigner: false, isWritable: false },
             { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
             {
@@ -6662,6 +6675,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
               isSigner: false,
               isWritable: false,
             },
+            { pubkey: sessionPDA, isSigner: false, isWritable: true },
             {
               pubkey: SystemProgram.programId,
               isSigner: false,
