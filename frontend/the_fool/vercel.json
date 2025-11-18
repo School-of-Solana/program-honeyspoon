@@ -1,0 +1,15 @@
+{
+  "buildCommand": "bun run build",
+  "devCommand": "bun run dev",
+  "installCommand": "bun install",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_USE_SOLANA": "true"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_USE_SOLANA": "true"
+    }
+  }
+}
