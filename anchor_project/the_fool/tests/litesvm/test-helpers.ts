@@ -164,7 +164,7 @@ export function buildInitHouseVaultData(isLocked: boolean): Buffer {
 }
 
 export function buildStartSessionData(betAmount: BN, sessionIndex: BN): Buffer {
-  const discriminator = Buffer.from([126, 4, 152, 174, 130, 6, 87, 190]);
+  const discriminator = Buffer.from([23, 227, 111, 142, 212, 230, 3, 175]);
   const betBuffer = betAmount.toArrayLike(Buffer, "le", 8);
   const indexBuffer = sessionIndex.toArrayLike(Buffer, "le", 8);
   return Buffer.concat([discriminator, betBuffer, indexBuffer]);
@@ -188,7 +188,7 @@ export function buildToggleHouseLockData(): Buffer {
   return Buffer.from([224, 8, 223, 134, 139, 162, 145, 238]);
 }
 export function buildCleanExpiredSessionData(): Buffer {
-  return Buffer.from([205, 213, 13, 151, 46, 192, 217, 158]);
+  return Buffer.from([198, 119, 17, 15, 128, 185, 80, 231]);
 }
 
 export function buildWithdrawHouseData(amount: BN): Buffer {
