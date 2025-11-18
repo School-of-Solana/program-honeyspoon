@@ -1172,17 +1172,19 @@ export default function Home() {
                   >
                     {isProcessing ? "DIVING..." : "DIVE DEEPER"}
                   </button>
-                  <button
-                    onClick={() => {
-                      playSound("BUTTON_CLICK");
-                      handleSurface();
-                    }}
-                    disabled={isProcessing}
-                    className={`nes-btn ${isProcessing ? "is-disabled" : "is-success"} flex-1`}
-                    style={{ fontSize: "16px", padding: "16px" }}
-                  >
-                    SURFACE
-                  </button>
+                  {gameState.diveNumber > 1 && (
+                    <button
+                      onClick={() => {
+                        playSound("BUTTON_CLICK");
+                        handleSurface();
+                      }}
+                      disabled={isProcessing}
+                      className={`nes-btn ${isProcessing ? "is-disabled" : "is-success"} flex-1`}
+                      style={{ fontSize: "16px", padding: "16px" }}
+                    >
+                      SURFACE
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -449,17 +449,15 @@ export class SolanaGameChain implements GameChainPort {
     // Build instruction data
     const data = buildPlayRoundData();
 
-    // Instructions sysvar for proper on-chain RNG (contains transaction recent blockhash)
-    const INSTRUCTIONS_SYSVAR = new PublicKey("Sysvar1nstructions1111111111111111111111111");
-
-    // Build instruction
+    // Build instruction with basic required accounts
+    // The program will validate and require any additional accounts it needs
+    // This makes the frontend work with different RNG implementations
     const instruction = new TransactionInstruction({
       keys: [
         { pubkey: userPubkey, isSigner: true, isWritable: true },
         { pubkey: configPda, isSigner: false, isWritable: false },
         { pubkey: sessionPubkey, isSigner: false, isWritable: true },
         { pubkey: session.houseVault, isSigner: false, isWritable: true },
-        { pubkey: INSTRUCTIONS_SYSVAR, isSigner: false, isWritable: false },
       ],
       programId: PROGRAM_ID,
       data,
