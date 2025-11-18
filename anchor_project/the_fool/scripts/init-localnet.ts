@@ -62,7 +62,8 @@ async function main() {
   console.log("🚀 Initializing dive_game on localnet...\n");
 
   
-  const connection = new Connection("http:
+  const connection = new Connection("http://localhost:8899", "confirmed");
+  
   
   
   const keypairPath = path.join(os.homedir(), ".config", "solana", "id.json");
@@ -187,7 +188,7 @@ async function main() {
   console.log("\n💡 Add these to your .env.local:");
   console.log(`   NEXT_PUBLIC_PROGRAM_ID="${PROGRAM_ID.toBase58()}"`);
   console.log(`   NEXT_PUBLIC_HOUSE_AUTHORITY="${houseAuthority.toBase58()}"`);
-  console.log(`   NEXT_PUBLIC_RPC_URL="http:
+  console.log(`   NEXT_PUBLIC_RPC_URL="http://localhost:8899"`);
 }
 
 main().catch(console.error);

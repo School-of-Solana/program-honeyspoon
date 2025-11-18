@@ -184,6 +184,9 @@ export function buildLoseSessionData(): Buffer {
 export function buildToggleHouseLockData(): Buffer {
   return Buffer.from([224, 8, 223, 134, 139, 162, 145, 238]);
 }
+export function buildCleanExpiredSessionData(): Buffer {
+  return Buffer.from([205, 213, 13, 151, 46, 192, 217, 158]);
+}
 
 
 
