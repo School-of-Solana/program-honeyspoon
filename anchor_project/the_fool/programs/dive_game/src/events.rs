@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-
 #[event]
 pub struct InitializeHouseVaultEvent {
     pub house_vault: Pubkey,
@@ -7,7 +6,6 @@ pub struct InitializeHouseVaultEvent {
     pub locked: bool,
     pub timestamp: i64,
 }
-
 #[event]
 pub struct SessionStartedEvent {
     pub session: Pubkey,
@@ -17,7 +15,6 @@ pub struct SessionStartedEvent {
     pub max_payout: u64,
     pub timestamp: i64,
 }
-
 #[event]
 pub struct RoundPlayedEvent {
     pub session: Pubkey,
@@ -26,7 +23,6 @@ pub struct RoundPlayedEvent {
     pub current_treasure: u64,
     pub timestamp: i64,
 }
-
 #[event]
 pub struct SessionLostEvent {
     pub session: Pubkey,
@@ -36,7 +32,6 @@ pub struct SessionLostEvent {
     pub final_dive_number: u16,
     pub timestamp: i64,
 }
-
 #[event]
 pub struct SessionCashedOutEvent {
     pub session: Pubkey,
@@ -46,7 +41,6 @@ pub struct SessionCashedOutEvent {
     pub final_dive_number: u16,
     pub timestamp: i64,
 }
-
 #[event]
 pub struct ToggleHouseLockEvent {
     pub house_vault: Pubkey,

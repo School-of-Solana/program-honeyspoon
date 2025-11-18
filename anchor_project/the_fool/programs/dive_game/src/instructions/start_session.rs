@@ -1,22 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-
 use crate::errors::GameError;
 use crate::events::SessionStartedEvent;
 use crate::game_math;
 use crate::rng;
 use crate::states::*;
-
-/// Start a new game session with secure on-chain RNG
-///
-/// This implementation:
-/// - Calculates max_payout on-chain (user cannot manipulate)
-/// - Generates RNG seed from slot hashes (deterministic outcomes)
-///
-/// # Security
-/// All game parameters are computed on-chain. The user only controls:
-/// - bet_amount (how much they wager)
-/// - session_index (which session slot to use)
 pub fn start_session(
     ctx: Context<StartSession>,
     bet_amount: u64,
@@ -26,58 +14,38 @@ pub fn start_session(
     let house_vault = &mut ctx.accounts.house_vault;
     let session = &mut ctx.accounts.session;
     let clock = Clock::get()?;
-
-    // Check house not locked
     require!(!house_vault.locked, GameError::HouseLocked);
-
-    // Validate bet amount against config limits
     require!(bet_amount >= config.min_bet, GameError::InvalidBetAmount);
     if config.max_bet > 0 {
         require!(bet_amount <= config.max_bet, GameError::InvalidBetAmount);
     }
-
-    // Calculate max payout on-chain using config (no user input!)
     let max_payout = game_math::max_payout_for_bet(config, bet_amount);
-
-    // Transfer bet from user to house vault
     let transfer_ix = system_program::Transfer {
         from: ctx.accounts.user.to_account_info(),
         to: house_vault.to_account_info(),
     };
     let cpi_ctx = CpiContext::new(ctx.accounts.system_program.to_account_info(), transfer_ix);
     system_program::transfer(cpi_ctx, bet_amount)?;
-
-    // Check free liquidity vs new reservation
     let vault_balance = house_vault.to_account_info().lamports();
     let available = vault_balance
         .checked_sub(house_vault.total_reserved)
         .ok_or(GameError::Overflow)?;
     require!(available >= max_payout, GameError::InsufficientVaultBalance);
-
-    // Reserve max_payout in house vault using helper method
     house_vault.reserve(max_payout)?;
-
-    // Generate RNG seed using Clock (works in all environments including test validator)
-    // Combine slot + unix timestamp + session PDA for randomness
     let mut seed_material = [0u8; 32];
     seed_material[0..8].copy_from_slice(&clock.slot.to_le_bytes());
     seed_material[8..16].copy_from_slice(&clock.unix_timestamp.to_le_bytes());
     seed_material[16..32].copy_from_slice(&session.key().to_bytes()[0..16]);
-
-    // Generate final seed using the seed material
     let rng_seed = rng::generate_seed(&seed_material, &session.key());
-
-    // Initialize session
     session.user = ctx.accounts.user.key();
     session.house_vault = house_vault.key();
     session.status = SessionStatus::Active;
     session.bet_amount = bet_amount;
-    session.current_treasure = bet_amount; // Start with bet amount
+    session.current_treasure = bet_amount; 
     session.max_payout = max_payout;
     session.dive_number = 1;
     session.bump = ctx.bumps.session;
-    session.rng_seed = rng_seed; // Fixed-size array, no .to_vec() needed
-
+    session.rng_seed = rng_seed; 
     emit!(SessionStartedEvent {
         session: session.key(),
         user: session.user,
@@ -86,32 +54,24 @@ pub fn start_session(
         max_payout: session.max_payout,
         timestamp: clock.unix_timestamp,
     });
-
     Ok(())
 }
-
 #[derive(Accounts)]
 #[instruction(bet_amount: u64, session_index: u64)]
 pub struct StartSession<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
-
-    /// Game configuration account (single source of truth for all game parameters)
     #[account(
         seeds = [GAME_CONFIG_SEED.as_bytes()],
         bump = config.bump,
     )]
     pub config: Account<'info, GameConfig>,
-
     #[account(
         mut,
         has_one = house_authority,
     )]
     pub house_vault: Account<'info, HouseVault>,
-
-    /// CHECK: Only used for seeds verification
     pub house_authority: UncheckedAccount<'info>,
-
     #[account(
         init,
         payer = user,
@@ -124,6 +84,5 @@ pub struct StartSession<'info> {
         bump
     )]
     pub session: Account<'info, GameSession>,
-
     pub system_program: Program<'info, System>,
 }

@@ -1,38 +1,26 @@
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-
 use crate::errors::GameError;
 use crate::events::SessionCashedOutEvent;
 use crate::states::*;
-
 pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
     let session = &mut ctx.accounts.session;
     let house_vault = &mut ctx.accounts.house_vault;
     let clock = Clock::get()?;
-
-    // Verify session is active
     require!(
         session.status == SessionStatus::Active,
         GameError::InvalidSessionStatus
     );
-
-    // Verify house not locked
     require!(!house_vault.locked, GameError::HouseLocked);
-
-    // Verify profitable cash out
     require!(
         session.current_treasure > session.bet_amount,
         GameError::InsufficientTreasure
     );
-
-    // Check vault has enough balance
     let vault_balance = house_vault.to_account_info().lamports();
     require!(
         vault_balance >= session.current_treasure,
         GameError::InsufficientVaultBalance
     );
-
-    // Transfer payout from house vault to user using PDA signer
     let house_authority_key = house_vault.house_authority;
     let seeds = &[
         HOUSE_VAULT_SEED.as_bytes(),
@@ -40,7 +28,6 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
         &[house_vault.bump],
     ];
     let signer_seeds = &[&seeds[..]];
-
     let transfer_ix = system_program::Transfer {
         from: house_vault.to_account_info(),
         to: ctx.accounts.user.to_account_info(),
@@ -51,13 +38,8 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
         signer_seeds,
     );
     system_program::transfer(cpi_ctx, session.current_treasure)?;
-
-    // Release reserved funds using helper method
     house_vault.release(session.max_payout)?;
-
-    // Update session status
     session.status = SessionStatus::CashedOut;
-
     emit!(SessionCashedOutEvent {
         session: session.key(),
         user: session.user,
@@ -66,15 +48,12 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
         final_dive_number: session.dive_number,
         timestamp: clock.unix_timestamp,
     });
-
     Ok(())
 }
-
 #[derive(Accounts)]
 pub struct CashOut<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
-
     #[account(
         mut,
         has_one = user,
@@ -82,9 +61,7 @@ pub struct CashOut<'info> {
         close = user,
     )]
     pub session: Account<'info, GameSession>,
-
     #[account(mut)]
     pub house_vault: Account<'info, HouseVault>,
-
     pub system_program: Program<'info, System>,
 }

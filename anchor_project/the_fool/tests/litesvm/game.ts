@@ -13,15 +13,13 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 
-// NOTE: test-helpers.ts contains reusable helpers that could be used to simplify this file
-// Gradually migrate to using those helpers where appropriate
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/**
- * Helper to log transaction failures verbosely
- */
+
 function logTransactionFailure(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
     console.log(`\n❌ Transaction failed: ${context}`);
@@ -37,9 +35,7 @@ function logTransactionFailure(result: any, context: string): void {
   }
 }
 
-/**
- * Helper to log account states for debugging
- */
+
 function logAccountStates(
   svm: LiteSVM,
   configPDA: PublicKey,
@@ -49,14 +45,14 @@ function logAccountStates(
 ): void {
   console.log(`\n📊 Account States - ${context}`);
 
-  // Helper to convert lamports to SOL
+  
   const sol = (lamports: BN | bigint | number): number => {
     const lamportsBN =
       lamports instanceof BN ? lamports : new BN(lamports.toString());
     return lamportsBN.toNumber() / LAMPORTS_PER_SOL;
   };
 
-  // Config account
+  
   const configAccount = svm.getAccount(configPDA);
   if (configAccount) {
     const configData = parseConfigData(configAccount.data);
@@ -76,7 +72,7 @@ function logAccountStates(
     console.log("Config: NOT FOUND");
   }
 
-  // House vault account
+  
   const vaultAccount = svm.getAccount(houseVaultPDA);
   if (vaultAccount) {
     const vaultData = parseHouseVaultData(vaultAccount.data);
@@ -103,7 +99,7 @@ function logAccountStates(
     console.log("House Vault: NOT FOUND");
   }
 
-  // Player account
+  
   const playerAccount = svm.getAccount(playerPubkey);
   if (playerAccount) {
     console.log("Player:");
@@ -117,9 +113,9 @@ function logAccountStates(
   }
 }
 
-// ============================================================================
-// Constants & Helpers
-// ============================================================================
+
+
+
 
 const PROGRAM_ID = new PublicKey(
   "7f56Kmapmckgg8avSnqJvCUjtfDKVovENtzfvhSTEQ6h"
@@ -130,22 +126,18 @@ const SESSION_SEED = "session";
 const GAME_CONFIG_SEED = "game_config";
 
 const TEST_AMOUNTS = {
-  TINY: 0.01, // Minimum bet is now 0.01 SOL (was 0.001)
+  TINY: 0.01, 
   SMALL: 0.1,
   MEDIUM: 1,
   LARGE: 10,
 };
 
-/**
- * Helper to convert SOL to lamports
- */
+
 function lamports(sol: number): BN {
   return new BN(Math.round(sol * LAMPORTS_PER_SOL));
 }
 
-/**
- * Helper to get PDA for config
- */
+
 function getConfigPDA(): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [Buffer.from(GAME_CONFIG_SEED)],
@@ -153,9 +145,7 @@ function getConfigPDA(): [PublicKey, number] {
   );
 }
 
-/**
- * Helper to get PDA for house vault
- */
+
 function getHouseVaultPDA(houseAuthority: PublicKey): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [Buffer.from(HOUSE_VAULT_SEED), houseAuthority.toBuffer()],
@@ -163,9 +153,7 @@ function getHouseVaultPDA(houseAuthority: PublicKey): [PublicKey, number] {
   );
 }
 
-/**
- * Helper to get PDA for session
- */
+
 function getSessionPDA(
   player: PublicKey,
   sessionIndex: BN
@@ -178,15 +166,13 @@ function getSessionPDA(
   );
 }
 
-/**
- * Serialize Option<T> type for Borsh
- */
+
 function serializeOption<T>(value: T | null, size: number): Buffer {
   if (value === null) {
-    return Buffer.from([0]); // None variant
+    return Buffer.from([0]); 
   }
   const buffer = Buffer.alloc(1 + size);
-  buffer.writeUInt8(1, 0); // Some variant
+  buffer.writeUInt8(1, 0); 
 
   if (typeof value === "number") {
     if (size === 2) {
@@ -202,9 +188,7 @@ function serializeOption<T>(value: T | null, size: number): Buffer {
   return buffer;
 }
 
-/**
- * Build init_config instruction data
- */
+
 function buildInitConfigData(params: {
   baseSurvivalPpm?: number;
   decayPerDivePpm?: number;
@@ -234,18 +218,14 @@ function buildInitConfigData(params: {
   return data;
 }
 
-/**
- * Build init_house_vault instruction data
- */
+
 function buildInitHouseVaultData(locked: boolean): Buffer {
   const discriminator = Buffer.from([82, 247, 65, 25, 166, 239, 30, 112]);
   const lockedByte = Buffer.from([locked ? 1 : 0]);
   return Buffer.concat([discriminator, lockedByte]);
 }
 
-/**
- * Build start_session instruction data
- */
+
 function buildStartSessionData(betAmount: BN, sessionIndex: BN): Buffer {
   const discriminator = Buffer.from([23, 227, 111, 142, 212, 230, 3, 175]);
   const betBytes = betAmount.toArrayLike(Buffer, "le", 8);
@@ -253,37 +233,27 @@ function buildStartSessionData(betAmount: BN, sessionIndex: BN): Buffer {
   return Buffer.concat([discriminator, betBytes, indexBytes]);
 }
 
-/**
- * Build play_round instruction data
- */
+
 function buildPlayRoundData(): Buffer {
   return Buffer.from([38, 35, 89, 4, 59, 139, 225, 250]);
 }
 
-/**
- * Build cash_out instruction data
- */
+
 function buildCashOutData(): Buffer {
   return Buffer.from([1, 110, 57, 58, 159, 157, 243, 192]);
 }
 
-/**
- * Build toggle_house_lock instruction data
- */
+
 function buildToggleHouseLockData(): Buffer {
   return Buffer.from([170, 63, 166, 115, 196, 253, 239, 115]);
 }
 
-/**
- * Build lose_session instruction data
- */
+
 function buildLoseSessionData(): Buffer {
   return Buffer.from([13, 163, 66, 150, 39, 65, 34, 53]);
 }
 
-/**
- * Helper to check transaction failed with specific error
- */
+
 function expectTxFailedWith(result: any, errorCode: string): void {
   expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
   if (result && result.logs) {
@@ -294,9 +264,7 @@ function expectTxFailedWith(result: any, errorCode: string): void {
   }
 }
 
-/**
- * Parse account data for GameSession
- */
+
 function parseSessionData(dataInput: Uint8Array): {
   user: PublicKey;
   houseVault: PublicKey;
@@ -308,10 +276,10 @@ function parseSessionData(dataInput: Uint8Array): {
   bump: number;
   rngSeed: Buffer;
 } {
-  // Convert Uint8Array to Buffer
+  
   const data = Buffer.from(dataInput);
 
-  let offset = 8; // Skip discriminator
+  let offset = 8; 
 
   const user = new PublicKey(data.slice(offset, offset + 32));
   offset += 32;
@@ -354,19 +322,17 @@ function parseSessionData(dataInput: Uint8Array): {
   };
 }
 
-/**
- * Parse account data for HouseVault
- */
+
 function parseHouseVaultData(dataInput: Uint8Array): {
   houseAuthority: PublicKey;
   locked: boolean;
   totalReserved: BN;
   bump: number;
 } {
-  // Convert Uint8Array to Buffer
+  
   const data = Buffer.from(dataInput);
 
-  let offset = 8; // Skip discriminator
+  let offset = 8; 
 
   const houseAuthority = new PublicKey(data.slice(offset, offset + 32));
   offset += 32;
@@ -387,9 +353,7 @@ function parseHouseVaultData(dataInput: Uint8Array): {
   };
 }
 
-/**
- * Parse account data for GameConfig
- */
+
 function parseConfigData(dataInput: Uint8Array): {
   admin: PublicKey;
   baseSurvivalPpm: number;
@@ -403,10 +367,10 @@ function parseConfigData(dataInput: Uint8Array): {
   maxBet: BN;
   bump: number;
 } {
-  // Convert Uint8Array to Buffer
+  
   const data = Buffer.from(dataInput);
 
-  let offset = 8; // Skip discriminator
+  let offset = 8; 
 
   const admin = new PublicKey(data.slice(offset, offset + 32));
   offset += 32;
@@ -455,9 +419,9 @@ function parseConfigData(dataInput: Uint8Array): {
   };
 }
 
-// ============================================================================
-// Tests
-// ============================================================================
+
+
+
 
 describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
   let svm: LiteSVM;
@@ -466,10 +430,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
   let houseVaultPDA: PublicKey;
 
   beforeEach(() => {
-    // Create a fresh SVM instance for each test
+    
     svm = new LiteSVM();
 
-    // Load the compiled program
+    
     const programPath = path.join(
       __dirname,
       "../../target/deploy/dive_game.so"
@@ -477,11 +441,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     const programBytes = fs.readFileSync(programPath);
     svm.addProgram(PROGRAM_ID, programBytes);
 
-    // Create and fund authority
+    
     authority = new Keypair();
     svm.airdrop(authority.publicKey, 100n * BigInt(LAMPORTS_PER_SOL));
 
-    // Derive PDAs
+    
     [configPDA] = getConfigPDA();
     [houseVaultPDA] = getHouseVaultPDA(authority.publicKey);
   });
@@ -513,8 +477,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
   describe("Configuration Management", () => {
     it("should initialize config with explicit default values", () => {
-      // Test that explicitly passing default values works (vs using None/null)
-      const data = buildInitConfigData({}); // Use all defaults for now
+      
+      const data = buildInitConfigData({}); 
 
       const instruction = new TransactionInstruction({
         keys: [
@@ -574,7 +538,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
   describe("House Vault Management", () => {
     beforeEach(() => {
-      // Initialize config first
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -631,7 +595,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       }
       expect(result).to.not.be.null;
 
-      // Check transaction succeeded
+      
       if (result?.constructor?.name === "FailedTransactionMetadata") {
         console.log("Transaction failed with logs:", result.logs);
       }
@@ -690,7 +654,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it.skip("should toggle house lock (BLOCKED: litesvm transaction deduplication prevents identical tx)", () => {
-      // Initialize unlocked
+      
       const initData = buildInitHouseVaultData(false);
       const initIx = new TransactionInstruction({
         keys: [
@@ -712,7 +676,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       initTx.sign(authority);
       svm.sendTransaction(initTx);
 
-      // Toggle to locked
+      
       const toggleData = buildToggleHouseLockData();
       const toggleIx = new TransactionInstruction({
         keys: [
@@ -737,9 +701,9 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       let vaultData = parseHouseVaultData(vaultAccount!.data);
       expect(vaultData.locked).to.be.true;
 
-      // Note: LiteSVM's transaction deduplication prevents sending identical transactions
-      // even with different blockhashes, which blocks testing the second toggle.
-      // This is a limitation of the testing environment, not the actual smart contract.
+      
+      
+      
     });
   });
 
@@ -748,7 +712,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     let sessionPDA: PublicKey;
 
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -770,7 +734,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -799,10 +763,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault
+      
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
 
-      // Create player
+      
       player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
@@ -856,13 +820,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         expect(sessionData.diveNumber).to.equal(1);
         expect(sessionData.rngSeed.length).to.equal(32);
 
-        // Check max payout is bet * 100
+        
         const expectedMaxPayout = betAmount.muln(100);
         expect(sessionData.maxPayout.toString()).to.equal(
           expectedMaxPayout.toString()
         );
 
-        // Check house vault has reserved funds
+        
         const vaultAccount = svm.getAccount(houseVaultPDA);
         if (vaultAccount) {
           const vaultData = parseHouseVaultData(vaultAccount.data);
@@ -874,7 +838,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should play a round and update session state", () => {
-      // Start session first
+      
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
@@ -900,7 +864,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Play round
+      
       const playData = buildPlayRoundData();
       const playIx = new TransactionInstruction({
         keys: [
@@ -928,7 +892,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       if (sessionAccount) {
         const sessionData = parseSessionData(sessionAccount.data);
 
-        // Session should either be Active with dive 2 or Lost
+        
         if (sessionData.status === "Active") {
           expect(sessionData.diveNumber).to.equal(2);
           expect(Number(sessionData.currentTreasure)).to.be.greaterThan(
@@ -951,9 +915,9 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           treasureMultiplierNum: 11,
           treasureMultiplierDen: 10,
           maxPayoutMultiplier: 100,
-          maxDives: 50, // Updated to match new default
-          minBet: new BN(10_000_000), // 0.01 SOL - new minimum
-          maxBet: new BN(500_000_000), // 0.5 SOL - new maximum
+          maxDives: 50, 
+          minBet: new BN(10_000_000), 
+          maxBet: new BN(500_000_000), 
         };
 
         const data = buildInitConfigData(expectedValues);
@@ -982,12 +946,12 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         }
         expect(result).to.not.be.null;
 
-        // Read back and parse
+        
         const configAccount = svm.getAccount(configPDA);
         if (configAccount) {
           const configData = parseConfigData(configAccount.data);
 
-          // Assert all values match
+          
           expect(configData.admin.toBase58()).to.equal(
             authority.publicKey.toBase58()
           );
@@ -1020,10 +984,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       });
 
       it("should use defaults for None fields", () => {
-        // Only set minBet and maxBet, rest should use defaults
+        
         const data = buildInitConfigData({
-          minBet: new BN(10_000_000), // 0.01 SOL - valid minimum
-          maxBet: new BN(500_000_000), // 0.5 SOL - valid maximum
+          minBet: new BN(10_000_000), 
+          maxBet: new BN(500_000_000), 
         });
 
         const instruction = new TransactionInstruction({
@@ -1051,23 +1015,23 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         if (!configAccount) return;
         const configData = parseConfigData(configAccount.data);
 
-        // Custom values
-        expect(configData.minBet.toString()).to.equal("10000000"); // 0.01 SOL
-        expect(configData.maxBet.toString()).to.equal("500000000"); // 0.5 SOL
+        
+        expect(configData.minBet.toString()).to.equal("10000000"); 
+        expect(configData.maxBet.toString()).to.equal("500000000"); 
 
-        // Defaults (from states.rs default_config) - UPDATED to match frontend
-        expect(configData.baseSurvivalPpm).to.equal(700000); // 70% (was 99%)
-        expect(configData.decayPerDivePpm).to.equal(8000); // 0.8% (was 0.5%)
-        expect(configData.minSurvivalPpm).to.equal(50000); // 5% (was 10%)
-        expect(configData.treasureMultiplierNum).to.equal(19); // 1.9x (was 1.1x)
+        
+        expect(configData.baseSurvivalPpm).to.equal(700000); 
+        expect(configData.decayPerDivePpm).to.equal(8000); 
+        expect(configData.minSurvivalPpm).to.equal(50000); 
+        expect(configData.treasureMultiplierNum).to.equal(19); 
         expect(configData.treasureMultiplierDen).to.equal(10);
         expect(configData.maxPayoutMultiplier).to.equal(100);
-        expect(configData.maxDives).to.equal(50); // was 200
+        expect(configData.maxDives).to.equal(50); 
       });
 
       it("should reject base_survival_ppm > 1_000_000", () => {
         const data = buildInitConfigData({
-          baseSurvivalPpm: 1_500_000, // Invalid: > 100%
+          baseSurvivalPpm: 1_500_000, 
         });
 
         const instruction = new TransactionInstruction({
@@ -1152,7 +1116,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
     describe("Initialization Idempotency", () => {
       it("should reject re-initializing existing config", () => {
-        // First init
+        
         const data1 = buildInitConfigData({});
         const ix1 = new TransactionInstruction({
           keys: [
@@ -1174,7 +1138,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         tx1.sign(authority);
         svm.sendTransaction(tx1);
 
-        // Second init attempt (same keys)
+        
         const data2 = buildInitConfigData({ maxDives: 50 });
         const ix2 = new TransactionInstruction({
           keys: [
@@ -1200,7 +1164,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       });
 
       it("should reject re-initializing existing house vault", () => {
-        // Init config first
+        
         const configData = buildInitConfigData({});
         const configIx = new TransactionInstruction({
           keys: [
@@ -1222,7 +1186,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         configTx.sign(authority);
         svm.sendTransaction(configTx);
 
-        // First vault init
+        
         const vaultData1 = buildInitHouseVaultData(false);
         const vaultIx1 = new TransactionInstruction({
           keys: [
@@ -1244,8 +1208,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         vaultTx1.sign(authority);
         svm.sendTransaction(vaultTx1);
 
-        // Second vault init attempt
-        const vaultData2 = buildInitHouseVaultData(true); // Different locked value
+        
+        const vaultData2 = buildInitHouseVaultData(true); 
         const vaultIx2 = new TransactionInstruction({
           keys: [
             { pubkey: authority.publicKey, isSigner: true, isWritable: true },
@@ -1272,7 +1236,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
     describe("Global Reserved Funds Invariant", () => {
       beforeEach(() => {
-        // Initialize config
+        
         const configData = buildInitConfigData({});
         const configIx = new TransactionInstruction({
           keys: [
@@ -1294,7 +1258,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         configTx.sign(authority);
         svm.sendTransaction(configTx);
 
-        // Initialize house vault
+        
         const vaultData = buildInitHouseVaultData(false);
         const vaultIx = new TransactionInstruction({
           keys: [
@@ -1328,7 +1292,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           active: boolean;
         }[] = [];
 
-        // Create 5 players with different bet sizes (within new limits: 0.01 - 0.5 SOL)
+        
         const betSizes = [0.01, 0.1, 0.2, 0.3, 0.5];
 
         for (let i = 0; i < betSizes.length; i++) {
@@ -1339,7 +1303,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           const betAmount = lamports(betSizes[i]);
           const maxPayout = betAmount.muln(100);
 
-          // Start session
+          
           const startData = buildStartSessionData(betAmount, new BN(0));
           const startIx = new TransactionInstruction({
             keys: [
@@ -1377,7 +1341,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           });
         }
 
-        // Checkpoint 1: All sessions active
+        
         let expectedReserved = sessions.reduce(
           (sum, s) => sum.add(s.maxPayout),
           new BN(0)
@@ -1390,7 +1354,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           "Initial: total_reserved should equal sum of all max_payouts"
         );
 
-        // Lose sessions 0 and 2
+        
         for (const idx of [0, 2]) {
           const session = sessions[idx];
           const loseData = buildLoseSessionData();
@@ -1421,7 +1385,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           session.active = false;
         }
 
-        // Checkpoint 2: After losing 2 sessions
+        
         expectedReserved = sessions
           .filter((s) => s.active)
           .reduce((sum, s) => sum.add(s.maxPayout), new BN(0));
@@ -1434,7 +1398,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           );
         }
 
-        // Lose remaining sessions
+        
         for (const session of sessions.filter((s) => s.active)) {
           const loseData = buildLoseSessionData();
           const loseIx = new TransactionInstruction({
@@ -1464,7 +1428,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           session.active = false;
         }
 
-        // Checkpoint 3: All sessions closed
+        
         const vaultAccount3 = svm.getAccount(houseVaultPDA);
         if (vaultAccount3) {
           vaultData = parseHouseVaultData(vaultAccount3.data);
@@ -1476,13 +1440,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       });
 
       it("should never allow total_reserved to exceed vault lamports", () => {
-        // Create vault with limited funds
+        
         const limitedVault = new Keypair();
         svm.airdrop(limitedVault.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
         const [limitedVaultPDA] = getHouseVaultPDA(limitedVault.publicKey);
 
-        // Initialize limited vault
+        
         const vaultData = buildInitHouseVaultData(false);
         const vaultIx = new TransactionInstruction({
           keys: [
@@ -1508,17 +1472,17 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         vaultTx.sign(limitedVault);
         svm.sendTransaction(vaultTx);
 
-        // Fund vault with only 10 SOL
+        
         svm.airdrop(limitedVaultPDA, 10n * BigInt(LAMPORTS_PER_SOL));
 
-        // Try to start sessions until we can't
+        
         let successfulSessions = 0;
         for (let i = 0; i < 20; i++) {
           const player = new Keypair();
           svm.airdrop(player.publicKey, 5n * BigInt(LAMPORTS_PER_SOL));
 
           const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-          const betAmount = lamports(0.1); // 0.1 SOL bet = 10 SOL reserved
+          const betAmount = lamports(0.1); 
 
           const startData = buildStartSessionData(betAmount, new BN(0));
           const startIx = new TransactionInstruction({
@@ -1549,13 +1513,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
           const result = svm.sendTransaction(startTx);
           if (result?.constructor?.name === "FailedTransactionMetadata") {
-            // Can't start more sessions - vault depleted
+            
             break;
           }
 
           successfulSessions++;
 
-          // Check invariant after each session
+          
           const vaultAccount = svm.getAccount(limitedVaultPDA);
           const vaultBalance = vaultAccount!.lamports;
           expect(vaultAccount).to.not.be.null;
@@ -1568,16 +1532,16 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           );
         }
 
-        // Should have been able to start at least 1 session
+        
         expect(successfulSessions).to.be.greaterThan(0);
-        // But not all 20 (limited funds)
+        
         expect(successfulSessions).to.be.lessThan(20);
       });
     });
 
     describe("PDA Bump Consistency", () => {
       it("should store correct bump in session account", () => {
-        // Initialize config + vault
+        
         const configData = buildInitConfigData({});
         const configIx = new TransactionInstruction({
           keys: [
@@ -1631,7 +1595,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
         const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-        // Start session
+        
         const startData = buildStartSessionData(betAmount, new BN(0));
         const startIx = new TransactionInstruction({
           keys: [
@@ -1656,7 +1620,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         startTx.sign(player);
         svm.sendTransaction(startTx);
 
-        // Parse and check bump
+        
         const sessionAccount = svm.getAccount(sessionPDA);
         expect(sessionAccount).to.not.be.null;
         if (!sessionAccount) return;
@@ -1666,7 +1630,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       });
 
       it("should store correct bump in house vault account", () => {
-        // Initialize config
+        
         const configData = buildInitConfigData({});
         const configIx = new TransactionInstruction({
           keys: [
@@ -1688,7 +1652,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         configTx.sign(authority);
         svm.sendTransaction(configTx);
 
-        // Initialize vault
+        
         const [vaultPDA, expectedBump] = getHouseVaultPDA(authority.publicKey);
 
         const vaultData = buildInitHouseVaultData(false);
@@ -1712,7 +1676,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         vaultTx.sign(authority);
         svm.sendTransaction(vaultTx);
 
-        // Parse and check bump
+        
         const vaultAccount = svm.getAccount(vaultPDA);
         const parsedVault = parseHouseVaultData(vaultAccount!.data);
 
@@ -1725,7 +1689,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     let player: Keypair;
 
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -1747,7 +1711,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -1776,10 +1740,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault
+      
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
 
-      // Create player
+      
       player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
     });
@@ -1810,13 +1774,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       tx.add(instruction);
       tx.sign(player);
 
-      // Transaction should fail
+      
       const result = svm.sendTransaction(tx);
       expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
     });
 
     it("should reject session start when house is locked", () => {
-      // Lock the house
+      
       const toggleData = buildToggleHouseLockData();
       const toggleIx = new TransactionInstruction({
         keys: [
@@ -1833,7 +1797,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       toggleTx.sign(authority);
       svm.sendTransaction(toggleTx);
 
-      // Try to start session with locked house
+      
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
       const data = buildStartSessionData(betAmount, new BN(0));
@@ -1865,13 +1829,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should handle insufficient vault balance", () => {
-      // Create a new house with minimal funds
+      
       const poorHouse = new Keypair();
       svm.airdrop(poorHouse.publicKey, 1n * BigInt(LAMPORTS_PER_SOL));
 
       const [poorVaultPDA] = getHouseVaultPDA(poorHouse.publicKey);
 
-      // Initialize poor vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -1893,12 +1857,12 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       vaultTx.sign(poorHouse);
       svm.sendTransaction(vaultTx);
 
-      // Fund it with only 0.1 SOL (not enough for 0.3 SOL bet * 100 multiplier)
+      
       svm.airdrop(poorVaultPDA, BigInt(0.1 * LAMPORTS_PER_SOL));
 
-      // Try to start session with 0.3 SOL bet (needs 30 SOL reserve)
+      
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = lamports(0.3); // 0.3 SOL - within new limits
+      const betAmount = lamports(0.3); 
       const data = buildStartSessionData(betAmount, new BN(0));
 
       const instruction = new TransactionInstruction({
@@ -1924,7 +1888,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       tx.sign(player);
 
       const result = svm.sendTransaction(tx);
-      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata"); // Should fail - insufficient balance
+      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata"); 
     });
   });
 
@@ -1933,7 +1897,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     let sessionPDA: PublicKey;
 
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -1955,7 +1919,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -1984,10 +1948,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault
+      
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
 
-      // Create player and start session
+      
       player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
@@ -2037,7 +2001,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       tx.sign(player);
 
       const result = svm.sendTransaction(tx);
-      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata"); // Should fail - treasure must be > bet
+      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata"); 
     });
 
     it("should successfully play multiple rounds", () => {
@@ -2064,7 +2028,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
         const result = svm.sendTransaction(tx);
         if (result === null) {
-          break; // Session might have been lost
+          break; 
         }
 
         roundsPlayed++;
@@ -2082,7 +2046,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should verify session state after multiple rounds", () => {
-      // Play 3 rounds
+      
       for (let i = 0; i < 3; i++) {
         const playData = buildPlayRoundData();
         const playIx = new TransactionInstruction({
@@ -2114,7 +2078,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const sessionAccount = svm.getAccount(sessionPDA);
       if (sessionAccount) {
         const sessionData = parseSessionData(sessionAccount.data);
-        // Verify dive number increased or session was lost
+        
         expect(sessionData.diveNumber > 1 || sessionData.status === "Lost").to
           .be.true;
       }
@@ -2123,7 +2087,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
   describe("Reserved Funds Management", () => {
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -2145,7 +2109,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -2174,7 +2138,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault
+      
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
     });
 
@@ -2183,7 +2147,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = lamports(TEST_AMOUNTS.SMALL); // 0.1 SOL - within new limits
+      const betAmount = lamports(TEST_AMOUNTS.SMALL); 
       const data = buildStartSessionData(betAmount, new BN(0));
 
       const instruction = new TransactionInstruction({
@@ -2214,7 +2178,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       if (!vaultAccount) return;
       const vaultData = parseHouseVaultData(vaultAccount.data);
 
-      const expectedReserved = betAmount.muln(100); // max_payout = bet * 100
+      const expectedReserved = betAmount.muln(100); 
       expect(vaultData.totalReserved.toString()).to.equal(
         expectedReserved.toString()
       );
@@ -2272,7 +2236,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
   describe("Edge Cases & Boundaries", () => {
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -2294,7 +2258,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -2323,7 +2287,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault with massive amount for large bets
+      
       svm.airdrop(houseVaultPDA, 10000n * BigInt(LAMPORTS_PER_SOL));
     });
 
@@ -2332,7 +2296,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const minBet = new BN(10_000_000); // 0.01 SOL - new default minimum
+      const minBet = new BN(10_000_000); 
       const data = buildStartSessionData(minBet, new BN(0));
 
       const instruction = new TransactionInstruction({
@@ -2367,8 +2331,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       expect(sessionAccount).to.not.be.null;
       if (!sessionAccount) return;
       const sessionData = parseSessionData(sessionAccount.data);
-      expect(sessionData.betAmount.toString()).to.equal("10000000"); // 0.01 SOL
-      expect(sessionData.maxPayout.toString()).to.equal("1000000000"); // 0.01 SOL * 100
+      expect(sessionData.betAmount.toString()).to.equal("10000000"); 
+      expect(sessionData.maxPayout.toString()).to.equal("1000000000"); 
     });
 
     it("should handle large bet amount (0.5 SOL - max)", () => {
@@ -2376,7 +2340,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 100n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = new BN(500_000_000); // 0.5 SOL - new maximum bet
+      const betAmount = new BN(500_000_000); 
       const data = buildStartSessionData(betAmount, new BN(0));
 
       const instruction = new TransactionInstruction({
@@ -2459,7 +2423,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         expect(result).to.not.be.null;
       }
 
-      // Verify all sessions exist
+      
       for (const index of sessionIndices) {
         const [sessionPDA] = getSessionPDA(player.publicKey, new BN(index));
         const sessionAccount = svm.getAccount(sessionPDA);
@@ -2471,7 +2435,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         }
       }
 
-      // Verify total reserved = 3 * (bet * 100)
+      
       const vaultAccount = svm.getAccount(houseVaultPDA);
       if (vaultAccount) {
         const vaultData = parseHouseVaultData(vaultAccount.data);
@@ -2519,13 +2483,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
   });
 
-  // ============================================================================
-  // ADVERSARIAL & SECURITY TESTS
-  // ============================================================================
+  
+  
+  
 
   describe("Money Conservation & Accounting Invariants", () => {
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -2547,7 +2511,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -2576,18 +2540,18 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault
+      
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
     });
 
     it("should correctly release reserved funds when player loses", () => {
-      // Create two players
+      
       const playerA = new Keypair();
       const playerB = new Keypair();
       svm.airdrop(playerA.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
       svm.airdrop(playerB.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      // Player A: 0.3 SOL bet (within new 0.01-0.5 SOL limits)
+      
       const betA = lamports(0.3);
       const [sessionA] = getSessionPDA(playerA.publicKey, new BN(0));
       const startAData = buildStartSessionData(betA, new BN(0));
@@ -2614,7 +2578,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       txA.sign(playerA);
       svm.sendTransaction(txA);
 
-      // Player B: 0.2 SOL bet (within new 0.01-0.5 SOL limits)
+      
       const betB = lamports(0.2);
       const [sessionB] = getSessionPDA(playerB.publicKey, new BN(0));
       const startBData = buildStartSessionData(betB, new BN(0));
@@ -2641,7 +2605,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       txB.sign(playerB);
       svm.sendTransaction(txB);
 
-      // Check total reserved = 150 SOL
+      
       let vaultAccount = svm.getAccount(houseVaultPDA);
       let vaultData = parseHouseVaultData(vaultAccount!.data);
       const expectedInitialReserved = betA.muln(100).add(betB.muln(100));
@@ -2649,7 +2613,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         expectedInitialReserved.toString()
       );
 
-      // Player A loses
+      
       const loseAData = buildLoseSessionData();
       const loseAIx = new TransactionInstruction({
         keys: [
@@ -2667,7 +2631,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       loseATx.sign(playerA);
       svm.sendTransaction(loseATx);
 
-      // Check total reserved = 50 SOL (only Player B's max_payout)
+      
       vaultAccount = svm.getAccount(houseVaultPDA);
       vaultData = parseHouseVaultData(vaultAccount!.data);
       const expectedAfterA = betB.muln(100);
@@ -2675,7 +2639,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         expectedAfterA.toString()
       );
 
-      // Player B loses
+      
       const loseBData = buildLoseSessionData();
       const loseBIx = new TransactionInstruction({
         keys: [
@@ -2693,24 +2657,24 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       loseBTx.sign(playerB);
       svm.sendTransaction(loseBTx);
 
-      // Check total reserved = 0 (all sessions closed)
+      
       vaultAccount = svm.getAccount(houseVaultPDA);
       vaultData = parseHouseVaultData(vaultAccount!.data);
       expect(vaultData.totalReserved.toString()).to.equal("0");
     });
 
     it("should correctly handle cash out accounting (flaky due to RNG)", () => {
-      // Note: This test is skipped because the outcome depends on RNG
-      // In practice, the player may lose on the first round, making cash-out impossible
-      // The important accounting logic is tested in other tests (reserved funds release)
+      
+      
+      
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const initialPlayerBalance = svm.getBalance(player.publicKey);
       const initialVaultBalance = svm.getBalance(houseVaultPDA);
 
-      // Start session
-      const betAmount = lamports(0.3); // 0.3 SOL - within new limits
+      
+      const betAmount = lamports(0.3); 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
@@ -2736,7 +2700,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Play one round to increase treasure
+      
       const playData = buildPlayRoundData();
       const playIx = new TransactionInstruction({
         keys: [
@@ -2755,7 +2719,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       playTx.sign(player);
       const playResult = svm.sendTransaction(playTx);
 
-      // Only proceed if play succeeded (not lost)
+      
       if (
         playResult !== null &&
         playResult.constructor.name !== "FailedTransactionMetadata"
@@ -2764,7 +2728,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         if (sessionAccount) {
           const sessionData = parseSessionData(sessionAccount.data);
 
-          // Only cash out if still active and treasure > bet
+          
           if (
             sessionData.status === "Active" &&
             sessionData.currentTreasure.gt(sessionData.betAmount)
@@ -2772,7 +2736,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
             const treasureAmount = sessionData.currentTreasure;
             const maxPayout = sessionData.maxPayout;
 
-            // Cash out
+            
             const cashOutData = buildCashOutData();
             const cashOutIx = new TransactionInstruction({
               keys: [
@@ -2790,33 +2754,33 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
             cashOutTx.sign(player);
             svm.sendTransaction(cashOutTx);
 
-            // Verify accounting
+            
             const finalPlayerBalance = svm.getBalance(player.publicKey);
             const finalVaultBalance = svm.getBalance(houseVaultPDA);
 
-            // Player should have gained treasure (minus fees)
-            // Note: Player balance check is approximate due to transaction fees
+            
+            
             const playerGain = Number(
               finalPlayerBalance - initialPlayerBalance
             );
             const treasureNum = Number(treasureAmount);
 
-            // Vault should have lost treasure (this is the critical check)
+            
             const vaultLoss = Number(initialVaultBalance - finalVaultBalance);
-            expect(vaultLoss).to.be.closeTo(treasureNum, treasureNum * 0.05); // Within 5% margin
+            expect(vaultLoss).to.be.closeTo(treasureNum, treasureNum * 0.05); 
 
-            // Player gain should be positive and less than treasure (due to fees)
+            
             expect(playerGain).to.be.greaterThan(0);
             expect(playerGain).to.be.lessThan(treasureNum * 1.01);
 
-            // Reserved funds should be released
+            
             const vaultAccount = svm.getAccount(houseVaultPDA);
             expect(vaultAccount).to.not.be.null;
             if (!vaultAccount) return;
             const vaultData = parseHouseVaultData(vaultAccount.data);
             expect(vaultData.totalReserved.toString()).to.equal("0");
 
-            // Session should be closed
+            
             const closedSession = svm.getAccount(sessionPDA);
             expect(closedSession).to.be.null;
           }
@@ -2830,14 +2794,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player1.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
       svm.airdrop(player2.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      // Calculate initial total
+      
       const initialTotal =
         svm.getBalance(player1.publicKey) +
         svm.getBalance(player2.publicKey) +
         svm.getBalance(houseVaultPDA) +
         svm.getBalance(authority.publicKey);
 
-      // Start sessions
+      
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
       const [session1] = getSessionPDA(player1.publicKey, new BN(0));
       const [session2] = getSessionPDA(player2.publicKey, new BN(0));
@@ -2871,7 +2835,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         svm.sendTransaction(tx);
       }
 
-      // Calculate total after sessions created (includes session account rent)
+      
       const session1Balance = svm.getAccount(session1)?.lamports || 0n;
       const session2Balance = svm.getAccount(session2)?.lamports || 0n;
       const midTotal =
@@ -2882,19 +2846,19 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         BigInt(session1Balance.toString()) +
         BigInt(session2Balance.toString());
 
-      // Total should be conserved (within small margin for tx fees)
+      
       const difference = Number(
         midTotal > initialTotal
           ? midTotal - initialTotal
           : initialTotal - midTotal
       );
-      expect(difference).to.be.lessThan(Number(lamports(0.01))); // Less than 0.01 SOL difference for fees
+      expect(difference).to.be.lessThan(Number(lamports(0.01))); 
     });
   });
 
   describe("State Machine Integrity & Authorization", () => {
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -2916,7 +2880,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -2945,7 +2909,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault
+      
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
     });
 
@@ -2956,7 +2920,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -2981,7 +2945,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Lose the session
+      
       const loseData = buildLoseSessionData();
       const loseIx = new TransactionInstruction({
         keys: [
@@ -2999,7 +2963,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       loseTx.sign(player);
       svm.sendTransaction(loseTx);
 
-      // Try to play round on closed session
+      
       const playData = buildPlayRoundData();
       const playIx = new TransactionInstruction({
         keys: [
@@ -3018,7 +2982,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       playTx.sign(player);
 
       const result = svm.sendTransaction(playTx);
-      // Should fail - account doesn't exist or InvalidSessionStatus
+      
       expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
     });
 
@@ -3029,7 +2993,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -3054,7 +3018,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // First lose_session - should succeed
+      
       const loseData = buildLoseSessionData();
       const loseIx = new TransactionInstruction({
         keys: [
@@ -3075,7 +3039,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         "FailedTransactionMetadata"
       );
 
-      // Second lose_session - should fail (account closed)
+      
       const loseIx2 = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -3103,7 +3067,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionA] = getSessionPDA(playerA.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Player A starts session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -3128,11 +3092,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(playerA);
       svm.sendTransaction(startTx);
 
-      // Player B tries to lose Player A's session
+      
       const loseData = buildLoseSessionData();
       const loseIx = new TransactionInstruction({
         keys: [
-          { pubkey: playerB.publicKey, isSigner: true, isWritable: true }, // Wrong signer!
+          { pubkey: playerB.publicKey, isSigner: true, isWritable: true }, 
           { pubkey: sessionA, isSigner: false, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
         ],
@@ -3148,7 +3112,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const result = svm.sendTransaction(loseTx);
       expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
 
-      // Verify session still exists and is owned by Player A
+      
       const sessionAccount = svm.getAccount(sessionA);
       if (sessionAccount) {
         const sessionData = parseSessionData(sessionAccount.data);
@@ -3161,7 +3125,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
   describe("Adversarial & Economic Edge Cases", () => {
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -3183,7 +3147,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -3212,7 +3176,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault
+      
       svm.airdrop(houseVaultPDA, 10000n * BigInt(LAMPORTS_PER_SOL));
     });
 
@@ -3223,7 +3187,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -3248,7 +3212,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Capture RNG seed
+      
       const sessionAccount1 = svm.getAccount(sessionPDA);
       if (!sessionAccount1) {
         expect.fail("Session account not found after start_session");
@@ -3256,11 +3220,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const sessionData1 = parseSessionData(sessionAccount1.data);
       const rngSeed = sessionData1.rngSeed.toString("hex");
 
-      // Warp clock forward
+      
       const clock = svm.getClock();
       svm.warpToSlot(clock.slot + 100n);
 
-      // Play round
+      
       const playData = buildPlayRoundData();
       const playIx = new TransactionInstruction({
         keys: [
@@ -3283,11 +3247,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       if (sessionAccount2) {
         const sessionData2 = parseSessionData(sessionAccount2.data);
 
-        // RNG seed should NOT change
+        
         expect(sessionData2.rngSeed.toString("hex")).to.equal(rngSeed);
 
-        // This proves the outcome is deterministic and cannot be manipulated
-        // by timing the transaction differently
+        
+        
       }
     });
 
@@ -3296,9 +3260,9 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = lamports(TEST_AMOUNTS.TINY); // Small bet for faster reaching cap
+      const betAmount = lamports(TEST_AMOUNTS.TINY); 
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -3330,7 +3294,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const sessionData = parseSessionData(sessionAccount.data);
       const maxPayout = sessionData.maxPayout;
 
-      // Play many rounds
+      
       for (let i = 0; i < 50; i++) {
         const playData = buildPlayRoundData();
         const playIx = new TransactionInstruction({
@@ -3358,21 +3322,21 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         const currentData = parseSessionData(currentSession.data);
         if (currentData.status !== "Active") break;
 
-        // Treasure must NEVER exceed max_payout
+        
         expect(currentData.currentTreasure.lte(maxPayout)).to.be.true;
       }
     });
 
     it("should handle dust amount payouts correctly", () => {
-      // Test with minimum bet amount (0.01 SOL = 10M lamports)
+      
 
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = new BN(10_000_000); // 0.01 SOL - minimum bet
+      const betAmount = new BN(10_000_000); 
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -3403,21 +3367,21 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       }
       const sessionData = parseSessionData(sessionAccount.data);
 
-      // Verify session was created with minimum bet (0.01 SOL)
-      expect(sessionData.betAmount.toString()).to.equal("10000000"); // 0.01 SOL
+      
+      expect(sessionData.betAmount.toString()).to.equal("10000000"); 
       expect(sessionData.currentTreasure.toString()).to.equal("10000000");
-      expect(sessionData.maxPayout.toString()).to.equal("1000000000"); // 0.01 SOL * 100
+      expect(sessionData.maxPayout.toString()).to.equal("1000000000"); 
 
-      // This proves the program can handle the minimum bet amount
-      // Full cash-out test would require playing a round successfully
+      
+      
     });
   });
 
   describe("Game Limits & Boundaries", () => {
     beforeEach(() => {
-      // Initialize config with explicit max_dives = 10 for faster testing
+      
       const configData = buildInitConfigData({
-        maxDives: 10, // Lower limit for faster testing
+        maxDives: 10, 
       });
       const configIx = new TransactionInstruction({
         keys: [
@@ -3439,7 +3403,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -3468,7 +3432,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault
+      
       svm.airdrop(houseVaultPDA, 10000n * BigInt(LAMPORTS_PER_SOL));
     });
 
@@ -3479,7 +3443,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.TINY);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -3511,10 +3475,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       let sessionData = parseSessionData(sessionAccount.data);
       expect(sessionData.diveNumber).to.equal(1);
 
-      // Play up to max_dives rounds
+      
       let roundsPlayed = 0;
       for (let i = 1; i < 11; i++) {
-        // Up to dive 10 (max_dives = 10)
+        
         const playData = buildPlayRoundData();
         const playIx = new TransactionInstruction({
           keys: [
@@ -3544,34 +3508,34 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         roundsPlayed++;
       }
 
-      // Should have played some rounds but not exceeded max_dives
+      
       expect(roundsPlayed).to.be.greaterThan(0);
       if (sessionAccount) {
         const finalData = parseSessionData(sessionAccount.data);
-        // Dive number should never exceed max_dives + 1 (since dive 1 is start)
+        
         expect(finalData.diveNumber).to.be.lessThanOrEqual(11);
       }
     });
 
     it("should handle bet bounds with custom config", () => {
-      // Create a custom config with min_bet = 0.1 SOL, max_bet = 5 SOL
+      
       const customAuthority = new Keypair();
       svm.airdrop(customAuthority.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [customConfigPDA] = getConfigPDA();
       const configData = buildInitConfigData({
-        minBet: lamports(0.01), // Min allowed
-        maxBet: lamports(0.5), // Max allowed (updated from 5 SOL)
+        minBet: lamports(0.01), 
+        maxBet: lamports(0.5), 
       });
 
-      // Note: We're reusing the same config PDA, which already exists
-      // This test demonstrates the validation logic conceptually
-      // In practice, we'd test with a fresh PDA or accept that init fails
+      
+      
+      
 
       const player = new Keypair();
       svm.airdrop(player.publicKey, 100n * BigInt(LAMPORTS_PER_SOL));
 
-      // Test bet below min (should fail if we had a fresh config)
+      
       const [sessionPDA1] = getSessionPDA(player.publicKey, new BN(0));
       const belowMinData = buildStartSessionData(lamports(0.01), new BN(0));
 
@@ -3597,17 +3561,17 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       belowMinTx.add(belowMinIx);
       belowMinTx.sign(player);
 
-      // Note: This may succeed with default config (min_bet=1)
-      // The test demonstrates the pattern for testing custom bet bounds
+      
+      
       const result = svm.sendTransaction(belowMinTx);
-      // With default config, 0.01 SOL should succeed
+      
       expect(result).to.not.be.null;
     });
   });
 
   describe("Stress & Concurrency Tests", () => {
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -3629,7 +3593,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -3658,7 +3622,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault with enough for many sessions
+      
       svm.airdrop(houseVaultPDA, 100000n * BigInt(LAMPORTS_PER_SOL));
     });
 
@@ -3667,14 +3631,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const players: Keypair[] = [];
       const betAmount = lamports(TEST_AMOUNTS.TINY);
 
-      // Create and fund all players
+      
       for (let i = 0; i < numPlayers; i++) {
         const player = new Keypair();
         svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
         players.push(player);
       }
 
-      // Start all sessions
+      
       let successfulSessions = 0;
       for (let i = 0; i < numPlayers; i++) {
         const player = players[i];
@@ -3714,7 +3678,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       expect(successfulSessions).to.equal(numPlayers);
 
-      // Verify house vault correctly tracked all reserves
+      
       const vaultAccount = svm.getAccount(houseVaultPDA);
       expect(vaultAccount).to.not.be.null;
       if (!vaultAccount) return;
@@ -3728,7 +3692,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
   describe("Replay Attack & Transaction Security", () => {
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -3750,7 +3714,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -3779,7 +3743,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Fund house vault
+      
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
     });
 
@@ -3790,7 +3754,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -3814,15 +3778,15 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.add(startIx);
       startTx.sign(player);
 
-      // Send transaction first time
+      
       const result1 = svm.sendTransaction(startTx);
       expect(result1).to.not.be.null;
 
-      // Try to replay the same transaction (should fail - session already exists)
+      
       const result2 = svm.sendTransaction(startTx);
       expect(result2.constructor.name).to.equal("FailedTransactionMetadata");
 
-      // Verify only one session was created
+      
       const sessionAccount = svm.getAccount(sessionPDA);
       if (sessionAccount) {
         const sessionData = parseSessionData(sessionAccount.data);
@@ -3838,7 +3802,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [session2PDA] = getSessionPDA(player.publicKey, new BN(1));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Create first session
+      
       const startData1 = buildStartSessionData(betAmount, new BN(0));
       const startIx1 = new TransactionInstruction({
         keys: [
@@ -3864,10 +3828,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const result1 = svm.sendTransaction(tx1);
       expect(result1).to.not.be.null;
 
-      // Verify first session created
+      
       const session1Account = svm.getAccount(session1PDA);
 
-      // Create second session with different index
+      
       const startData2 = buildStartSessionData(betAmount, new BN(1));
       const startIx2 = new TransactionInstruction({
         keys: [
@@ -3901,11 +3865,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         "FailedTransactionMetadata"
       );
 
-      // Verify reserved funds account for both sessions
+      
       const vaultAccount = svm.getAccount(houseVaultPDA);
       if (vaultAccount) {
         const vaultData = parseHouseVaultData(vaultAccount.data);
-        const expectedReserved = betAmount.muln(100).muln(2); // 2 sessions
+        const expectedReserved = betAmount.muln(100).muln(2); 
         expect(vaultData.totalReserved.toString()).to.equal(
           expectedReserved.toString()
         );
@@ -3944,8 +3908,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
     it("should reject config where min_bet > max_bet (when max_bet > 0)", () => {
       const data = buildInitConfigData({
-        minBet: new BN(500_000_000), // 0.5 SOL
-        maxBet: new BN(10_000_000), // 0.01 SOL - intentionally less than min
+        minBet: new BN(500_000_000), 
+        maxBet: new BN(10_000_000), 
       });
 
       const instruction = new TransactionInstruction({
@@ -3972,7 +3936,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should enforce min_bet from config", () => {
-      // Initialize config with min_bet = 0.1 SOL
+      
       const configData = buildInitConfigData({
         minBet: lamports(0.1),
       });
@@ -3997,7 +3961,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -4026,7 +3990,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
 
-      // Try bet below min_bet (0.01 SOL < 0.1 SOL)
+      
       const belowMinData = buildStartSessionData(lamports(0.01), new BN(0));
       const belowMinIx = new TransactionInstruction({
         keys: [
@@ -4061,7 +4025,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     let sessionPDA: PublicKey;
 
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -4083,7 +4047,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -4107,13 +4071,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
 
-      // Create player and attacker
+      
       player = new Keypair();
       attacker = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
       svm.airdrop(attacker.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      // Start player's session
+      
       [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
       const startData = buildStartSessionData(betAmount, new BN(0));
@@ -4145,7 +4109,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const playData = buildPlayRoundData();
       const playIx = new TransactionInstruction({
         keys: [
-          { pubkey: attacker.publicKey, isSigner: true, isWritable: true }, // Wrong signer!
+          { pubkey: attacker.publicKey, isSigner: true, isWritable: true }, 
           { pubkey: configPDA, isSigner: false, isWritable: false },
           { pubkey: sessionPDA, isSigner: false, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
@@ -4160,12 +4124,12 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       tx.sign(attacker);
 
       const result = svm.sendTransaction(tx);
-      // This should fail with a constraint violation
+      
       expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
     });
 
     it("should prevent non-owner from cashing out", () => {
-      // Play one successful round first
+      
       const playData = buildPlayRoundData();
       const playIx = new TransactionInstruction({
         keys: [
@@ -4184,11 +4148,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       playTx.sign(player);
       svm.sendTransaction(playTx);
 
-      // Attacker tries to cash out player's session
+      
       const cashOutData = buildCashOutData();
       const cashOutIx = new TransactionInstruction({
         keys: [
-          { pubkey: attacker.publicKey, isSigner: true, isWritable: true }, // Wrong signer!
+          { pubkey: attacker.publicKey, isSigner: true, isWritable: true }, 
           { pubkey: sessionPDA, isSigner: false, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
         ],
@@ -4209,7 +4173,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const loseData = buildLoseSessionData();
       const loseIx = new TransactionInstruction({
         keys: [
-          { pubkey: attacker.publicKey, isSigner: true, isWritable: true }, // Wrong signer!
+          { pubkey: attacker.publicKey, isSigner: true, isWritable: true }, 
           { pubkey: sessionPDA, isSigner: false, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
         ],
@@ -4232,7 +4196,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     let sessionPDA: PublicKey;
 
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -4254,7 +4218,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -4285,7 +4249,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should release reserved funds on lose_session", () => {
-      const betAmount = lamports(0.3); // 0.3 SOL - within new limits
+      const betAmount = lamports(0.3); 
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -4311,12 +4275,12 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const startResult = svm.sendTransaction(startTx);
       expect(startResult).to.not.be.null;
 
-      // Check reserved funds before
+      
       const beforeSessionAccount = svm.getAccount(sessionPDA);
       const beforeVaultAccount = svm.getAccount(houseVaultPDA);
 
       if (!beforeSessionAccount || !beforeVaultAccount) {
-        // Accounts not found - fail the test
+        
         expect.fail("Session or vault account not found after start_session");
       }
 
@@ -4328,7 +4292,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         expectedReserved.toString()
       );
 
-      // Lose session
+      
       const loseData = buildLoseSessionData();
       const loseIx = new TransactionInstruction({
         keys: [
@@ -4347,14 +4311,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const loseResult = svm.sendTransaction(loseTx);
       expect(loseResult).to.not.be.null;
 
-      // Check reserved funds released
+      
       const afterVaultAccount = svm.getAccount(houseVaultPDA);
       if (afterVaultAccount) {
         const afterVault = parseHouseVaultData(afterVaultAccount.data);
         expect(afterVault.totalReserved.toString()).to.equal("0");
       }
 
-      // Session should be closed
+      
       const closedSession = svm.getAccount(sessionPDA);
       expect(closedSession).to.be.null;
     });
@@ -4387,7 +4351,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       const initialPlayerBalance = svm.getBalance(player.publicKey);
 
-      // Play rounds until treasure > bet
+      
       for (let i = 0; i < 20; i++) {
         const playData = buildPlayRoundData();
         const playIx = new TransactionInstruction({
@@ -4419,18 +4383,18 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       const sessionAccount = svm.getAccount(sessionPDA);
       if (!sessionAccount) {
-        // Session lost during play rounds - skip test
+        
         return;
       }
 
       const beforeSession = parseSessionData(sessionAccount.data);
       if (beforeSession.status !== "Active") {
-        // Session not active - skip test
+        
         return;
       }
 
       if (!beforeSession.currentTreasure.gt(beforeSession.betAmount)) {
-        // Treasure not > bet - skip test
+        
         return;
       }
 
@@ -4438,7 +4402,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         svm.getAccount(houseVaultPDA)!.data
       );
 
-      // Cash out
+      
       const cashOutData = buildCashOutData();
       const cashOutIx = new TransactionInstruction({
         keys: [
@@ -4457,11 +4421,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const cashResult = svm.sendTransaction(cashOutTx);
 
       if (cashResult?.constructor?.name === "FailedTransactionMetadata") {
-        // Cash out failed - skip test
+        
         return;
       }
 
-      // Check reserved funds released
+      
       const afterVault = parseHouseVaultData(
         svm.getAccount(houseVaultPDA)!.data
       );
@@ -4469,13 +4433,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         beforeVault.totalReserved.sub(afterVault.totalReserved).toString()
       ).to.equal(beforeSession.maxPayout.toString());
 
-      // Player balance should increase
+      
       const afterPlayerBalance = svm.getBalance(player.publicKey);
       expect(Number(afterPlayerBalance)).to.be.greaterThan(
         Number(initialPlayerBalance)
       );
 
-      // Session should be closed
+      
       const closedSession = svm.getAccount(sessionPDA);
       expect(closedSession).to.be.null;
     });
@@ -4483,7 +4447,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
   describe("RNG Invariants", () => {
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -4505,7 +4469,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -4537,7 +4501,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -4571,7 +4535,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const sessionBefore = parseSessionData(sessionBeforeAccount.data);
       const seedHex = sessionBefore.rngSeed.toString("hex");
 
-      // Play multiple rounds
+      
       for (let i = 0; i < 5; i++) {
         const playData = buildPlayRoundData();
         const playIx = new TransactionInstruction({
@@ -4599,7 +4563,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         const s = parseSessionData(acc.data);
         if (s.status !== "Active") break;
 
-        // RNG seed must stay the same
+        
         expect(s.rngSeed.toString("hex")).to.equal(seedHex);
       }
     });
@@ -4643,7 +4607,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         seeds.push(s.rngSeed.toString("hex"));
       }
 
-      // All seeds must be unique
+      
       expect(new Set(seeds).size).to.equal(seeds.length);
     });
   });
@@ -4653,7 +4617,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     let sessionPDA: PublicKey;
 
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -4675,7 +4639,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -4706,7 +4670,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should not allow cash_out after session is Lost", () => {
-      // Start session
+      
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
@@ -4732,7 +4696,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Lose the session manually
+      
       const loseData = buildLoseSessionData();
       const loseIx = new TransactionInstruction({
         keys: [
@@ -4750,7 +4714,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       loseTx.sign(player);
       svm.sendTransaction(loseTx);
 
-      // Session should be closed, so cash_out should fail
+      
       const cashOutData = buildCashOutData();
       const cashOutIx = new TransactionInstruction({
         keys: [
@@ -4768,7 +4732,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       cashOutTx.sign(player);
 
       const result = svm.sendTransaction(cashOutTx);
-      // Should fail - account closed or InvalidSessionStatus
+      
       expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
     });
   });
@@ -4778,7 +4742,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     let sessionPDA: PublicKey;
 
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -4800,7 +4764,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -4829,7 +4793,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
 
-      // Start session
+      
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
@@ -4892,13 +4856,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
         roundsPlayed++;
 
-        // Verify invariants
+        
         if (lastTreasure !== null) {
-          // Treasure should increase monotonically
+          
           expect(Number(s.currentTreasure)).to.be.greaterThan(
             Number(lastTreasure)
           );
-          // Dive number should increment by 1
+          
           expect(s.diveNumber).to.equal(lastDive + 1);
         }
 
@@ -4912,7 +4876,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
   describe("Production-Grade: Money Conservation & Accounting", () => {
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -4934,7 +4898,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -4960,13 +4924,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should correctly release reserved funds step-by-step for multiple players (lose_session)", () => {
-      // Create two players
+      
       const playerA = new Keypair();
       const playerB = new Keypair();
       svm.airdrop(playerA.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
       svm.airdrop(playerB.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      // Player A: 0.3 SOL bet (within new 0.01-0.5 SOL limits)
+      
       const betA = lamports(0.3);
       const maxPayoutA = betA.muln(100);
       const [sessionA] = getSessionPDA(playerA.publicKey, new BN(0));
@@ -4995,7 +4959,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       txA.sign(playerA);
       svm.sendTransaction(txA);
 
-      // Player B: 0.2 SOL bet (within new 0.01-0.5 SOL limits)
+      
       const betB = lamports(0.2);
       const maxPayoutB = betB.muln(100);
       const [sessionB] = getSessionPDA(playerB.publicKey, new BN(0));
@@ -5025,7 +4989,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const resultB = svm.sendTransaction(txB);
       expect(resultB).to.not.be.null;
 
-      // Checkpoint 1: Both sessions active, total_reserved = 150 SOL
+      
       const vaultAccount1 = svm.getAccount(houseVaultPDA);
       let vaultData;
       if (vaultAccount1 && vaultAccount1.data.length > 0) {
@@ -5037,7 +5001,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Player A loses
+      
       const loseAData = buildLoseSessionData();
       const loseAIx = new TransactionInstruction({
         keys: [
@@ -5056,7 +5020,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const loseAResult = svm.sendTransaction(loseATx);
       expect(loseAResult).to.not.be.null;
 
-      // Checkpoint 2: Only Player B's session active, total_reserved = 50 SOL
+      
       const vaultAccount2 = svm.getAccount(houseVaultPDA);
       if (vaultAccount2) {
         vaultData = parseHouseVaultData(vaultAccount2.data);
@@ -5066,10 +5030,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Verify Player A's session is closed
+      
       expect(svm.getAccount(sessionA)).to.be.null;
 
-      // Player B loses
+      
       const loseBData = buildLoseSessionData();
       const loseBIx = new TransactionInstruction({
         keys: [
@@ -5088,7 +5052,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const loseBResult = svm.sendTransaction(loseBTx);
       expect(loseBResult).to.not.be.null;
 
-      // Checkpoint 3: All sessions closed, total_reserved = 0
+      
       const vaultAccount3 = svm.getAccount(houseVaultPDA);
       if (vaultAccount3) {
         vaultData = parseHouseVaultData(vaultAccount3.data);
@@ -5098,7 +5062,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Verify Player B's session is closed
+      
       expect(svm.getAccount(sessionB)).to.be.null;
     });
 
@@ -5107,14 +5071,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = lamports(0.3); // 0.3 SOL - within new limits
-      const maxPayout = betAmount.muln(100); // 30 SOL max payout
+      const betAmount = lamports(0.3); 
+      const maxPayout = betAmount.muln(100); 
 
-      // Record initial balances
+      
       const initialPlayerBalance = svm.getBalance(player.publicKey);
       const initialVaultBalance = svm.getBalance(houseVaultPDA);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -5140,7 +5104,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const startResult = svm.sendTransaction(startTx);
       expect(startResult).to.not.be.null;
 
-      // Verify total_reserved = 100 SOL
+      
       const initialVaultAccount = svm.getAccount(houseVaultPDA);
       let vaultData;
       if (initialVaultAccount && initialVaultAccount.data.length > 0) {
@@ -5150,7 +5114,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // Play rounds until treasure > bet (or give up after 30 tries)
+      
       let treasureAmount: BN | null = null;
       for (let i = 0; i < 30; i++) {
         const playData = buildPlayRoundData();
@@ -5186,11 +5150,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       }
 
       if (!treasureAmount || !treasureAmount.gt(betAmount)) {
-        // Skip test if we couldn't get a winning round
+        
         return;
       }
 
-      // Execute cash_out
+      
       const cashOutData = buildCashOutData();
       const cashOutIx = new TransactionInstruction({
         keys: [
@@ -5209,15 +5173,15 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const cashResult = svm.sendTransaction(cashOutTx);
 
       if (cashResult?.constructor?.name === "FailedTransactionMetadata") {
-        // Cash out failed - skip
+        
         return;
       }
 
-      // Verify accounting
+      
       const finalPlayerBalance = svm.getBalance(player.publicKey);
       const finalVaultBalance = svm.getBalance(houseVaultPDA);
 
-      // 1. total_reserved decreased by full max_payout (100 SOL)
+      
       const finalVaultAccount = svm.getAccount(houseVaultPDA);
       if (finalVaultAccount) {
         vaultData = parseHouseVaultData(finalVaultAccount.data);
@@ -5227,32 +5191,32 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         );
       }
 
-      // 2. House vault balance: player paid bet initially, then received treasure payout
-      // Net change should be: -(treasure - bet) = bet - treasure
+      
+      
       const vaultDiff = Number(initialVaultBalance - finalVaultBalance);
       const treasureNum = Number(treasureAmount);
       const betNum = Number(betAmount);
-      const expectedVaultDecrease = treasureNum - betNum; // Net payout to player
+      const expectedVaultDecrease = treasureNum - betNum; 
       expect(vaultDiff).to.be.closeTo(
         expectedVaultDecrease,
         expectedVaultDecrease * 0.05,
         "Vault should have net decrease of (treasure - bet)"
       );
 
-      // 3. Player balance increased (accounting for tx fees and rent refund)
+      
       expect(Number(finalPlayerBalance)).to.be.greaterThan(
         Number(initialPlayerBalance),
         "Player should have received payout"
       );
 
-      // 4. Session closed
+      
       expect(svm.getAccount(sessionPDA)).to.be.null;
     });
   });
 
   describe("Production-Grade: State Machine Integrity", () => {
     beforeEach(() => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -5274,7 +5238,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -5306,7 +5270,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -5331,7 +5295,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Execute lose_session
+      
       const loseData = buildLoseSessionData();
       const loseIx = new TransactionInstruction({
         keys: [
@@ -5349,10 +5313,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       loseTx.sign(player);
       svm.sendTransaction(loseTx);
 
-      // Verify session closed
+      
       expect(svm.getAccount(sessionPDA)).to.be.null;
 
-      // Attempt play_round on closed session
+      
       const playData = buildPlayRoundData();
       const playIx = new TransactionInstruction({
         keys: [
@@ -5375,7 +5339,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         "FailedTransactionMetadata"
       );
 
-      // Attempt cash_out on closed session
+      
       const cashOutData = buildCashOutData();
       const cashOutIx = new TransactionInstruction({
         keys: [
@@ -5405,7 +5369,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -5430,7 +5394,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Play rounds until treasure > bet
+      
       for (let i = 0; i < 30; i++) {
         const playData = buildPlayRoundData();
         const playIx = new TransactionInstruction({
@@ -5461,12 +5425,12 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       }
 
       const sessionAcc = svm.getAccount(sessionPDA);
-      if (!sessionAcc) return; // Session lost, skip
+      if (!sessionAcc) return; 
 
       const sessionData = parseSessionData(sessionAcc.data);
-      if (!sessionData.currentTreasure.gt(sessionData.betAmount)) return; // Can't cash out, skip
+      if (!sessionData.currentTreasure.gt(sessionData.betAmount)) return; 
 
-      // Execute cash_out
+      
       const cashOutData = buildCashOutData();
       const cashOutIx = new TransactionInstruction({
         keys: [
@@ -5484,12 +5448,12 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       cashOutTx.sign(player);
 
       const cashResult = svm.sendTransaction(cashOutTx);
-      if (cashResult?.constructor?.name === "FailedTransactionMetadata") return; // Cash out failed, skip
+      if (cashResult?.constructor?.name === "FailedTransactionMetadata") return; 
 
-      // Verify session closed
+      
       expect(svm.getAccount(sessionPDA)).to.be.null;
 
-      // Attempt play_round on closed session
+      
       const playData2 = buildPlayRoundData();
       const playIx2 = new TransactionInstruction({
         keys: [
@@ -5512,7 +5476,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         "FailedTransactionMetadata"
       );
 
-      // Attempt lose_session on closed session
+      
       const loseData = buildLoseSessionData();
       const loseIx = new TransactionInstruction({
         keys: [
@@ -5542,7 +5506,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Player starts session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -5567,11 +5531,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Authority tries to play_round
+      
       const playData = buildPlayRoundData();
       const playIx = new TransactionInstruction({
         keys: [
-          { pubkey: authority.publicKey, isSigner: true, isWritable: true }, // Wrong signer!
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true }, 
           { pubkey: configPDA, isSigner: false, isWritable: false },
           { pubkey: sessionPDA, isSigner: false, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
@@ -5590,11 +5554,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         "FailedTransactionMetadata"
       );
 
-      // Authority tries to cash_out
+      
       const cashOutData = buildCashOutData();
       const cashOutIx = new TransactionInstruction({
         keys: [
-          { pubkey: authority.publicKey, isSigner: true, isWritable: true }, // Wrong signer!
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true }, 
           { pubkey: sessionPDA, isSigner: false, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
         ],
@@ -5612,11 +5576,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         "FailedTransactionMetadata"
       );
 
-      // Authority tries to lose_session
+      
       const loseData = buildLoseSessionData();
       const loseIx = new TransactionInstruction({
         keys: [
-          { pubkey: authority.publicKey, isSigner: true, isWritable: true }, // Wrong signer!
+          { pubkey: authority.publicKey, isSigner: true, isWritable: true }, 
           { pubkey: sessionPDA, isSigner: false, isWritable: true },
           { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
         ],
@@ -5634,7 +5598,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         "FailedTransactionMetadata"
       );
 
-      // Verify session still active
+      
       const sessionAcc = svm.getAccount(sessionPDA);
       expect(sessionAcc).to.not.be.null;
       const sessionData = parseSessionData(sessionAcc!.data);
@@ -5644,9 +5608,9 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
   describe("Production-Grade: Economic Boundary Conditions", () => {
     it("should cap treasure at max_payout limit", () => {
-      // Initialize config with small max_payout for easier testing
+      
       const configData = buildInitConfigData({
-        maxPayoutMultiplier: 5, // 5x instead of 100x
+        maxPayoutMultiplier: 5, 
       });
 
       const configIx = new TransactionInstruction({
@@ -5669,7 +5633,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -5699,7 +5663,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.TINY);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -5733,7 +5697,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const initialSession = parseSessionData(initialSessionAccount.data);
       const maxPayout = initialSession.maxPayout;
 
-      // Play many rounds
+      
       let reachedCap = false;
       for (let i = 0; i < 50; i++) {
         const playData = buildPlayRoundData();
@@ -5762,26 +5726,26 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         const s = parseSessionData(acc.data);
         if (s.status !== "Active") break;
 
-        // Treasure must never exceed max_payout
+        
         expect(s.currentTreasure.lte(maxPayout)).to.be.true;
 
-        // Check if we reached the cap
+        
         if (s.currentTreasure.eq(maxPayout)) {
           reachedCap = true;
         }
       }
 
-      // We should have reached the cap at some point (or test is inconclusive due to RNG)
+      
       if (!reachedCap) {
-        // If we didn't reach the cap, the player likely lost before reaching it
-        // This is expected behavior - skip the cap assertion
+        
+        
         return;
       }
       expect(reachedCap).to.be.true;
     });
 
     it("should enforce max_dives limit", () => {
-      // Initialize config with small max_dives
+      
       const configData = buildInitConfigData({
         maxDives: 5,
       });
@@ -5806,7 +5770,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -5836,7 +5800,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.TINY);
 
-      // Start session (dive_number = 1)
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -5861,7 +5825,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Play up to 4 rounds (bringing dive_number to 5, the max)
+      
       let lastDive = 1;
       for (let i = 0; i < 4; i++) {
         const playData = buildPlayRoundData();
@@ -5893,16 +5857,16 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         lastDive = s.diveNumber;
       }
 
-      // Should be at dive 5 (or lost earlier)
+      
       const sessionAcc = svm.getAccount(sessionPDA);
-      if (!sessionAcc) return; // Lost, test complete
+      if (!sessionAcc) return; 
 
       const sessionData = parseSessionData(sessionAcc.data);
-      if (sessionData.status !== "Active") return; // Lost, test complete
+      if (sessionData.status !== "Active") return; 
 
       expect(sessionData.diveNumber).to.be.at.most(5);
 
-      // If we're at dive 5, attempt one more round - should fail or auto-lose
+      
       if (sessionData.diveNumber === 5) {
         const playData = buildPlayRoundData();
         const playIx = new TransactionInstruction({
@@ -5923,12 +5887,12 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
         const result = svm.sendTransaction(playTx);
 
-        // Either fails immediately or auto-loses
+        
         if (result?.constructor?.name !== "FailedTransactionMetadata") {
           const finalAcc = svm.getAccount(sessionPDA);
           if (finalAcc) {
             const finalData = parseSessionData(finalAcc.data);
-            // Should not be active anymore
+            
             expect(finalData.status).to.not.equal("Active");
           }
         }
@@ -5936,7 +5900,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should handle in-flight house lock correctly", () => {
-      // Initialize config
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -5958,7 +5922,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       configTx.sign(authority);
       svm.sendTransaction(configTx);
 
-      // Initialize house vault
+      
       const vaultData = buildInitHouseVaultData(false);
       const vaultIx = new TransactionInstruction({
         keys: [
@@ -5988,7 +5952,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
 
-      // Start session
+      
       const startData = buildStartSessionData(betAmount, new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -6013,7 +5977,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Lock the house
+      
       const toggleData = buildToggleHouseLockData();
       const toggleIx = new TransactionInstruction({
         keys: [
@@ -6030,7 +5994,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       toggleTx.sign(authority);
       svm.sendTransaction(toggleTx);
 
-      // Verify locked
+      
       const lockedVaultAccount = svm.getAccount(houseVaultPDA);
       if (!lockedVaultAccount || lockedVaultAccount.data.length === 0) {
         expect.fail("Vault account not found or empty");
@@ -6038,7 +6002,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       let lockedVaultData = parseHouseVaultData(lockedVaultAccount.data);
       expect(lockedVaultData.locked).to.be.true;
 
-      // play_round should still work (in-flight sessions not affected)
+      
       const playData = buildPlayRoundData();
       const playIx = new TransactionInstruction({
         keys: [
@@ -6057,21 +6021,21 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       playTx.sign(player);
 
       const playResult = svm.sendTransaction(playTx);
-      // Should succeed (or lose naturally)
+      
       if (playResult?.constructor?.name === "FailedTransactionMetadata") {
-        // If it failed, it's not due to house lock (would be different error)
-        // For now, we accept this outcome
+        
+        
       }
 
-      // Note: Testing cash_out while locked is complex because we need treasure > bet
-      // For production, you'd want to test that cash_out fails with HouseLocked
-      // when vault is locked, but this requires reliable win setup
+      
+      
+      
     });
   });
 
   describe("Session Reopening & Cleanup", () => {
     it("should allow starting a new session after lose_session", () => {
-      // Initialize config and vault
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -6116,11 +6080,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
 
-      // Create player
+      
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      // Start first session
+      
       const sessionIndex = new BN(0);
       const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
@@ -6149,7 +6113,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Lose the session
+      
       const loseData = buildLoseSessionData();
       const loseIx = new TransactionInstruction({
         keys: [
@@ -6173,7 +6137,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       loseTx.sign(player);
       svm.sendTransaction(loseTx);
 
-      // Start a NEW session with index 1 - should succeed
+      
       const sessionIndex2 = new BN(1);
       const [sessionPDA2] = getSessionPDA(player.publicKey, sessionIndex2);
 
@@ -6202,11 +6166,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const result2 = svm.sendTransaction(startTx2);
       expect(result2).to.not.be.null;
 
-      // First session is closed (lose_session closes the account)
+      
       const session1Account = svm.getAccount(sessionPDA);
-      expect(session1Account).to.be.null; // Account closed
+      expect(session1Account).to.be.null; 
 
-      // Second session should exist and be Active
+      
       const session2Account = svm.getAccount(sessionPDA2);
       if (session2Account) {
         const session2Data = parseSessionData(session2Account.data);
@@ -6218,7 +6182,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should allow starting a new session after cash_out (TODO: debug)", () => {
-      // Initialize config and vault
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -6263,11 +6227,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
 
-      // Create player
+      
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      // Start first session
+      
       const sessionIndex = new BN(0);
       const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
@@ -6296,7 +6260,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       svm.sendTransaction(startTx);
 
-      // Cash out immediately
+      
       const cashOutData = buildCashOutData();
       const cashOutIx = new TransactionInstruction({
         keys: [
@@ -6321,7 +6285,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       cashOutTx.sign(player);
       svm.sendTransaction(cashOutTx);
 
-      // Start a NEW session with index 1 - should succeed
+      
       const sessionIndex2 = new BN(1);
       const [sessionPDA2] = getSessionPDA(player.publicKey, sessionIndex2);
 
@@ -6350,11 +6314,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const result2 = svm.sendTransaction(startTx2);
       expect(result2).to.not.be.null;
 
-      // First session is closed (cash_out closes the account)
+      
       const session1Account = svm.getAccount(sessionPDA);
-      expect(session1Account).to.be.null; // Account closed
+      expect(session1Account).to.be.null; 
 
-      // Second session should exist and be Active
+      
       const session2Account = svm.getAccount(sessionPDA2);
       if (session2Account) {
         const session2Data = parseSessionData(session2Account.data);
@@ -6367,14 +6331,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
   });
 
   describe("Additional Boundary Conditions", () => {
-    // These tests need custom configs, so they use isolated SVM instances
+    
     let isolatedSvm: LiteSVM;
     let isolatedAuthority: Keypair;
     let isolatedConfigPDA: PublicKey;
     let isolatedHouseVaultPDA: PublicKey;
 
     beforeEach(() => {
-      // Create isolated SVM for tests that need custom config
+      
       isolatedSvm = new LiteSVM();
       const programPath = path.join(
         __dirname,
@@ -6394,11 +6358,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should handle minimum bet amount correctly", () => {
-      // Initialize config with specific min bet
-      const minBetAmount = new BN(100000); // 0.0001 SOL
+      
+      const minBetAmount = new BN(100000); 
       const configData = buildInitConfigData({
         minBet: minBetAmount,
-        maxBet: new BN(0), // No max
+        maxBet: new BN(0), 
       });
       const configIx = new TransactionInstruction({
         keys: [
@@ -6454,15 +6418,15 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         1000n * BigInt(LAMPORTS_PER_SOL)
       );
 
-      // Create player
+      
       const player = new Keypair();
       isolatedSvm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      // Try to bet EXACTLY the minimum - should succeed
+      
       const sessionIndex = new BN(0);
       const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
 
-      // Log account states before transaction
+      
       console.log("\n=== BEFORE START SESSION ===");
       logAccountStates(
         isolatedSvm,
@@ -6511,14 +6475,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       startTx.sign(player);
       const result = isolatedSvm.sendTransaction(startTx);
 
-      // Log transaction result details
+      
       console.log("\n=== TRANSACTION RESULT ===");
       console.log("Result type:", result.constructor.name);
       console.log("Result keys:", Object.keys(result));
       console.log("Result:", result);
       if (result.constructor.name === "FailedTransactionMetadata") {
         logTransactionFailure(result, "Minimum bet start session");
-        // Try to see if there are logs in the result
+        
         console.log("Checking for logs...");
         if (result.logs !== undefined) {
           console.log("Logs found:", result.logs);
@@ -6527,7 +6491,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         }
       }
 
-      // Check if transaction succeeded
+      
       expect(result.constructor.name).to.equal("TransactionMetadata");
 
       const sessionAccount = isolatedSvm.getAccount(sessionPDA);
@@ -6540,10 +6504,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it.skip("should enforce max_bet when configured", () => {
-      // Initialize config with specific max bet
-      const maxBetAmount = new BN(300_000_000); // 0.3 SOL
+      
+      const maxBetAmount = new BN(300_000_000); 
       const configData = buildInitConfigData({
-        minBet: new BN(10_000_000), // 0.01 SOL
+        minBet: new BN(10_000_000), 
         maxBet: maxBetAmount,
       });
       const configIx = new TransactionInstruction({
@@ -6589,11 +6553,11 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       svm.airdrop(houseVaultPDA, 10000n * BigInt(LAMPORTS_PER_SOL));
 
-      // Create player
+      
       const player = new Keypair();
       svm.airdrop(player.publicKey, 100n * BigInt(LAMPORTS_PER_SOL));
 
-      // Try to bet MORE than max - should fail
+      
       const sessionIndex = new BN(0);
       const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
       const tooBigBet = maxBetAmount.addn(1);
@@ -6626,7 +6590,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should handle multiple concurrent sessions from different players (TODO: debug)", () => {
-      // Initialize config and vault
+      
       const configData = buildInitConfigData({});
       const configIx = new TransactionInstruction({
         keys: [
@@ -6671,15 +6635,15 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       svm.airdrop(houseVaultPDA, 10000n * BigInt(LAMPORTS_PER_SOL));
 
-      // Create 5 players
+      
       const players = Array.from({ length: 5 }, () => new Keypair());
       players.forEach((p) =>
         svm.airdrop(p.publicKey, 10n * BigInt(LAMPORTS_PER_SOL))
       );
 
-      const betAmount = lamports(0.3); // 0.3 SOL - within new limits
+      const betAmount = lamports(0.3); 
 
-      // Start sessions for all players
+      
       const sessionPDAs: PublicKey[] = [];
       players.forEach((player, i) => {
         const sessionIndex = new BN(0);
@@ -6715,7 +6679,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         svm.sendTransaction(startTx);
       });
 
-      // Verify all sessions exist and are independent
+      
       sessionPDAs.forEach((sessionPDA, i) => {
         const account = svm.getAccount(sessionPDA);
         expect(account).to.not.be.null;
@@ -6727,10 +6691,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         expect(sessionData.status).to.equal("Active");
       });
 
-      // Vault should have reserved funds for all sessions
+      
       const vaultAccount = svm.getAccount(houseVaultPDA);
       const vaultData2 = parseHouseVaultData(vaultAccount!.data);
-      const expectedReserved = betAmount.muln(100).muln(5); // 5 players * max_payout
+      const expectedReserved = betAmount.muln(100).muln(5); 
       expect(vaultData2.totalReserved.toString()).to.equal(
         expectedReserved.toString()
       );

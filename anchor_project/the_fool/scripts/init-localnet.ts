@@ -1,11 +1,4 @@
-/**
- * Initialize localnet for dive_game program
- * 
- * This script:
- * 1. Initializes GameConfig with default parameters (70% survival, 5% house edge)
- * 2. Initializes HouseVault for the house authority
- * 3. Funds the house vault with initial SOL
- */
+
 
 import {
   Connection,
@@ -21,24 +14,24 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
-// Program ID (must match deployed program)
+
 const PROGRAM_ID = new PublicKey("9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7");
 
-// Seeds
+
 const GAME_CONFIG_SEED = "game_config";
 const HOUSE_VAULT_SEED = "house_vault";
 
-// Helper: Serialize Option<T>
+
 function serializeOption(value: number | null | undefined, size: number): Buffer {
   if (value === null || value === undefined) {
-    return Buffer.from([0]); // None
+    return Buffer.from([0]); 
   }
   const buffer = Buffer.alloc(1 + size);
-  buffer.writeUInt8(1, 0); // Some
+  buffer.writeUInt8(1, 0); 
   if (size === 2) buffer.writeUInt16LE(value, 1);
   else if (size === 4) buffer.writeUInt32LE(value, 1);
   else if (size === 8) {
-    // For u64, write as two u32s
+    
     const low = value & 0xffffffff;
     const high = Math.floor(value / 0x100000000);
     buffer.writeUInt32LE(low, 1);
@@ -47,7 +40,7 @@ function serializeOption(value: number | null | undefined, size: number): Buffer
   return buffer;
 }
 
-// Get config PDA
+
 function getConfigPDA(): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from(GAME_CONFIG_SEED)],
@@ -56,7 +49,7 @@ function getConfigPDA(): PublicKey {
   return pda;
 }
 
-// Get house vault PDA
+
 function getHouseVaultPDA(houseAuthority: PublicKey): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from(HOUSE_VAULT_SEED), houseAuthority.toBuffer()],
@@ -68,10 +61,10 @@ function getHouseVaultPDA(houseAuthority: PublicKey): PublicKey {
 async function main() {
   console.log("🚀 Initializing dive_game on localnet...\n");
 
-  // Connect to localnet
-  const connection = new Connection("http://localhost:8899", "confirmed");
   
-  // Load payer keypair from ~/.config/solana/id.json
+  const connection = new Connection("http:
+  
+  
   const keypairPath = path.join(os.homedir(), ".config", "solana", "id.json");
   const keypairData = JSON.parse(fs.readFileSync(keypairPath, "utf-8"));
   const payer = Keypair.fromSecretKey(Uint8Array.from(keypairData));
@@ -80,7 +73,7 @@ async function main() {
   const balance = await connection.getBalance(payer.publicKey);
   console.log(`💰 Balance: ${balance / LAMPORTS_PER_SOL} SOL\n`);
 
-  // Step 1: Initialize GameConfig
+  
   console.log("Step 1: Initializing GameConfig...");
   const configPda = getConfigPDA();
   console.log(`   Config PDA: ${configPda.toBase58()}`);
@@ -90,19 +83,19 @@ async function main() {
     if (configAccount) {
       console.log("   ✅ Config already initialized\n");
     } else {
-      // Build init_config instruction data
+      
       const discriminator = Buffer.from([23, 235, 115, 232, 168, 96, 1, 231]);
       const data = Buffer.concat([
         discriminator,
-        serializeOption(null, 4), // baseSurvivalPpm: use default (700_000 = 70%)
-        serializeOption(null, 4), // decayPerDivePpm: use default (8_000 = 0.8%)
-        serializeOption(null, 4), // minSurvivalPpm: use default (50_000 = 5%)
-        serializeOption(null, 2), // treasureMultiplierNum: use default (19)
-        serializeOption(null, 2), // treasureMultiplierDen: use default (10)
-        serializeOption(null, 2), // maxPayoutMultiplier: use default (100)
-        serializeOption(null, 2), // maxDives: use default (50)
-        serializeOption(100_000_000, 8), // minBet: 100_000_000 lamports = 0.1 SOL
-        serializeOption(10_000_000_000, 8), // maxBet: 10_000_000_000 lamports = 10 SOL
+        serializeOption(null, 4), 
+        serializeOption(null, 4), 
+        serializeOption(null, 4), 
+        serializeOption(null, 2), 
+        serializeOption(null, 2), 
+        serializeOption(null, 2), 
+        serializeOption(null, 2), 
+        serializeOption(100_000_000, 8), 
+        serializeOption(10_000_000_000, 8), 
       ]);
 
       const instruction = new TransactionInstruction({
@@ -123,9 +116,9 @@ async function main() {
     console.error(`   ❌ Error initializing config: ${error.message}\n`);
   }
 
-  // Step 2: Initialize HouseVault
+  
   console.log("Step 2: Initializing HouseVault...");
-  const houseAuthority = payer.publicKey; // Using payer as house authority for localnet
+  const houseAuthority = payer.publicKey; 
   const vaultPda = getHouseVaultPDA(houseAuthority);
   console.log(`   House Authority: ${houseAuthority.toBase58()}`);
   console.log(`   Vault PDA: ${vaultPda.toBase58()}`);
@@ -137,9 +130,9 @@ async function main() {
       const vaultBalance = await connection.getBalance(vaultPda);
       console.log(`   💰 Vault balance: ${vaultBalance / LAMPORTS_PER_SOL} SOL\n`);
     } else {
-      // Build init_house_vault instruction data
+      
       const discriminator = Buffer.from([82, 247, 65, 25, 166, 239, 30, 112]);
-      const lockedByte = Buffer.from([0]); // locked = false
+      const lockedByte = Buffer.from([0]); 
       const data = Buffer.concat([discriminator, lockedByte]);
 
       const instruction = new TransactionInstruction({
@@ -160,11 +153,11 @@ async function main() {
     console.error(`   ❌ Error initializing vault: ${error.message}\n`);
   }
 
-  // Step 3: Fund the house vault
+  
   console.log("Step 3: Funding house vault...");
   try {
     const vaultBalance = await connection.getBalance(vaultPda);
-    const targetBalance = 1000 * LAMPORTS_PER_SOL; // 1000 SOL
+    const targetBalance = 1000 * LAMPORTS_PER_SOL; 
     
     if (vaultBalance < targetBalance) {
       const amountToSend = targetBalance - vaultBalance;
@@ -194,7 +187,7 @@ async function main() {
   console.log("\n💡 Add these to your .env.local:");
   console.log(`   NEXT_PUBLIC_PROGRAM_ID="${PROGRAM_ID.toBase58()}"`);
   console.log(`   NEXT_PUBLIC_HOUSE_AUTHORITY="${houseAuthority.toBase58()}"`);
-  console.log(`   NEXT_PUBLIC_RPC_URL="http://localhost:8899"`);
+  console.log(`   NEXT_PUBLIC_RPC_URL="http:
 }
 
 main().catch(console.error);

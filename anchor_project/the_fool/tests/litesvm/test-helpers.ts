@@ -10,9 +10,9 @@ import {
 import type { Signer } from "@solana/web3.js";
 import BN from "bn.js";
 
-// ============================================================================
-// Constants
-// ============================================================================
+
+
+
 
 export const PROGRAM_ID = new PublicKey(
   "7f56Kmapmckgg8avSnqJvCUjtfDKVovENtzfvhSTEQ6h"
@@ -29,9 +29,9 @@ export const TEST_AMOUNTS = {
   LARGE: 10,
 };
 
-// ============================================================================
-// PDA Helpers
-// ============================================================================
+
+
+
 
 export function getConfigPDA(): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
@@ -61,9 +61,9 @@ export function getSessionPDA(
   );
 }
 
-// ============================================================================
-// Conversion Helpers
-// ============================================================================
+
+
+
 
 export function lamports(sol: number): BN {
   return new BN(Math.round(sol * LAMPORTS_PER_SOL));
@@ -75,16 +75,16 @@ export function sol(lamports: BN | bigint): number {
   return lamportsBN.toNumber() / LAMPORTS_PER_SOL;
 }
 
-// ============================================================================
-// Serialization Helpers
-// ============================================================================
+
+
+
 
 export function serializeOption<T>(value: T | null, size: number): Buffer {
   if (value === null) {
-    return Buffer.from([0]); // None variant
+    return Buffer.from([0]); 
   }
   const buffer = Buffer.alloc(1 + size);
-  buffer.writeUInt8(1, 0); // Some variant
+  buffer.writeUInt8(1, 0); 
 
   if (typeof value === "number") {
     if (size === 2) {
@@ -100,9 +100,9 @@ export function serializeOption<T>(value: T | null, size: number): Buffer {
   return buffer;
 }
 
-// ============================================================================
-// Transaction Helpers
-// ============================================================================
+
+
+
 
 export interface BuildAndSendTxParams {
   svm: LiteSVM;
@@ -121,9 +121,9 @@ export function buildAndSendTx(params: BuildAndSendTxParams) {
   return svm.sendTransaction(tx);
 }
 
-// ============================================================================
-// Instruction Builders
-// ============================================================================
+
+
+
 
 export interface GameConfigParams {
   baseSurvivalPpm?: number | null;
@@ -185,9 +185,9 @@ export function buildToggleHouseLockData(): Buffer {
   return Buffer.from([224, 8, 223, 134, 139, 162, 145, 238]);
 }
 
-// ============================================================================
-// Instruction Creation Helpers
-// ============================================================================
+
+
+
 
 export function createInitConfigInstruction(
   admin: PublicKey,
@@ -300,9 +300,9 @@ export function createLoseSessionInstruction(
   });
 }
 
-// ============================================================================
-// Account Parsers
-// ============================================================================
+
+
+
 
 export interface ParsedSessionData {
   user: PublicKey;
@@ -317,7 +317,7 @@ export interface ParsedSessionData {
 }
 
 export function parseSessionData(data: Buffer): ParsedSessionData {
-  let offset = 8; // Skip discriminator
+  let offset = 8; 
 
   const user = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
@@ -368,7 +368,7 @@ export interface ParsedHouseVaultData {
 }
 
 export function parseHouseVaultData(data: Buffer): ParsedHouseVaultData {
-  let offset = 8; // Skip discriminator
+  let offset = 8; 
 
   const authority = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
@@ -404,7 +404,7 @@ export interface ParsedConfigData {
 }
 
 export function parseConfigData(data: Buffer): ParsedConfigData {
-  let offset = 8; // Skip discriminator
+  let offset = 8; 
 
   const admin = new PublicKey(data.subarray(offset, offset + 32));
   offset += 32;
@@ -453,9 +453,9 @@ export function parseConfigData(data: Buffer): ParsedConfigData {
   };
 }
 
-// ============================================================================
-// Test Fixtures
-// ============================================================================
+
+
+
 
 export interface GameFixture {
   svm: LiteSVM;
@@ -491,7 +491,7 @@ export function createBasicFixture(
   } = params;
 
   if (!skipInit) {
-    // Initialize config
+    
     const configIx = createInitConfigInstruction(
       authority.publicKey,
       configPDA,
@@ -503,7 +503,7 @@ export function createBasicFixture(
       signers: [authority],
     });
 
-    // Initialize vault
+    
     const vaultIx = createInitHouseVaultInstruction(
       authority.publicKey,
       houseVaultPDA,
@@ -515,17 +515,17 @@ export function createBasicFixture(
       signers: [authority],
     });
 
-    // Fund vault if requested
+    
     if (fundVault) {
       svm.airdrop(houseVaultPDA, BigInt(fundVault.toString()));
     }
   }
 
-  // Create player
+  
   const player = new Keypair();
   svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-  // Get session PDA
+  
   const sessionIndex = new BN(0);
   const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
 
@@ -573,9 +573,9 @@ export function startGameSession(params: StartGameSessionParams): void {
   });
 }
 
-// ============================================================================
-// Transaction Result Helpers
-// ============================================================================
+
+
+
 
 export function logTransactionFailure(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
@@ -592,7 +592,7 @@ export function logTransactionFailure(result: any, context: string): void {
   }
 }
 
-// Helper to log account states for debugging
+
 export function logAccountStates(
   svm: LiteSVM,
   configPDA: PublicKey,
@@ -602,7 +602,7 @@ export function logAccountStates(
 ): void {
   console.log(`\n📊 Account States - ${context}`);
 
-  // Config account
+  
   const configData = getConfigData(svm, configPDA);
   if (configData) {
     console.log("Config:");
@@ -621,7 +621,7 @@ export function logAccountStates(
     console.log("Config: NOT FOUND");
   }
 
-  // House vault account
+  
   const vaultAccount = svm.getAccount(houseVaultPDA);
   const vaultData = getVaultData(svm, houseVaultPDA);
   if (vaultAccount && vaultData) {
@@ -645,7 +645,7 @@ export function logAccountStates(
     console.log("House Vault: NOT FOUND");
   }
 
-  // Player account
+  
   const playerAccount = svm.getAccount(playerPubkey);
   if (playerAccount) {
     console.log("Player:");
@@ -663,25 +663,25 @@ export function expectTxSuccess(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
     logTransactionFailure(result, context);
   }
-  // expect(result?.constructor?.name).to.equal("TransactionMetadata", context);
+  
 }
 
 export function expectTxFailure(result: any, context: string): void {
-  // expect(result?.constructor?.name).to.equal("FailedTransactionMetadata", context);
+  
 }
 
 export function expectTxFailedWith(result: any, errorCode: string): void {
-  // expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
+  
   if (result && result.logs) {
     const logs: string[] = result.logs;
     const errorLog = logs.find((l) => l.includes(errorCode));
-    // expect(errorLog, `Expected error "${errorCode}" not found in logs`).to.not.be.undefined;
+    
   }
 }
 
-// ============================================================================
-// High-Level Test Context Helpers
-// ============================================================================
+
+
+
 
 export interface TestContext {
   svm: LiteSVM;
@@ -867,9 +867,9 @@ export function loseSession(
   });
 }
 
-// ============================================================================
-// Data Fetching Helpers
-// ============================================================================
+
+
+
 
 export function getSessionData(
   svm: LiteSVM,
