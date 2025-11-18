@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 pub const HOUSE_VAULT_SEED: &str = "house_vault";
 pub const SESSION_SEED: &str = "session";
 pub const GAME_CONFIG_SEED: &str = "game_config";
-#[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+#[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy, PartialEq, Eq, InitSpace, Debug)]
 pub enum SessionStatus {
     Active,
     Lost,
@@ -149,5 +149,252 @@ impl GameSession {
         self.ensure_active()?;
         self.status = SessionStatus::CashedOut;
         Ok(())
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    fn test_config() -> GameConfig {
+        let (base, decay, min, num, den, max_mult, max_dives, min_bet, max_bet) =
+            GameConfig::default_config();
+        GameConfig {
+            admin: Pubkey::default(),
+            base_survival_ppm: base,
+            decay_per_dive_ppm: decay,
+            min_survival_ppm: min,
+            treasure_multiplier_num: num,
+            treasure_multiplier_den: den,
+            max_payout_multiplier: max_mult,
+            max_dives,
+            min_bet,
+            max_bet,
+            bump: 0,
+        }
+    }
+    
+    fn test_session() -> GameSession {
+        GameSession {
+            user: Pubkey::default(),
+            house_vault: Pubkey::default(),
+            status: SessionStatus::Active,
+            bet_amount: 1_000_000,
+            current_treasure: 1_000_000,
+            max_payout: 100_000_000,
+            dive_number: 1,
+            bump: 0,
+            rng_seed: [0u8; 32],
+        }
+    }
+    
+    fn test_vault() -> HouseVault {
+        HouseVault {
+            house_authority: Pubkey::default(),
+            total_reserved: 0,
+            locked: false,
+            bump: 0,
+        }
+    }
+    
+    // GameConfig::validate() tests
+    #[test]
+    fn test_validate_valid_config() {
+        let config = test_config();
+        assert!(config.validate().is_ok());
+    }
+    
+    #[test]
+    fn test_validate_zero_treasure_denominator() {
+        let mut config = test_config();
+        config.treasure_multiplier_den = 0;
+        assert!(config.validate().is_err());
+    }
+    
+    #[test]
+    fn test_validate_zero_treasure_numerator() {
+        let mut config = test_config();
+        config.treasure_multiplier_num = 0;
+        assert!(config.validate().is_err());
+    }
+    
+    #[test]
+    fn test_validate_zero_max_payout_multiplier() {
+        let mut config = test_config();
+        config.max_payout_multiplier = 0;
+        assert!(config.validate().is_err());
+    }
+    
+    #[test]
+    fn test_validate_base_survival_exceeds_100_percent() {
+        let mut config = test_config();
+        config.base_survival_ppm = 1_000_001;
+        assert!(config.validate().is_err());
+    }
+    
+    #[test]
+    fn test_validate_min_survival_exceeds_base() {
+        let mut config = test_config();
+        config.min_survival_ppm = config.base_survival_ppm + 1;
+        assert!(config.validate().is_err());
+    }
+    
+    #[test]
+    fn test_validate_zero_max_dives() {
+        let mut config = test_config();
+        config.max_dives = 0;
+        assert!(config.validate().is_err());
+    }
+    
+    #[test]
+    fn test_validate_min_bet_exceeds_max_bet() {
+        let mut config = test_config();
+        config.max_bet = 100;
+        config.min_bet = 200;
+        assert!(config.validate().is_err());
+    }
+    
+    #[test]
+    fn test_validate_max_bet_zero_is_valid() {
+        let mut config = test_config();
+        config.max_bet = 0;
+        config.min_bet = 1000;
+        assert!(config.validate().is_ok());
+    }
+    
+    // GameSession tests
+    #[test]
+    fn test_ensure_active_when_active() {
+        let session = test_session();
+        assert!(session.ensure_active().is_ok());
+    }
+    
+    #[test]
+    fn test_ensure_active_when_lost() {
+        let mut session = test_session();
+        session.status = SessionStatus::Lost;
+        assert!(session.ensure_active().is_err());
+    }
+    
+    #[test]
+    fn test_ensure_active_when_cashed_out() {
+        let mut session = test_session();
+        session.status = SessionStatus::CashedOut;
+        assert!(session.ensure_active().is_err());
+    }
+    
+    #[test]
+    fn test_mark_lost_when_active() {
+        let mut session = test_session();
+        assert!(session.mark_lost().is_ok());
+        assert_eq!(session.status, SessionStatus::Lost);
+    }
+    
+    #[test]
+    fn test_mark_lost_when_already_lost() {
+        let mut session = test_session();
+        session.status = SessionStatus::Lost;
+        assert!(session.mark_lost().is_err());
+    }
+    
+    #[test]
+    fn test_mark_lost_when_cashed_out() {
+        let mut session = test_session();
+        session.status = SessionStatus::CashedOut;
+        assert!(session.mark_lost().is_err());
+    }
+    
+    #[test]
+    fn test_mark_cashed_out_when_active() {
+        let mut session = test_session();
+        assert!(session.mark_cashed_out().is_ok());
+        assert_eq!(session.status, SessionStatus::CashedOut);
+    }
+    
+    #[test]
+    fn test_mark_cashed_out_when_lost() {
+        let mut session = test_session();
+        session.status = SessionStatus::Lost;
+        assert!(session.mark_cashed_out().is_err());
+    }
+    
+    #[test]
+    fn test_mark_cashed_out_when_already_cashed_out() {
+        let mut session = test_session();
+        session.status = SessionStatus::CashedOut;
+        assert!(session.mark_cashed_out().is_err());
+    }
+    
+    // HouseVault tests
+    #[test]
+    fn test_reserve_success() {
+        let mut vault = test_vault();
+        assert!(vault.reserve(1000).is_ok());
+        assert_eq!(vault.total_reserved, 1000);
+    }
+    
+    #[test]
+    fn test_reserve_multiple_times() {
+        let mut vault = test_vault();
+        assert!(vault.reserve(1000).is_ok());
+        assert!(vault.reserve(500).is_ok());
+        assert_eq!(vault.total_reserved, 1500);
+    }
+    
+    #[test]
+    fn test_reserve_overflow() {
+        let mut vault = test_vault();
+        vault.total_reserved = u64::MAX;
+        assert!(vault.reserve(1).is_err());
+    }
+    
+    #[test]
+    fn test_release_success() {
+        let mut vault = test_vault();
+        vault.total_reserved = 1000;
+        assert!(vault.release(500).is_ok());
+        assert_eq!(vault.total_reserved, 500);
+    }
+    
+    #[test]
+    fn test_release_full_amount() {
+        let mut vault = test_vault();
+        vault.total_reserved = 1000;
+        assert!(vault.release(1000).is_ok());
+        assert_eq!(vault.total_reserved, 0);
+    }
+    
+    #[test]
+    fn test_release_more_than_reserved() {
+        let mut vault = test_vault();
+        vault.total_reserved = 500;
+        assert!(vault.release(1000).is_err());
+    }
+    
+    #[test]
+    fn test_release_underflow() {
+        let mut vault = test_vault();
+        vault.total_reserved = 0;
+        assert!(vault.release(1).is_err());
+    }
+    
+    #[test]
+    fn test_reserve_and_release_cycle() {
+        let mut vault = test_vault();
+        
+        // Reserve for first session
+        assert!(vault.reserve(1000).is_ok());
+        assert_eq!(vault.total_reserved, 1000);
+        
+        // Reserve for second session
+        assert!(vault.reserve(2000).is_ok());
+        assert_eq!(vault.total_reserved, 3000);
+        
+        // Release first session
+        assert!(vault.release(1000).is_ok());
+        assert_eq!(vault.total_reserved, 2000);
+        
+        // Release second session
+        assert!(vault.release(2000).is_ok());
+        assert_eq!(vault.total_reserved, 0);
     }
 }

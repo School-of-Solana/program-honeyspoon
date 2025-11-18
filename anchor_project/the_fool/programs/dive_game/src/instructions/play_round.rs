@@ -10,6 +10,9 @@ pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
     let house_vault = &mut ctx.accounts.house_vault;
     let clock = Clock::get()?;
     
+    // Strict lock: house lock blocks all operations except lose_session
+    require!(!house_vault.locked, GameError::HouseLocked);
+    
     // Use helper method to ensure session is active
     session.ensure_active()?;
     
