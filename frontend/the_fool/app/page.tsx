@@ -1067,63 +1067,34 @@ export default function Home() {
               showHUD ? "opacity-100" : "opacity-0"
             }`}
           >
-            {/* Top HUD Bar - NES Style */}
-            <div className="absolute top-0 left-0 right-0 p-4 pointer-events-auto">
-              <div className="max-w-7xl mx-auto grid grid-cols-2 gap-4">
-                {/* Left: Depth & Dive # */}
-                <div
-                  className="nes-container is-dark"
+            {/* Top HUD Bar - NES Style (Treasure Only) */}
+            <div className="absolute top-20 right-4 pointer-events-auto" style={{ width: "180px" }}>
+              {/* Treasure Panel */}
+              <div
+                className="nes-container is-dark"
+                style={{
+                  backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
+                  padding: "10px",
+                  textAlign: "center",
+                }}
+              >
+                <p
                   style={{
-                    backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
-                    padding: "12px",
+                    fontSize: "24px",
+                    color: GAME_COLORS.TREASURE_GOLD,
+                    marginBottom: "2px",
                   }}
                 >
-                  <p
-                    style={{
-                      fontSize: "28px",
-                      color: GAME_COLORS.DEPTH_CYAN,
-                      marginBottom: "4px",
-                    }}
-                  >
-                    {gameState.depth}m
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "8px",
-                      color: GAME_COLORS.TEXT_SECONDARY,
-                    }}
-                  >
-                    DIVE #{gameState.diveNumber}
-                  </p>
-                </div>
-
-                {/* Right: Treasure */}
-                <div
-                  className="nes-container is-dark"
+                  {gameState.currentTreasure} SOL
+                </p>
+                <p
                   style={{
-                    backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
-                    padding: "12px",
-                    textAlign: "right",
+                    fontSize: "8px",
+                    color: GAME_COLORS.TEXT_SECONDARY,
                   }}
                 >
-                  <p
-                    style={{
-                      fontSize: "28px",
-                      color: GAME_COLORS.TREASURE_GOLD,
-                      marginBottom: "4px",
-                    }}
-                  >
-                    {gameState.currentTreasure} SOL
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "8px",
-                      color: GAME_COLORS.TEXT_SECONDARY,
-                    }}
-                  >
-                    TREASURE
-                  </p>
-                </div>
+                  TREASURE
+                </p>
               </div>
             </div>
 

@@ -385,7 +385,7 @@ export class SolanaGameChain implements GameChainPort {
     // Generate session index (timestamp-based for uniqueness)
     const sessionIndex = BigInt(Date.now());
     const sessionIndexBN = new BN(sessionIndex.toString());
-    const sessionPda = getSessionPDA(userPubkey, sessionIndexBN);
+    const sessionPda = getSessionPDA(userPubkey, sessionIndex);
 
     // Build instruction data
     const betBN = new BN(params.betAmountLamports.toString());

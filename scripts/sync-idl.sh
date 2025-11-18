@@ -132,7 +132,7 @@ else
     echo -e "${YELLOW}⚠️  Prettier not found, skipping formatting${NC}"
 fi
 
-# Step 9: Update discriminators in solanaHelpers.ts
+# Step 9: Update discriminators in solanaHelpers.ts (preserve manual exports!)
 echo -e "${BLUE}🔨 Updating instruction discriminators...${NC}"
 SOLANA_HELPERS="$FRONTEND_DIR/lib/ports/solanaHelpers.ts"
 
@@ -179,8 +179,59 @@ export const DISCRIMINATORS = {\`;
     const regex = /\/\*\*[^]*?Instruction discriminators[^]*?\*\/\s*export const DISCRIMINATORS = \{[^}]*\};/;
     if (regex.test(content)) {
         content = content.replace(regex, newDisc);
+        
+        // CRITICAL: Check if file has manual exports section
+        // If not, add it at the end
+        const manualExportsMarker = '// Re-exports and Wrappers (Added manually - do not remove!)';
+        if (!content.includes(manualExportsMarker)) {
+            console.log('⚠️  Manual exports section missing, adding it back...');
+            
+            // Append the manual exports section
+            content += \`
+
+// ============================================================================
+// Re-exports and Wrappers (Added manually - do not remove!)
+// ============================================================================
+
+import {
+  getGameConfigAddress,
+  getHouseVaultAddress,
+  getSessionAddress,
+} from \"../solana/pdas\";
+import { lamportsToSol, solToLamports } from \"../utils/lamports\";
+
+// Program ID from environment
+export const PROGRAM_ID = new PublicKey(
+  process.env.NEXT_PUBLIC_PROGRAM_ID ||
+    \"9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7\"
+);
+
+// PDA helper wrappers that return just the address (not tuple)
+export function getConfigPDA(): PublicKey {
+  const [pda] = getGameConfigAddress(PROGRAM_ID);
+  return pda;
+}
+
+export function getHouseVaultPDA(houseAuthority: PublicKey): PublicKey {
+  const [pda] = getHouseVaultAddress(houseAuthority, PROGRAM_ID);
+  return pda;
+}
+
+export function getSessionPDA(
+  user: PublicKey,
+  sessionIndex: bigint | number
+): PublicKey {
+  const [pda] = getSessionAddress(user, sessionIndex, PROGRAM_ID);
+  return pda;
+}
+
+// Export lamport utilities
+export { lamportsToSol, solToLamports };
+\`;
+        }
+        
         fs.writeFileSync('$SOLANA_HELPERS', content);
-        console.log('✅ Updated discriminators');
+        console.log('✅ Updated discriminators and preserved manual exports');
     } else {
         console.log('⚠️  Could not find DISCRIMINATORS section');
     }

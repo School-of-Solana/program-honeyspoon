@@ -51,10 +51,6 @@ export type DiveGame = {
           "relations": [
             "session"
           ]
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
@@ -1144,10 +1140,6 @@ export const IDL: DiveGame = {
           "relations": [
             "session"
           ]
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
