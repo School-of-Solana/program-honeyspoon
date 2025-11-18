@@ -59,10 +59,13 @@ function getHouseVaultPDA(houseAuthority: PublicKey): PublicKey {
 }
 
 async function main() {
-  console.log("🚀 Initializing dive_game on localnet...\n");
+  const rpcUrl = process.env.RPC_URL || "http://localhost:8899";
+  const networkName = rpcUrl.includes("devnet") ? "devnet" : "localnet";
+  
+  console.log(`🚀 Initializing dive_game on ${networkName}...\n`);
 
   
-  const connection = new Connection("http://localhost:8899", "confirmed");
+  const connection = new Connection(rpcUrl, "confirmed");
   
   
   
@@ -188,7 +191,7 @@ async function main() {
   console.log("\n💡 Add these to your .env.local:");
   console.log(`   NEXT_PUBLIC_PROGRAM_ID="${PROGRAM_ID.toBase58()}"`);
   console.log(`   NEXT_PUBLIC_HOUSE_AUTHORITY="${houseAuthority.toBase58()}"`);
-  console.log(`   NEXT_PUBLIC_RPC_URL="http://localhost:8899"`);
+  console.log(`   NEXT_PUBLIC_RPC_URL="${rpcUrl}"`);
 }
 
 main().catch(console.error);
