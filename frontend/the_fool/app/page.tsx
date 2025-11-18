@@ -50,6 +50,7 @@ export default function Home() {
   const setUserId = useChainWalletStore((state) => state.setUserId);
   const userBalance = useChainWalletStore((state) => state.userBalance);
   const refreshBalance = useChainWalletStore((state) => state.refreshBalance);
+  const isLoading = useChainWalletStore((state) => state.isLoading);
   const updateFromSSE = useChainWalletStore((state) => state.updateFromSSE);
   const setSSEConnected = useChainWalletStore((state) => state.setSSEConnected);
   const isSSEConnected = useChainWalletStore((state) => state.isSSEConnected);
@@ -991,18 +992,36 @@ export default function Home() {
               >
                 <div className="flex justify-between items-center">
                   <span style={{ fontSize: "10px" }}>BALANCE</span>
-                  <span
-                    style={{ fontSize: "16px", fontWeight: "bold" }}
-                    onClick={() =>
-                      console.log("[UI] 💰 Balance clicked - gameState:", {
-                        walletBalance: gameState.walletBalance,
-                        userBalance,
-                        fullGameState: gameState,
-                      })
-                    }
-                  >
-                    {gameState.walletBalance || 0} SOL
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      style={{ fontSize: "16px", fontWeight: "bold" }}
+                      onClick={() =>
+                        console.log("[UI] 💰 Balance clicked - gameState:", {
+                          walletBalance: gameState.walletBalance,
+                          userBalance,
+                          fullGameState: gameState,
+                        })
+                      }
+                    >
+                      {gameState.walletBalance || 0} SOL
+                    </span>
+                    <button
+                      className="nes-btn is-primary"
+                      style={{
+                        padding: "2px 8px",
+                        fontSize: "10px",
+                        minHeight: "24px",
+                      }}
+                      onClick={async () => {
+                        console.log("[UI] 🔄 Manual balance refresh requested");
+                        await refreshBalance();
+                      }}
+                      disabled={isLoading}
+                      title="Refresh balance"
+                    >
+                      {isLoading ? "..." : "↻"}
+                    </button>
+                  </div>
                 </div>
               </div>
 
