@@ -307,10 +307,6 @@ export type DiveGame = {
           "relations": [
             "session"
           ]
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": []
@@ -437,6 +433,63 @@ export type DiveGame = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "withdraw_house",
+      "discriminator": [
+        226,
+        236,
+        222,
+        156,
+        198,
+        230,
+        70,
+        147
+      ],
+      "accounts": [
+        {
+          "name": "house_authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "house_vault"
+          ]
+        },
+        {
+          "name": "house_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  111,
+                  117,
+                  115,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "house_authority"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -810,6 +863,10 @@ export type DiveGame = {
         "fields": [
           {
             "name": "house_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "game_keeper",
             "type": "pubkey"
           },
           {
@@ -1343,10 +1400,6 @@ export const IDL: DiveGame = {
           "relations": [
             "session"
           ]
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": []
@@ -1473,6 +1526,63 @@ export const IDL: DiveGame = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "withdraw_house",
+      "discriminator": [
+        226,
+        236,
+        222,
+        156,
+        198,
+        230,
+        70,
+        147
+      ],
+      "accounts": [
+        {
+          "name": "house_authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "house_vault"
+          ]
+        },
+        {
+          "name": "house_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  111,
+                  117,
+                  115,
+                  101,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "house_authority"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1846,6 +1956,10 @@ export const IDL: DiveGame = {
         "fields": [
           {
             "name": "house_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "game_keeper",
             "type": "pubkey"
           },
           {
