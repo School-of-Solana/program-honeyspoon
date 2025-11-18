@@ -122,6 +122,10 @@ pub struct GameSession {
     pub bump: u8,
     // NOTE: rng_seed removed in Phase 1 RNG security enhancement
     // We now use SlotHashes sysvar for per-round entropy instead
+    /// Phase 2: Activity tracking for timeout-based cleanup
+    /// Slot number when session was last active
+    /// Updated on: start_session, play_round (if survived), cash_out
+    pub last_active_slot: u64,
 }
 
 impl GameSession {
@@ -181,6 +185,7 @@ mod tests {
             max_payout: 100_000_000,
             dive_number: 1,
             bump: 0,
+            last_active_slot: 0,
         }
     }
 

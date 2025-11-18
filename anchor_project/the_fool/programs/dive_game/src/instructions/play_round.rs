@@ -46,6 +46,10 @@ pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
         session.dive_number += 1;
         session.current_treasure =
             game_math::treasure_for_dive(config, session.bet_amount, session.dive_number);
+
+        // Phase 2: Update activity tracking on successful round
+        session.last_active_slot = clock.slot;
+
         emit!(RoundPlayedEvent {
             session: session.key(),
             user: session.user,

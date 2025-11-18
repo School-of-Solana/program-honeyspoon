@@ -23,4 +23,6 @@ pub enum GameError {
     MaxDivesReached,
     #[msg("Could not retrieve valid slot hash from SlotHashes sysvar")]
     InvalidSlotHash,
+    #[msg("Session has not expired yet - cannot clean up")]
+    SessionNotExpired,
 }

@@ -11,6 +11,9 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
     // Use helper method to ensure session is active
     session.ensure_active()?;
 
+    // Phase 2: Update activity tracking before closing
+    session.last_active_slot = clock.slot;
+
     require!(!house_vault.locked, GameError::HouseLocked);
     require!(
         session.current_treasure > session.bet_amount,

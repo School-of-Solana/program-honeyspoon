@@ -43,6 +43,9 @@ pub fn start_session(
     session.max_payout = max_payout;
     session.dive_number = 1;
     session.bump = ctx.bumps.session;
+
+    // Phase 2: Initialize activity tracking for timeout-based cleanup
+    session.last_active_slot = clock.slot;
     emit!(SessionStartedEvent {
         session: session.key(),
         user: session.user,

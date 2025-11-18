@@ -48,3 +48,11 @@ pub struct ToggleHouseLockEvent {
     pub locked: bool,
     pub timestamp: i64,
 }
+#[event]
+pub struct SessionCleanedEvent {
+    pub session: Pubkey,
+    pub user: Pubkey,
+    pub crank: Pubkey,
+    pub released_amount: u64,
+    pub slots_inactive: u64,
+}

@@ -34,6 +34,9 @@ pub mod dive_game {
         instructions::cash_out(ctx)
     }
     pub fn toggle_house_lock(ctx: Context<ToggleHouseLock>) -> Result<()> {
-        instructions::toggle_house_lock(ctx)
+        instructions::toggle_house_lock::toggle_house_lock(ctx)
+    }
+    pub fn clean_expired_session(ctx: Context<CleanExpired>) -> Result<()> {
+        instructions::clean_expired_session::clean_expired_session(ctx)
     }
 }
