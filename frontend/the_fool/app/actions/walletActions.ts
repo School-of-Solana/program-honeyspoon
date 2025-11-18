@@ -17,7 +17,11 @@ import { getWalletInfo as getEngineWalletInfo } from "./gameEngine";
 import { getGameChain } from "@/lib/ports";
 import { solToLamports, lamportsToSol } from "@/lib/utils/lamports";
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { detectSolanaNetwork, canAirdrop, SolanaNetwork } from "@/lib/utils/networkDetection";
+import {
+  detectSolanaNetwork,
+  canAirdrop,
+  SolanaNetwork,
+} from "@/lib/utils/networkDetection";
 
 /**
  * Get comprehensive wallet info for a user
@@ -182,10 +186,10 @@ export async function debugTopUpHouseVault(
 
 /**
  * Airdrop SOL to a wallet (Localhost/Devnet only)
- * 
+ *
  * This action requests an airdrop from the Solana faucet.
  * Only works on localhost and devnet networks.
- * 
+ *
  * @param walletAddress - Wallet public key to airdrop to
  * @param amount - Amount in SOL (default: 2 SOL)
  * @returns Success status, signature, and new balance
@@ -193,9 +197,9 @@ export async function debugTopUpHouseVault(
 export async function airdropSol(
   walletAddress: string,
   amount: number = 2
-): Promise<{ 
-  success: boolean; 
-  signature?: string; 
+): Promise<{
+  success: boolean;
+  signature?: string;
   newBalance?: number;
   error?: string;
   network?: string;
@@ -203,13 +207,19 @@ export async function airdropSol(
   try {
     // Detect network
     const network = detectSolanaNetwork();
-    const networkName = network === SolanaNetwork.LOCALHOST ? 'Localhost' : 
-                       network === SolanaNetwork.DEVNET ? 'Devnet' : 
-                       network === SolanaNetwork.TESTNET ? 'Testnet' : 
-                       network === SolanaNetwork.MAINNET ? 'Mainnet' : 'Unknown';
-    
+    const networkName =
+      network === SolanaNetwork.LOCALHOST
+        ? "Localhost"
+        : network === SolanaNetwork.DEVNET
+          ? "Devnet"
+          : network === SolanaNetwork.TESTNET
+            ? "Testnet"
+            : network === SolanaNetwork.MAINNET
+              ? "Mainnet"
+              : "Unknown";
+
     console.log(`[WALLET ACTIONS] 💧 Airdrop request on ${networkName}`, {
-      walletAddress: walletAddress.substring(0, 12) + '...',
+      walletAddress: walletAddress.substring(0, 12) + "...",
       amount,
       network,
     });
@@ -224,8 +234,8 @@ export async function airdropSol(
     }
 
     // Get RPC connection
-    const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8899';
-    const connection = new Connection(rpcUrl, 'confirmed');
+    const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8899";
+    const connection = new Connection(rpcUrl, "confirmed");
 
     // Validate wallet address
     let publicKey: PublicKey;
@@ -234,16 +244,16 @@ export async function airdropSol(
     } catch (err) {
       return {
         success: false,
-        error: 'Invalid wallet address',
+        error: "Invalid wallet address",
         network: networkName,
       };
     }
 
-    // Validate amount (max 5 SOL per airdrop for safety)
-    if (amount <= 0 || amount > 5) {
+    // Validate amount (max 1000 SOL per airdrop for localnet testing)
+    if (amount <= 0 || amount > 1000) {
       return {
         success: false,
-        error: 'Amount must be between 0.1 and 5 SOL',
+        error: "Amount must be between 0.1 and 1000 SOL",
         network: networkName,
       };
     }
@@ -251,7 +261,7 @@ export async function airdropSol(
     // Request airdrop
     const amountLamports = amount * LAMPORTS_PER_SOL;
     console.log(`[WALLET ACTIONS] 💧 Requesting ${amount} SOL airdrop...`);
-    
+
     const signature = await connection.requestAirdrop(
       publicKey,
       amountLamports
@@ -262,7 +272,7 @@ export async function airdropSol(
     });
 
     // Wait for confirmation (with timeout)
-    await connection.confirmTransaction(signature, 'confirmed');
+    await connection.confirmTransaction(signature, "confirmed");
 
     // Get new balance
     const balance = await connection.getBalance(publicKey);
@@ -273,6 +283,12 @@ export async function airdropSol(
       newBalance,
     });
 
+    // Trigger SSE update for all connected clients  
+    // Note: We can't directly import from route handlers in server actions
+    // The SSE will pick up the balance change on next poll (5s fallback)
+    // or clients can manually refresh
+    console.log(`[WALLET ACTIONS] 💡 Airdrop complete. SSE will update on next poll.`);
+
     return {
       success: true,
       signature,
@@ -281,16 +297,17 @@ export async function airdropSol(
     };
   } catch (error) {
     console.error("[WALLET ACTIONS] ❌ Airdrop failed:", error);
-    
+
     let errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
+
     // Handle common airdrop errors
-    if (errorMessage.includes('airdrop limit')) {
-      errorMessage = 'Airdrop limit reached. Please try again in a few minutes.';
-    } else if (errorMessage.includes('429')) {
-      errorMessage = 'Too many requests. Please wait a moment and try again.';
+    if (errorMessage.includes("airdrop limit")) {
+      errorMessage =
+        "Airdrop limit reached. Please try again in a few minutes.";
+    } else if (errorMessage.includes("429")) {
+      errorMessage = "Too many requests. Please wait a moment and try again.";
     }
-    
+
     return {
       success: false,
       error: errorMessage,

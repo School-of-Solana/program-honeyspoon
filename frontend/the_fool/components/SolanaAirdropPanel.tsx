@@ -37,6 +37,7 @@ export function SolanaAirdropPanel() {
   const userBalance = useChainWalletStore((state) => state.userBalance);
   const houseVaultBalance = useChainWalletStore((state) => state.houseVaultBalance);
   const isSSEConnected = useChainWalletStore((state) => state.isSSEConnected);
+  const refreshBalance = useChainWalletStore((state) => state.refreshBalance);
   
   const [isOpen, setIsOpen] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
@@ -46,7 +47,7 @@ export function SolanaAirdropPanel() {
   const [isAirdropping, setIsAirdropping] = useState(false);
   const [isAirdroppingHouse, setIsAirdroppingHouse] = useState(false);
   const [airdropAmount, setAirdropAmount] = useState('1');
-  const [houseAirdropAmount, setHouseAirdropAmount] = useState('100');
+  const [houseAirdropAmount, setHouseAirdropAmount] = useState('500');
   const [message, setMessage] = useState('');
   const [houseMessage, setHouseMessage] = useState('');
 
@@ -117,6 +118,9 @@ export function SolanaAirdropPanel() {
           setBalance(result.newBalance);
           console.log('[AIRDROP PANEL] 💰 Balance updated to:', result.newBalance);
         }
+        // Trigger manual refresh to update all clients
+        console.log('[AIRDROP PANEL] 🔄 Triggering manual balance refresh...');
+        await refreshBalance();
       } else {
         console.error('[AIRDROP PANEL] ❌ Airdrop failed:', result.error);
         setMessage(`❌ ${result.error}`);
@@ -178,6 +182,9 @@ export function SolanaAirdropPanel() {
           setHouseBalance(result.newBalance);
           console.log('[AIRDROP PANEL] 🏦 House balance updated to:', result.newBalance);
         }
+        // Trigger manual refresh to update all clients
+        console.log('[AIRDROP PANEL] 🔄 Triggering manual balance refresh...');
+        await refreshBalance();
       } else {
         console.error('[AIRDROP PANEL] ❌ House airdrop failed:', result.error);
         setHouseMessage(`❌ ${result.error}`);

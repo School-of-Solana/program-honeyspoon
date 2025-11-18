@@ -61,10 +61,6 @@ export type DiveGame = {
     },
     {
       "name": "init_config",
-      "docs": [
-        "Initialize game configuration (single source of truth for parameters)",
-        "Pass None for any parameter to use defaults"
-      ],
       "discriminator": [
         23,
         235,
@@ -216,12 +212,6 @@ export type DiveGame = {
     },
     {
       "name": "play_round",
-      "docs": [
-        "Play a round with secure on-chain outcome computation",
-        "- Outcome computed from stored RNG seed (user cannot manipulate)",
-        "- Treasure calculated deterministically",
-        "- Probability curve applied for win/loss"
-      ],
       "discriminator": [
         38,
         35,
@@ -243,9 +233,6 @@ export type DiveGame = {
         },
         {
           "name": "config",
-          "docs": [
-            "Game configuration account"
-          ],
           "pda": {
             "seeds": [
               {
@@ -277,17 +264,19 @@ export type DiveGame = {
           "relations": [
             "session"
           ]
+        },
+        {
+          "name": "slot_hashes",
+          "docs": [
+            "SlotHashes sysvar for per-round entropy"
+          ],
+          "address": "SysvarS1otHashes111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
       "name": "start_session",
-      "docs": [
-        "Start a new game session with secure on-chain RNG",
-        "- max_payout computed on-chain (user cannot manipulate)",
-        "- RNG seed generated from slot hashes for deterministic outcomes"
-      ],
       "discriminator": [
         23,
         227,
@@ -306,9 +295,6 @@ export type DiveGame = {
         },
         {
           "name": "config",
-          "docs": [
-            "Game configuration account (single source of truth for all game parameters)"
-          ],
           "pda": {
             "seeds": [
               {
@@ -584,101 +570,61 @@ export type DiveGame = {
       "code": 6009,
       "name": "MaxDivesReached",
       "msg": "Maximum number of dives reached"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidSlotHash",
+      "msg": "Could not retrieve valid slot hash from SlotHashes sysvar"
     }
   ],
   "types": [
     {
       "name": "GameConfig",
-      "docs": [
-        "Game configuration - single source of truth for all game parameters",
-        "This account stores the parameters that govern game mechanics.",
-        "Both on-chain instructions and off-chain clients read from this account."
-      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "admin",
-            "docs": [
-              "Admin who can update the config"
-            ],
             "type": "pubkey"
           },
           {
             "name": "base_survival_ppm",
-            "docs": [
-              "Base survival probability at dive 1 (in PPM = parts per million, 1M = 100%)",
-              "Default: 990_000 = 99%"
-            ],
             "type": "u32"
           },
           {
             "name": "decay_per_dive_ppm",
-            "docs": [
-              "Probability decay per dive (in PPM)",
-              "Default: 5_000 = 0.5% decrease per dive"
-            ],
             "type": "u32"
           },
           {
             "name": "min_survival_ppm",
-            "docs": [
-              "Minimum survival probability floor (in PPM)",
-              "Default: 100_000 = 10%"
-            ],
             "type": "u32"
           },
           {
             "name": "treasure_multiplier_num",
-            "docs": [
-              "Treasure multiplier numerator (default: 11 for 1.1x)"
-            ],
             "type": "u16"
           },
           {
             "name": "treasure_multiplier_den",
-            "docs": [
-              "Treasure multiplier denominator (default: 10 for 1.1x)"
-            ],
             "type": "u16"
           },
           {
             "name": "max_payout_multiplier",
-            "docs": [
-              "Max payout multiplier (max_payout = bet * this)",
-              "Default: 100 (100x bet)"
-            ],
             "type": "u16"
           },
           {
             "name": "max_dives",
-            "docs": [
-              "Maximum number of dives allowed (safety limit)",
-              "Default: 200"
-            ],
             "type": "u16"
           },
           {
             "name": "min_bet",
-            "docs": [
-              "Minimum bet amount in lamports",
-              "Default: 1 (allow any bet)"
-            ],
             "type": "u64"
           },
           {
             "name": "max_bet",
-            "docs": [
-              "Maximum bet amount in lamports (0 = no limit)",
-              "Default: 0 (no limit)"
-            ],
             "type": "u64"
           },
           {
             "name": "bump",
-            "docs": [
-              "PDA bump"
-            ],
             "type": "u8"
           }
         ]
@@ -686,9 +632,6 @@ export type DiveGame = {
     },
     {
       "name": "GameConfigParams",
-      "docs": [
-        "Configuration parameters for game initialization"
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -789,15 +732,6 @@ export type DiveGame = {
           {
             "name": "bump",
             "type": "u8"
-          },
-          {
-            "name": "rng_seed",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
           }
         ]
       }
@@ -1068,10 +1002,6 @@ export const IDL: DiveGame = {
     },
     {
       "name": "init_config",
-      "docs": [
-        "Initialize game configuration (single source of truth for parameters)",
-        "Pass None for any parameter to use defaults"
-      ],
       "discriminator": [
         23,
         235,
@@ -1223,12 +1153,6 @@ export const IDL: DiveGame = {
     },
     {
       "name": "play_round",
-      "docs": [
-        "Play a round with secure on-chain outcome computation",
-        "- Outcome computed from stored RNG seed (user cannot manipulate)",
-        "- Treasure calculated deterministically",
-        "- Probability curve applied for win/loss"
-      ],
       "discriminator": [
         38,
         35,
@@ -1250,9 +1174,6 @@ export const IDL: DiveGame = {
         },
         {
           "name": "config",
-          "docs": [
-            "Game configuration account"
-          ],
           "pda": {
             "seeds": [
               {
@@ -1284,17 +1205,19 @@ export const IDL: DiveGame = {
           "relations": [
             "session"
           ]
+        },
+        {
+          "name": "slot_hashes",
+          "docs": [
+            "SlotHashes sysvar for per-round entropy"
+          ],
+          "address": "SysvarS1otHashes111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
       "name": "start_session",
-      "docs": [
-        "Start a new game session with secure on-chain RNG",
-        "- max_payout computed on-chain (user cannot manipulate)",
-        "- RNG seed generated from slot hashes for deterministic outcomes"
-      ],
       "discriminator": [
         23,
         227,
@@ -1313,9 +1236,6 @@ export const IDL: DiveGame = {
         },
         {
           "name": "config",
-          "docs": [
-            "Game configuration account (single source of truth for all game parameters)"
-          ],
           "pda": {
             "seeds": [
               {
@@ -1591,101 +1511,61 @@ export const IDL: DiveGame = {
       "code": 6009,
       "name": "MaxDivesReached",
       "msg": "Maximum number of dives reached"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidSlotHash",
+      "msg": "Could not retrieve valid slot hash from SlotHashes sysvar"
     }
   ],
   "types": [
     {
       "name": "GameConfig",
-      "docs": [
-        "Game configuration - single source of truth for all game parameters",
-        "This account stores the parameters that govern game mechanics.",
-        "Both on-chain instructions and off-chain clients read from this account."
-      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "admin",
-            "docs": [
-              "Admin who can update the config"
-            ],
             "type": "pubkey"
           },
           {
             "name": "base_survival_ppm",
-            "docs": [
-              "Base survival probability at dive 1 (in PPM = parts per million, 1M = 100%)",
-              "Default: 990_000 = 99%"
-            ],
             "type": "u32"
           },
           {
             "name": "decay_per_dive_ppm",
-            "docs": [
-              "Probability decay per dive (in PPM)",
-              "Default: 5_000 = 0.5% decrease per dive"
-            ],
             "type": "u32"
           },
           {
             "name": "min_survival_ppm",
-            "docs": [
-              "Minimum survival probability floor (in PPM)",
-              "Default: 100_000 = 10%"
-            ],
             "type": "u32"
           },
           {
             "name": "treasure_multiplier_num",
-            "docs": [
-              "Treasure multiplier numerator (default: 11 for 1.1x)"
-            ],
             "type": "u16"
           },
           {
             "name": "treasure_multiplier_den",
-            "docs": [
-              "Treasure multiplier denominator (default: 10 for 1.1x)"
-            ],
             "type": "u16"
           },
           {
             "name": "max_payout_multiplier",
-            "docs": [
-              "Max payout multiplier (max_payout = bet * this)",
-              "Default: 100 (100x bet)"
-            ],
             "type": "u16"
           },
           {
             "name": "max_dives",
-            "docs": [
-              "Maximum number of dives allowed (safety limit)",
-              "Default: 200"
-            ],
             "type": "u16"
           },
           {
             "name": "min_bet",
-            "docs": [
-              "Minimum bet amount in lamports",
-              "Default: 1 (allow any bet)"
-            ],
             "type": "u64"
           },
           {
             "name": "max_bet",
-            "docs": [
-              "Maximum bet amount in lamports (0 = no limit)",
-              "Default: 0 (no limit)"
-            ],
             "type": "u64"
           },
           {
             "name": "bump",
-            "docs": [
-              "PDA bump"
-            ],
             "type": "u8"
           }
         ]
@@ -1693,9 +1573,6 @@ export const IDL: DiveGame = {
     },
     {
       "name": "GameConfigParams",
-      "docs": [
-        "Configuration parameters for game initialization"
-      ],
       "type": {
         "kind": "struct",
         "fields": [
@@ -1796,15 +1673,6 @@ export const IDL: DiveGame = {
           {
             "name": "bump",
             "type": "u8"
-          },
-          {
-            "name": "rng_seed",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
           }
         ]
       }

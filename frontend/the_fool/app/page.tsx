@@ -711,11 +711,43 @@ export default function Home() {
     playSound("SURFACE"); // Play splash sound
 
     try {
-      const result = await surfaceWithTreasure(
-        gameState.currentTreasure,
-        gameState.sessionId,
-        gameState.userId
-      );
+      const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === 'true';
+      let result;
+      
+      if (useSolana) {
+        // Solana mode - call chain directly (wallet will sign)
+        console.log("[GAME] 🔗 Solana mode: calling cashOut on-chain...");
+        
+        const { finalTreasureLamports, state } = await gameChain.cashOut({
+          sessionPda: gameState.sessionId,
+          userPubkey: gameState.userId,
+        });
+        
+        // Convert to expected format
+        const finalAmount = lamportsToSol(finalTreasureLamports);
+        const profit = finalAmount - gameState.initialBet;
+        
+        result = {
+          success: true,
+          finalAmount,
+          profit,
+        };
+        
+        console.log("[GAME] ✅ On-chain cashOut result:", {
+          finalTreasureLamports: finalTreasureLamports.toString(),
+          finalAmount,
+          profit,
+          sessionStatus: state.status,
+        });
+      } else {
+        // LocalGameChain mode - use server action
+        console.log("[GAME] 🔗 LocalGameChain mode: using server action...");
+        result = await surfaceWithTreasure(
+          gameState.currentTreasure,
+          gameState.sessionId,
+          gameState.userId
+        );
+      }
 
       console.log("[GAME] 💰 Surface result", {
         success: result.success,
@@ -774,6 +806,10 @@ export default function Home() {
         setTimeout(() => setShowBettingCard(true), 500);
       }
     } catch (error) {
+      console.error("[GAME] ❌ Cash out error:", error);
+      console.error("[GAME] ❌ Error stack:", error instanceof Error ? error.stack : "No stack");
+      console.error("[GAME] ❌ Error type:", error?.constructor?.name);
+      
       const message = error instanceof Error ? error.message : "Unknown error";
 
       // ✅ NEW: Use typed error parsing instead of string matching

@@ -1,144 +1,103 @@
 /**
- * Solana Helper Functions
- * 
- * Shared utilities for PDA derivation and instruction building.
- * Used by both SolanaGameChain and tests.
- * 
- * CRITICAL: Seeds and discriminators MUST match the on-chain program exactly!
+ * Solana helpers for instruction building and PDA derivation
+ * Generated from target/idl/dive_game.json
+ * Last synced: Tue 18 Nov 2025 16:48:38 EST
  */
 
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import BN from "bn.js";
 
+// ============================================================================
+// Program ID
+// ============================================================================
+
 /**
- * Program ID from Anchor build
- * MUST match the program ID in Anchor.toml and the deployed program
+ * The deployed program ID
+ * This should match NEXT_PUBLIC_PROGRAM_ID in .env
  */
 export const PROGRAM_ID = new PublicKey(
-  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
+  process.env.NEXT_PUBLIC_PROGRAM_ID || "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
 );
 
-/**
- * PDA seeds - MUST match contract states.rs exactly
- */
-export const GAME_CONFIG_SEED = "game_config";
-export const HOUSE_VAULT_SEED = "house_vault";
-export const SESSION_SEED = "session";
+// ============================================================================
+// PDA Helpers
+// ============================================================================
 
 /**
- * Constants
+ * Derive the game config PDA
+ * Seeds: ["game_config"]
  */
-export const LAMPORTS_PER_SOL = 1_000_000_000;
+export function getConfigPDA(): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("game_config")],
+    PROGRAM_ID
+  );
+}
 
 /**
- * Convert SOL to lamports using BN to avoid float precision issues
+ * Derive the house vault PDA
+ * Seeds: ["house_vault", house_authority.key()]
  */
-export function solToLamports(sol: number): BN {
-  const lamportsBig = BigInt(Math.round(sol * LAMPORTS_PER_SOL));
-  return new BN(lamportsBig.toString());
+export function getHouseVaultPDA(houseAuthority: PublicKey): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("house_vault"),
+      houseAuthority.toBuffer(),
+    ],
+    PROGRAM_ID
+  );
+}
+
+/**
+ * Helper: Convert u64 to little-endian buffer
+ */
+function u64ToBuffer(value: number | bigint): Buffer {
+  const bigValue = BigInt(value);
+  const arr = new Uint8Array(8);
+  const view = new DataView(arr.buffer);
+  view.setBigUint64(0, bigValue, true); // true = little-endian
+  return Buffer.from(arr);
+}
+
+/**
+ * Derive the game session PDA
+ * Seeds: ["session", user.key(), session_index.to_le_bytes()]
+ */
+export function getSessionPDA(
+  user: PublicKey,
+  sessionIndex: bigint | number
+): [PublicKey, number] {
+  const indexBuf = u64ToBuffer(sessionIndex);
+  
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("session"),
+      user.toBuffer(),
+      indexBuf,
+    ],
+    PROGRAM_ID
+  );
+}
+
+// ============================================================================
+// Lamports Conversion
+// ============================================================================
+
+/**
+ * Convert SOL to lamports
+ */
+export function solToLamports(sol: number): bigint {
+  return BigInt(Math.floor(sol * 1_000_000_000));
 }
 
 /**
  * Convert lamports to SOL
  */
-export function lamportsToSol(lamports: BN | bigint): number {
-  const lamportsBig = typeof lamports === "bigint" ? lamports : BigInt(lamports.toString());
-  return Number(lamportsBig) / LAMPORTS_PER_SOL;
-}
-
-// ============================================================================
-// PDA Derivation Functions
-// ============================================================================
-
-/**
- * Derive game config PDA
- * Seeds: ["game_config"]
- */
-export function getConfigPDA(): PublicKey {
-  const [pda] = PublicKey.findProgramAddressSync(
-    [Buffer.from(GAME_CONFIG_SEED)],
-    PROGRAM_ID
-  );
-  return pda;
-}
-
-/**
- * Derive house vault PDA
- * Seeds: ["house_vault", house_authority.key()]
- */
-export function getHouseVaultPDA(houseAuthority: PublicKey): PublicKey {
-  const [pda] = PublicKey.findProgramAddressSync(
-    [Buffer.from(HOUSE_VAULT_SEED), houseAuthority.toBuffer()],
-    PROGRAM_ID
-  );
-  return pda;
-}
-
-/**
- * Derive game session PDA
- * Seeds: ["session", user.key(), session_index.to_le_bytes()]
- */
-export function getSessionPDA(
-  player: PublicKey,
-  sessionIndex: BN | bigint | number
-): PublicKey {
-  // Convert to bigint
-  const indexBig = typeof sessionIndex === "bigint" 
-    ? sessionIndex 
-    : BigInt(sessionIndex.toString());
-  
-  // Use DataView for browser compatibility (no writeBigUInt64LE in browser Buffer)
-  const indexBuffer = new Uint8Array(8);
-  const view = new DataView(indexBuffer.buffer);
-  view.setBigUint64(0, indexBig, true); // true = little-endian
-  
-  const [pda] = PublicKey.findProgramAddressSync(
-    [Buffer.from(SESSION_SEED), player.toBuffer(), Buffer.from(indexBuffer)],
-    PROGRAM_ID
-  );
-  return pda;
-}
-
-// ============================================================================
-// Option<T> Serialization
-// ============================================================================
-
-/**
- * Serialize Rust Option<T> for instruction data
- * Format: [discriminator: u8, value?: T]
- * - discriminator = 0 → None
- * - discriminator = 1 → Some(value)
- */
-export function serializeOption(
-  value: number | BN | bigint | null | undefined,
-  size: number
-): Buffer {
-  if (value === null || value === undefined) {
-    return Buffer.from([0]); // None
-  }
-  
-  const buffer = Buffer.alloc(1 + size);
-  buffer.writeUInt8(1, 0); // Some
-
-  if (typeof value === "number") {
-    if (size === 2) buffer.writeUInt16LE(value, 1);
-    else if (size === 4) buffer.writeUInt32LE(value, 1);
-    else if (size === 8) {
-      // For u64, convert to BigInt first
-      const bn = new BN(value);
-      const bytes = bn.toArrayLike(Buffer, "le", 8);
-      bytes.copy(buffer, 1);
-    }
-  } else if (BN.isBN(value)) {
-    const bytes = value.toArrayLike(Buffer, "le", size);
-    bytes.copy(buffer, 1);
-  } else if (typeof value === "bigint") {
-    const bn = new BN(value.toString());
-    const bytes = bn.toArrayLike(Buffer, "le", size);
-    bytes.copy(buffer, 1);
-  }
-
-  return buffer;
+export function lamportsToSol(lamports: bigint | BN): number {
+  const lamportsNum = typeof lamports === 'bigint' 
+    ? Number(lamports) 
+    : lamports.toNumber();
+  return lamportsNum / 1_000_000_000;
 }
 
 // ============================================================================
@@ -148,17 +107,40 @@ export function serializeOption(
 /**
  * Instruction discriminators from IDL
  * These are generated by Anchor and MUST match exactly
- * Generated from target/idl/dive_game.json
  */
 export const DISCRIMINATORS = {
+  CASH_OUT: Buffer.from([1, 110, 57, 58, 159, 157, 243, 192]),
   INIT_CONFIG: Buffer.from([23, 235, 115, 232, 168, 96, 1, 231]),
   INIT_HOUSE_VAULT: Buffer.from([82, 247, 65, 25, 166, 239, 30, 112]),
-  START_SESSION: Buffer.from([23, 227, 111, 142, 212, 230, 3, 175]),
-  PLAY_ROUND: Buffer.from([38, 35, 89, 4, 59, 139, 225, 250]),
-  CASH_OUT: Buffer.from([1, 110, 57, 58, 159, 157, 243, 192]),
   LOSE_SESSION: Buffer.from([13, 163, 66, 150, 39, 65, 34, 53]),
+  PLAY_ROUND: Buffer.from([38, 35, 89, 4, 59, 139, 225, 250]),
+  START_SESSION: Buffer.from([23, 227, 111, 142, 212, 230, 3, 175]),
   TOGGLE_HOUSE_LOCK: Buffer.from([170, 63, 166, 115, 196, 253, 239, 115]),
 };
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Serialize an Option<T> field for Anchor instruction data
+ * - None: [0]
+ * - Some(value): [1, ...value_bytes]
+ */
+function serializeOption(
+  value: number | BN | bigint | undefined | null,
+  byteLength: number
+): Buffer {
+  if (value === undefined || value === null) {
+    // None variant
+    return Buffer.from([0]);
+  }
+
+  // Some variant
+  const valueBN = value instanceof BN ? value : new BN(value.toString());
+  const valueBytes = valueBN.toArrayLike(Buffer, "le", byteLength);
+  return Buffer.concat([Buffer.from([1]), valueBytes]);
+}
 
 // ============================================================================
 // Instruction Data Builders
@@ -181,15 +163,15 @@ export function buildInitConfigData(params: {
 }): Buffer {
   return Buffer.concat([
     DISCRIMINATORS.INIT_CONFIG,
-    serializeOption(params.baseSurvivalPpm, 4),      // Option<u32>
-    serializeOption(params.decayPerDivePpm, 4),      // Option<u32>
-    serializeOption(params.minSurvivalPpm, 4),       // Option<u32>
+    serializeOption(params.baseSurvivalPpm, 4), // Option<u32>
+    serializeOption(params.decayPerDivePpm, 4), // Option<u32>
+    serializeOption(params.minSurvivalPpm, 4), // Option<u32>
     serializeOption(params.treasureMultiplierNum, 2), // Option<u16>
     serializeOption(params.treasureMultiplierDen, 2), // Option<u16>
-    serializeOption(params.maxPayoutMultiplier, 2),  // Option<u16>
-    serializeOption(params.maxDives, 2),             // Option<u16>
-    serializeOption(params.minBet, 8),               // Option<u64>
-    serializeOption(params.maxBet, 8),               // Option<u64>
+    serializeOption(params.maxPayoutMultiplier, 2), // Option<u16>
+    serializeOption(params.maxDives, 2), // Option<u16>
+    serializeOption(params.minBet, 8), // Option<u64>
+    serializeOption(params.maxBet, 8), // Option<u64>
   ]);
 }
 
@@ -209,15 +191,16 @@ export function buildStartSessionData(
   sessionIndex: BN | bigint | number
 ): Buffer {
   const betBN = BN.isBN(betAmount) ? betAmount : new BN(betAmount.toString());
-  const indexBN = typeof sessionIndex === "number" 
-    ? new BN(sessionIndex)
-    : BN.isBN(sessionIndex) 
-      ? sessionIndex 
-      : new BN(sessionIndex.toString());
-  
+  const indexBN =
+    typeof sessionIndex === "number"
+      ? new BN(sessionIndex)
+      : BN.isBN(sessionIndex)
+        ? sessionIndex
+        : new BN(sessionIndex.toString());
+
   const betBytes = betBN.toArrayLike(Buffer, "le", 8);
   const indexBytes = indexBN.toArrayLike(Buffer, "le", 8);
-  
+
   return Buffer.concat([DISCRIMINATORS.START_SESSION, betBytes, indexBytes]);
 }
 
