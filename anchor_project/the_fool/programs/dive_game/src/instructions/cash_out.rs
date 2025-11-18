@@ -2,7 +2,6 @@ use crate::errors::GameError;
 use crate::events::SessionCashedOutEvent;
 use crate::states::*;
 use anchor_lang::prelude::*;
-use anchor_lang::system_program;
 pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
     let session = &mut ctx.accounts.session;
     let house_vault = &mut ctx.accounts.house_vault;
@@ -24,23 +23,19 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
         vault_balance >= session.current_treasure,
         GameError::InsufficientVaultBalance
     );
-    let house_authority_key = house_vault.house_authority;
-    let seeds = &[
-        HOUSE_VAULT_SEED.as_bytes(),
-        house_authority_key.as_ref(),
-        &[house_vault.bump],
-    ];
-    let signer_seeds = &[&seeds[..]];
-    let transfer_ix = system_program::Transfer {
-        from: house_vault.to_account_info(),
-        to: ctx.accounts.user.to_account_info(),
-    };
-    let cpi_ctx = CpiContext::new_with_signer(
-        ctx.accounts.system_program.to_account_info(),
-        transfer_ix,
-        signer_seeds,
-    );
-    system_program::transfer(cpi_ctx, session.current_treasure)?;
+    
+    // Manual lamport transfer from vault to user
+    // Cannot use system_program::transfer() because vault has data
+    let vault_lamports = house_vault.to_account_info().lamports();
+    let user_lamports = ctx.accounts.user.lamports();
+    
+    **house_vault.to_account_info().try_borrow_mut_lamports()? = vault_lamports
+        .checked_sub(session.current_treasure)
+        .ok_or(GameError::Overflow)?;
+    
+    **ctx.accounts.user.try_borrow_mut_lamports()? = user_lamports
+        .checked_add(session.current_treasure)
+        .ok_or(GameError::Overflow)?;
 
     // Use helper methods for fund release and state transition
     house_vault.release(session.max_payout)?;
@@ -79,5 +74,4 @@ pub struct CashOut<'info> {
     pub session: Account<'info, GameSession>,
     #[account(mut)]
     pub house_vault: Account<'info, HouseVault>,
-    pub system_program: Program<'info, System>,
 }
