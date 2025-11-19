@@ -209,9 +209,27 @@ function extractErrorCode(error: any): { code: string; codeNumber?: number } {
 
   // Try to extract from error message
   const errorString = error.message || error.toString();
-  const errorCodeMatch = errorString.match(/Error Code:\s*(\w+)/);
+  
+  // Try "Error Code: Name" format
+  let errorCodeMatch = errorString.match(/Error Code:\s*(\w+)/);
   if (errorCodeMatch) {
-    return { code: errorCodeMatch[1] };
+    const errorName = errorCodeMatch[1];
+    // Try to find the corresponding number
+    const codeNumber = GameErrorCode[errorName as keyof typeof GameErrorCode];
+    return { code: errorName, codeNumber };
+  }
+  
+  // Try "Error Number: 6005" format
+  const errorNumberMatch = errorString.match(/Error Number:\s*(\d+)/);
+  if (errorNumberMatch) {
+    const codeNumber = parseInt(errorNumberMatch[1]);
+    // Map to error name
+    for (const [name, value] of Object.entries(GameErrorCode)) {
+      if (value === codeNumber) {
+        return { code: name, codeNumber };
+      }
+    }
+    return { code: `Error${codeNumber}`, codeNumber };
   }
 
   return { code: "Unknown" };
@@ -226,17 +244,24 @@ function extractLogs(error: any): string[] {
     return error.logs;
   }
 
-  // Logs in error message
+  // Logs in error message as array string
   const errorString = error.message || error.toString();
-  const logsMatch = errorString.match(/Logs:\s*\[([\s\S]*?)\]/);
+  const logsMatch = errorString.match(/Logs:\s*\n?\[([\s\S]+?)\]/);
 
   if (logsMatch) {
     const logsString = logsMatch[1];
-    return logsString
-      .split(",")
+    // Split by newlines or commas, handling quoted strings
+    const logs = logsString
+      .split(/,?\n\s*/)
       .map((line: string) =>
-        line.trim().replace(/^"|"$/g, "").replace(/\\"/g, '"')
-      );
+        line.trim()
+          .replace(/^["']|["']$/g, '') // Remove surrounding quotes
+          .replace(/\\"/g, '"') // Unescape quotes
+          .replace(/^,\s*/, '') // Remove leading comma
+      )
+      .filter((line: string) => line.length > 0);
+    
+    return logs;
   }
 
   return [];
