@@ -30,16 +30,22 @@ pub fn start_session(
         .checked_sub(house_vault.total_reserved)
         .ok_or(GameError::Overflow)?;
 
-    if available < max_payout {
+    // Relaxed vault requirement: only require 20% of max_payout to be available
+    // This allows the game to run with lower vault balances for testing/demo
+    // Still reserve the full max_payout for accounting purposes
+    let required_balance = max_payout / 5;  // 20% of max_payout
+    
+    if available < required_balance {
         msg!(
             "INSUFFICIENT_VAULT need={} have={} vault={}",
-            max_payout / 1_000_000_000,
+            required_balance / 1_000_000_000,
             available / 1_000_000_000,
             house_vault.key()
         );
         return Err(GameError::InsufficientVaultBalance.into());
     }
 
+    // Still reserve full max_payout for proper accounting
     house_vault.reserve(max_payout)?;
 
     // Phase 1 RNG Security: No longer generate or store RNG seed

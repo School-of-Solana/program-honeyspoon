@@ -62,15 +62,15 @@ pub struct GameConfig {
 impl GameConfig {
     pub fn default_config() -> (u32, u32, u32, u16, u16, u16, u16, u64, u64) {
         (
-            700_000,
-            8_000,
-            50_000,
-            19,
-            10,
-            100,
-            50,
-            100_000_000,
-            10_000_000_000,
+            700_000,            // base_survival_ppm (70%)
+            8_000,              // decay_per_dive_ppm (0.8%)
+            50_000,             // min_survival_ppm (5%)
+            19,                 // treasure_multiplier_num
+            10,                 // treasure_multiplier_den (1.9x per dive)
+            100,                // max_payout_multiplier (100x max)
+            5,                  // max_dives (reduced from 50 to 5)
+            100_000_000,        // min_bet (0.1 SOL)
+            200_000_000,        // max_bet (0.2 SOL, reduced from 10 SOL)
         )
     }
 
