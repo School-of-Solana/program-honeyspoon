@@ -7,7 +7,7 @@ pub mod rng;
 pub mod states;
 use instructions::init_config::GameConfigParams;
 use instructions::*;
-declare_id!("9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7");
+declare_id!("CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1");
 #[program]
 pub mod dive_game {
     use super::*;

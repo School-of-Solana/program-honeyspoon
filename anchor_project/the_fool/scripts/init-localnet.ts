@@ -13,7 +13,7 @@ import * as os from "os";
 import * as path from "path";
 
 const PROGRAM_ID = new PublicKey(
-  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
+  "CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1"
 );
 
 const GAME_CONFIG_SEED = "game_config";
