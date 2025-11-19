@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import OceanScene from "@/components/DeepSeaDiver/OceanScene";
 import DebugPanel from "@/components/DebugWalletPanel";
 import { GameErrorBoundary } from "@/components/DeepSeaDiver/GameErrorBoundary";
@@ -24,6 +24,7 @@ import { useWalletOrUserId } from "@/lib/hooks/useWalletOrUserId";
 import { useWalletSSE } from "@/lib/hooks/useWalletSSE";
 import { useGameChain } from "@/lib/hooks/useGameChain";
 import { useAsyncAction } from "@/lib/hooks/useAsyncAction";
+import { useDebouncedCallback } from 'use-debounce';
 import { playSound, getSoundManager } from "@/lib/soundManager";
 import { useGameStore } from "@/lib/gameStore";
 import { useChainWalletStore } from "@/lib/chainWalletStore";
@@ -468,6 +469,13 @@ export default function Home() {
       setIsProcessing(false);
     }
   };
+
+  // Wrap handleStartGame with debouncing to prevent double-clicks (2 second delay)
+  const debouncedStartGame = useDebouncedCallback(
+    handleStartGame,
+    2000, // 2 second debounce
+    { leading: true, trailing: false } // Execute immediately on first click, ignore subsequent clicks
+  );
 
   // Dive deeper
   const handleDiveDeeper = async () => {

@@ -7,7 +7,6 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import {
-  PhantomWalletAdapter,
   SolflareWalletAdapter,
   TrustWalletAdapter,
   CoinbaseWalletAdapter,
@@ -35,7 +34,7 @@ interface WalletProviderProps {
  * - Provides wallet modal for connection UI
  *
  * Supported Wallets:
- * - Phantom (most popular)
+ * - Phantom (via Standard Wallet interface - auto-detected)
  * - Solflare
  * - Trust Wallet
  * - Coinbase Wallet
@@ -72,10 +71,10 @@ export function WalletProvider({ children }: WalletProviderProps) {
   }, [endpoint]);
 
   // Initialize wallet adapters
+  // Note: Phantom now uses Standard Wallet interface and doesn't need an adapter
   const wallets = useMemo(
     () => [
-      // Most popular wallets first
-      new PhantomWalletAdapter(),
+      // Popular wallets (Phantom auto-detected via Standard Wallet)
       new SolflareWalletAdapter(),
       new TrustWalletAdapter(),
       new CoinbaseWalletAdapter(),
