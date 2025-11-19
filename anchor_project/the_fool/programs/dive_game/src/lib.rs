@@ -42,4 +42,7 @@ pub mod dive_game {
     pub fn withdraw_house(ctx: Context<WithdrawHouse>, amount: u64) -> Result<()> {
         instructions::withdraw_house(ctx, amount)
     }
+    pub fn reset_vault_reserved(ctx: Context<ResetVaultReserved>) -> Result<()> {
+        instructions::reset_vault_reserved(ctx)
+    }
 }

@@ -26,9 +26,25 @@ pub fn start_session(
     let cpi_ctx = CpiContext::new(ctx.accounts.system_program.to_account_info(), transfer_ix);
     system_program::transfer(cpi_ctx, bet_amount)?;
     let vault_balance = house_vault.to_account_info().lamports();
-    let available = vault_balance
-        .checked_sub(house_vault.total_reserved)
-        .ok_or(GameError::Overflow)?;
+    
+    // Handle the case where total_reserved exceeds actual balance (accounting error)
+    // This can happen if sessions weren't properly cleaned up
+    let available = match vault_balance.checked_sub(house_vault.total_reserved) {
+        Some(avail) => avail,
+        None => {
+            // total_reserved > vault_balance - log detailed error
+            msg!(
+                "VAULT_ACCOUNTING_ERROR vault_balance={} total_reserved={} vault={}",
+                vault_balance / 1_000_000_000,
+                house_vault.total_reserved / 1_000_000_000,
+                house_vault.key()
+            );
+            msg!(
+                "HINT: Reserved funds exceed actual balance. Admin should reset total_reserved."
+            );
+            return Err(GameError::InsufficientVaultBalance.into());
+        }
+    };
 
     // Relaxed vault requirement: only require 20% of max_payout to be available
     // This allows the game to run with lower vault balances for testing/demo
