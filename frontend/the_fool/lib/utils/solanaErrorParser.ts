@@ -254,7 +254,7 @@ export function parseSolanaError(
   const logs = extractLogs(error);
 
   // Get error message from GameErrorMessage or extract from logs
-  let errorMessage =
+  const errorMessage =
     GameErrorMessage[errorCodeNumber as GameErrorCode] || "Transaction failed";
 
   // Extract amounts and addresses from logs
