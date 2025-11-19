@@ -37,15 +37,67 @@ export async function getWalletInfo(userId: string): Promise<{
   houseAvailable: number;
 }> {
   try {
-    // Use existing gameEngine wallet info (in-memory for now)
-    const walletInfo = await getEngineWalletInfo(userId);
+    const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
 
-    return {
-      userBalance: walletInfo.balance,
-      houseBalance: walletInfo.houseBalance,
-      houseReserved: walletInfo.houseReserved,
-      houseAvailable: walletInfo.houseBalance - walletInfo.houseReserved,
-    };
+    if (useSolana) {
+      // Fetch DIRECTLY from blockchain to avoid stale cache
+      const chain = getGameChain();
+
+      // Get user balance
+      const userBalanceLamports = await chain.getUserBalance(userId);
+      const userBalance = Number(userBalanceLamports) / 1_000_000_000; // Convert to SOL
+
+      // Get house vault info
+      const houseAuthority = process.env.NEXT_PUBLIC_HOUSE_AUTHORITY;
+      let houseBalance = 0;
+      let houseReserved = 0;
+
+      if (houseAuthority) {
+        try {
+          // Get vault PDA
+          const { getHouseVaultAddress } = await import("@/lib/solana/pdas");
+          const { PublicKey } = await import("@solana/web3.js");
+
+          const programId = new PublicKey(
+            process.env.NEXT_PUBLIC_PROGRAM_ID || ""
+          );
+          const houseAuthPubkey = new PublicKey(houseAuthority);
+          const [vaultPda] = getHouseVaultAddress(houseAuthPubkey, programId);
+          const vaultPdaStr = vaultPda.toBase58();
+
+          // Fetch vault state and balance
+          const vaultState = await chain.getHouseVault(vaultPdaStr);
+          const vaultBalanceLamports = await chain.getVaultBalance(vaultPdaStr);
+
+          houseBalance = Number(vaultBalanceLamports) / 1_000_000_000;
+          houseReserved = vaultState
+            ? Number(vaultState.totalReserved) / 1_000_000_000
+            : 0;
+        } catch (vaultError) {
+          console.error(
+            "[WALLET ACTIONS] Failed to fetch vault info:",
+            vaultError
+          );
+        }
+      }
+
+      return {
+        userBalance,
+        houseBalance,
+        houseReserved,
+        houseAvailable: houseBalance - houseReserved,
+      };
+    } else {
+      // Use existing gameEngine wallet info for local mode
+      const walletInfo = await getEngineWalletInfo(userId);
+
+      return {
+        userBalance: walletInfo.balance,
+        houseBalance: walletInfo.houseBalance,
+        houseReserved: walletInfo.houseReserved,
+        houseAvailable: walletInfo.houseBalance - walletInfo.houseReserved,
+      };
+    }
   } catch (error) {
     console.error("[WALLET ACTIONS] Failed to get wallet info:", error);
     // Return safe defaults
