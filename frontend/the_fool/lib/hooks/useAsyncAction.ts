@@ -1,16 +1,16 @@
 /**
  * useAsyncAction Hook
- * 
+ *
  * Prevents double-clicks and manages loading states for async operations
  * Uses industry-standard npm packages:
  * - use-debounce: For debouncing clicks
  * - react-use: For async state management
  */
 
-import { useState, useCallback, useRef } from 'react';
-import { useAsyncFn } from 'react-use';
-import { useDebouncedCallback } from 'use-debounce';
-import { logger } from '@/lib/logger';
+import { useState, useCallback, useRef } from "react";
+import { useAsyncFn } from "react-use";
+import { useDebouncedCallback } from "use-debounce";
+import { logger } from "@/lib/logger";
 
 interface UseAsyncActionOptions {
   /**
@@ -19,13 +19,13 @@ interface UseAsyncActionOptions {
    * @default 300
    */
   debounceMs?: number;
-  
+
   /**
    * Log action execution (for debugging)
    * @default true
    */
   logExecution?: boolean;
-  
+
   /**
    * Action name for logging
    */
@@ -34,7 +34,7 @@ interface UseAsyncActionOptions {
 
 /**
  * Hook to wrap async actions with debouncing and loading states
- * 
+ *
  * @example
  * ```tsx
  * const { execute, isLoading, error } = useAsyncAction(
@@ -43,7 +43,7 @@ interface UseAsyncActionOptions {
  *   },
  *   { debounceMs: 2000, actionName: 'Start Game' }
  * );
- * 
+ *
  * <button onClick={execute} disabled={isLoading}>
  *   {isLoading ? 'Starting...' : 'Start Game'}
  * </button>
@@ -56,7 +56,7 @@ export function useAsyncAction<T = void>(
   const {
     debounceMs = 300,
     logExecution = true,
-    actionName = 'Action',
+    actionName = "Action",
   } = options;
 
   // Track if action is in flight to prevent concurrent executions
@@ -67,14 +67,16 @@ export function useAsyncAction<T = void>(
     // Prevent concurrent executions
     if (isExecutingRef.current) {
       if (logExecution) {
-        logger.game.warn(`[${actionName}] Already executing, ignoring duplicate call`);
+        logger.game.warn(
+          `[${actionName}] Already executing, ignoring duplicate call`
+        );
       }
       return;
     }
 
     try {
       isExecutingRef.current = true;
-      
+
       if (logExecution) {
         logger.game.info(`[${actionName}] Starting...`);
       }
@@ -108,17 +110,17 @@ export function useAsyncAction<T = void>(
      * Execute the async action (debounced)
      */
     execute: debouncedAction,
-    
+
     /**
      * Is the action currently executing?
      */
     isLoading: state.loading,
-    
+
     /**
      * Error from last execution (if any)
      */
     error: state.error,
-    
+
     /**
      * Result from last successful execution
      */
@@ -131,7 +133,7 @@ export function useAsyncAction<T = void>(
  */
 export function useAsyncActionSimple<T = void>(
   action: () => Promise<T>,
-  actionName = 'Action'
+  actionName = "Action"
 ) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | undefined>();
@@ -140,7 +142,9 @@ export function useAsyncActionSimple<T = void>(
   const execute = useCallback(async () => {
     // Prevent concurrent executions
     if (isExecutingRef.current) {
-      logger.game.warn(`[${actionName}] Already executing, ignoring duplicate call`);
+      logger.game.warn(
+        `[${actionName}] Already executing, ignoring duplicate call`
+      );
       return;
     }
 
@@ -148,11 +152,11 @@ export function useAsyncActionSimple<T = void>(
       isExecutingRef.current = true;
       setIsLoading(true);
       setError(undefined);
-      
+
       logger.game.info(`[${actionName}] Starting...`);
       const result = await action();
       logger.game.info(`[${actionName}] Completed successfully`);
-      
+
       return result;
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));

@@ -578,6 +578,20 @@ export function startGameSession(params: StartGameSessionParams): void {
 export function logTransactionFailure(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
     console.log(`\n❌ Transaction failed: ${context}`);
+    
+    // Try to parse with new error parser
+    try {
+      const { parseTransactionError, formatErrorForConsole } = require("./errorParser");
+      const parsed = parseTransactionError(result);
+      if (parsed) {
+        console.log(formatErrorForConsole(parsed));
+        return;
+      }
+    } catch (e) {
+      // Fall back to old format if parser not available
+    }
+    
+    // Legacy format
     if (result.logs) {
       console.log("Transaction logs:");
       result.logs.forEach((log: string, i: number) => {
@@ -659,14 +673,27 @@ export function expectTxSuccess(result: any, context: string): void {
   }
 }
 
-export function expectTxFailure(result: any, context: string): void {}
+export function expectTxFailure(result: any, context: string): void {
+  if (result?.constructor?.name !== "FailedTransactionMetadata") {
+    throw new Error(`Expected transaction to fail: ${context}`);
+  }
+}
 
 export function expectTxFailedWith(result: any, errorCode: string): void {
   if (result && result.logs) {
     const logs: string[] = result.logs;
     const errorLog = logs.find((l) => l.includes(errorCode));
+    if (!errorLog) {
+      logTransactionFailure(result, `Expected error: ${errorCode}`);
+      throw new Error(`Transaction did not fail with error: ${errorCode}`);
+    }
+  } else {
+    throw new Error(`Transaction did not produce logs to check for error: ${errorCode}`);
   }
 }
+
+// Re-export error parser utilities for convenience
+export { parseTransactionError, formatErrorForConsole, expectError, expectSuccess, hasError, GameErrorCode } from "./errorParser";
 
 export interface TestContext {
   svm: LiteSVM;
