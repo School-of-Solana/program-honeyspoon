@@ -47,13 +47,24 @@ const CLUSTER = "?cluster=devnet";
 /**
  * Extracts amounts from new compact log format
  * Format: "INSUFFICIENT_VAULT need=10 have=2 vault=..."
+ *
+ * Searches both in the logs array AND in the raw error message as fallback
  */
-function extractCompactAmounts(logs: string[]): ParsedSolanaError["amounts"] {
+function extractCompactAmounts(
+  logs: string[],
+  rawErrorMessage?: string
+): ParsedSolanaError["amounts"] {
   const amounts: ParsedSolanaError["amounts"] = {};
 
-  for (const log of logs) {
+  // Combine logs and raw error message for searching
+  const searchTexts = [...logs];
+  if (rawErrorMessage) {
+    searchTexts.push(rawErrorMessage);
+  }
+
+  for (const text of searchTexts) {
     // Match: INSUFFICIENT_VAULT need=10 have=2
-    const vaultMatch = log.match(
+    const vaultMatch = text.match(
       /INSUFFICIENT_VAULT\s+need=(\d+(?:\.\d+)?)\s+have=(\d+(?:\.\d+)?)/
     );
     if (vaultMatch) {
@@ -64,7 +75,7 @@ function extractCompactAmounts(logs: string[]): ParsedSolanaError["amounts"] {
     }
 
     // Match: INSUFFICIENT_TREASURE treasure=0 bet=1
-    const treasureMatch = log.match(
+    const treasureMatch = text.match(
       /INSUFFICIENT_TREASURE\s+treasure=(\d+(?:\.\d+)?)\s+bet=(\d+(?:\.\d+)?)/
     );
     if (treasureMatch) {
@@ -73,7 +84,7 @@ function extractCompactAmounts(logs: string[]): ParsedSolanaError["amounts"] {
     }
 
     // Match: VAULT_UNDERFUNDED need=10 have=5
-    const underfundedMatch = log.match(
+    const underfundedMatch = text.match(
       /VAULT_UNDERFUNDED\s+need=(\d+(?:\.\d+)?)\s+have=(\d+(?:\.\d+)?)/
     );
     if (underfundedMatch) {
@@ -90,27 +101,36 @@ function extractCompactAmounts(logs: string[]): ParsedSolanaError["amounts"] {
 
 /**
  * Extracts wallet/PDA addresses from new compact log format
+ *
+ * Searches both in the logs array AND in the raw error message as fallback
  */
 function extractCompactAddresses(
-  logs: string[]
+  logs: string[],
+  rawErrorMessage?: string
 ): ParsedSolanaError["addresses"] {
   const addresses: ParsedSolanaError["addresses"] = {};
 
-  for (const log of logs) {
+  // Combine logs and raw error message for searching
+  const searchTexts = [...logs];
+  if (rawErrorMessage) {
+    searchTexts.push(rawErrorMessage);
+  }
+
+  for (const text of searchTexts) {
     // Match: vault=EF6u3Zw2tv8w5ao6KeqpDbnFxzh2mt4DN6PLEzEnwVoV
-    const vaultMatch = log.match(/vault=([1-9A-HJ-NP-Za-km-z]{32,44})/);
+    const vaultMatch = text.match(/vault=([1-9A-HJ-NP-Za-km-z]{32,44})/);
     if (vaultMatch) {
       addresses.vault = vaultMatch[1];
     }
 
     // Match: session=AbC123...
-    const sessionMatch = log.match(/session=([1-9A-HJ-NP-Za-km-z]{32,44})/);
+    const sessionMatch = text.match(/session=([1-9A-HJ-NP-Za-km-z]{32,44})/);
     if (sessionMatch) {
       addresses.session = sessionMatch[1];
     }
 
     // Match: user=...
-    const userMatch = log.match(/user=([1-9A-HJ-NP-Za-km-z]{32,44})/);
+    const userMatch = text.match(/user=([1-9A-HJ-NP-Za-km-z]{32,44})/);
     if (userMatch) {
       addresses.user = userMatch[1];
     }
@@ -209,16 +229,16 @@ function extractErrorCode(error: any): { code: string; codeNumber?: number } {
 
   // Try to extract from error message
   const errorString = error.message || error.toString();
-  
+
   // Try "Error Code: Name" format
-  let errorCodeMatch = errorString.match(/Error Code:\s*(\w+)/);
+  const errorCodeMatch = errorString.match(/Error Code:\s*(\w+)/);
   if (errorCodeMatch) {
     const errorName = errorCodeMatch[1];
     // Try to find the corresponding number
     const codeNumber = GameErrorCode[errorName as keyof typeof GameErrorCode];
     return { code: errorName, codeNumber };
   }
-  
+
   // Try "Error Number: 6005" format
   const errorNumberMatch = errorString.match(/Error Number:\s*(\d+)/);
   if (errorNumberMatch) {
@@ -246,21 +266,40 @@ function extractLogs(error: any): string[] {
 
   // Logs in error message as array string
   const errorString = error.message || error.toString();
-  const logsMatch = errorString.match(/Logs:\s*\n?\[([\s\S]+?)\]/);
+
+  // Try multiple patterns to extract logs
+  // Pattern 1: Logs: [...] with newlines
+  let logsMatch = errorString.match(/Logs:\s*\n?\[([\s\S]+?)\]/);
+
+  // Pattern 2: logs: [...] (lowercase)
+  if (!logsMatch) {
+    logsMatch = errorString.match(/logs:\s*\n?\[([\s\S]+?)\]/);
+  }
+
+  // Pattern 3: Just look for array with "Program" entries
+  if (!logsMatch) {
+    logsMatch = errorString.match(/\[([\s\S]*?Program[\s\S]+?)\]/);
+  }
 
   if (logsMatch) {
     const logsString = logsMatch[1];
-    // Split by newlines or commas, handling quoted strings
+
+    // Split by commas OR newlines, being careful with quoted strings
+    // This regex splits on comma+optional-newline OR just-newline, but not inside quotes
     const logs = logsString
-      .split(/,?\n\s*/)
-      .map((line: string) =>
-        line.trim()
-          .replace(/^["']|["']$/g, '') // Remove surrounding quotes
-          .replace(/\\"/g, '"') // Unescape quotes
-          .replace(/^,\s*/, '') // Remove leading comma
-      )
-      .filter((line: string) => line.length > 0);
-    
+      .split(/(?:,\s*\n\s*|,\s*|\n\s*)(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+      .map((line: string) => {
+        let cleaned = line.trim();
+        // Remove surrounding quotes (single or double)
+        cleaned = cleaned.replace(/^["']|["']$/g, "");
+        // Unescape any escaped quotes
+        cleaned = cleaned.replace(/\\"/g, '"');
+        // Remove leading comma if still present
+        cleaned = cleaned.replace(/^,\s*/, "");
+        return cleaned;
+      })
+      .filter((line: string) => line.length > 0 && line !== ",");
+
     return logs;
   }
 
@@ -278,13 +317,16 @@ export function parseSolanaError(
     extractErrorCode(error);
   const logs = extractLogs(error);
 
+  // Get raw error message for fallback searching
+  const rawErrorMessage = error.message || error.toString();
+
   // Get error message from GameErrorMessage or extract from logs
   const errorMessage =
     GameErrorMessage[errorCodeNumber as GameErrorCode] || "Transaction failed";
 
-  // Extract amounts and addresses from logs
-  const amounts = extractCompactAmounts(logs);
-  const addresses = extractCompactAddresses(logs);
+  // Extract amounts and addresses from logs (with fallback to raw message)
+  const amounts = extractCompactAmounts(logs, rawErrorMessage);
+  const addresses = extractCompactAddresses(logs, rawErrorMessage);
   const explorerLinks = generateExplorerLinks(addresses, cluster);
   const actionableSteps = getActionableSteps(errorCode, amounts);
 

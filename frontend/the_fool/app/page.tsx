@@ -394,6 +394,15 @@ export default function Home() {
         } catch (error) {
           console.error("[GAME] ERROR: Solana transaction failed:", error);
 
+          // Debug: Log the raw error structure
+          console.log("[GAME] DEBUG: Raw error object:", {
+            type: typeof error,
+            keys: error ? Object.keys(error) : [],
+            message: error instanceof Error ? error.message : String(error),
+            logs: (error as any)?.logs,
+            err: (error as any)?.err,
+          });
+
           // Parse Solana error with improved parser
           const parsed = parseSolanaError(error);
           console.log("[GAME] Parsed Solana Error:", {
