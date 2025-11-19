@@ -44,15 +44,10 @@ export function parseHouseVaultData(
   const data = Buffer.from(dataInput);
   
   // Use Anchor's BorshAccountsCoder to decode
+  // Returns account with snake_case field names matching the IDL
   const decoded = program.coder.accounts.decode("HouseVault", data);
   
-  return {
-    house_authority: decoded.houseAuthority,
-    game_keeper: decoded.gameKeeper,
-    locked: decoded.locked,
-    total_reserved: new BN(decoded.totalReserved),
-    bump: decoded.bump,
-  };
+  return decoded as HouseVaultAccount;
 }
 
 /**
@@ -65,21 +60,10 @@ export function parseGameConfigData(
   const program = getProgram(connection);
   const data = Buffer.from(dataInput);
   
+  // Returns account with snake_case field names matching the IDL
   const decoded = program.coder.accounts.decode("GameConfig", data);
   
-  return {
-    admin: decoded.admin,
-    base_survival_ppm: decoded.baseSurvivalPpm,
-    decay_per_dive_ppm: decoded.decayPerDivePpm,
-    min_survival_ppm: decoded.minSurvivalPpm,
-    treasure_multiplier_num: decoded.treasureMultiplierNum,
-    treasure_multiplier_den: decoded.treasureMultiplierDen,
-    max_payout_multiplier: decoded.maxPayoutMultiplier,
-    max_dives: decoded.maxDives,
-    min_bet: new BN(decoded.minBet),
-    max_bet: new BN(decoded.maxBet),
-    bump: decoded.bump,
-  };
+  return decoded as GameConfigAccount;
 }
 
 /**
@@ -92,19 +76,10 @@ export function parseGameSessionData(
   const program = getProgram(connection);
   const data = Buffer.from(dataInput);
   
+  // Returns account with snake_case field names matching the IDL
   const decoded = program.coder.accounts.decode("GameSession", data);
   
-  return {
-    user: decoded.user,
-    house_vault: decoded.houseVault,
-    status: decoded.status,
-    bet_amount: new BN(decoded.betAmount),
-    current_treasure: new BN(decoded.currentTreasure),
-    max_payout: new BN(decoded.maxPayout),
-    dive_number: decoded.diveNumber,
-    bump: decoded.bump,
-    last_active_slot: new BN(decoded.lastActiveSlot),
-  };
+  return decoded as GameSessionAccount;
 }
 
 // Legacy alias

@@ -272,15 +272,15 @@ export class SolanaGameChain implements GameChainPort {
     return {
       configPda: configPda.toBase58(),
       admin: account.admin.toBase58(),
-      baseSurvivalPpm: account.baseSurvivalPpm,
-      decayPerDivePpm: account.decayPerDivePpm,
-      minSurvivalPpm: account.minSurvivalPpm,
-      treasureMultiplierNum: account.treasureMultiplierNum,
-      treasureMultiplierDen: account.treasureMultiplierDen,
-      maxPayoutMultiplier: account.maxPayoutMultiplier,
-      maxDives: account.maxDives,
-      minBet: BigInt(account.minBet.toString()),
-      maxBet: BigInt(account.maxBet.toString()),
+      baseSurvivalPpm: account.base_survival_ppm,
+      decayPerDivePpm: account.decay_per_dive_ppm,
+      minSurvivalPpm: account.min_survival_ppm,
+      treasureMultiplierNum: account.treasure_multiplier_num,
+      treasureMultiplierDen: account.treasure_multiplier_den,
+      maxPayoutMultiplier: account.max_payout_multiplier,
+      maxDives: account.max_dives,
+      minBet: BigInt(account.min_bet.toString()),
+      maxBet: BigInt(account.max_bet.toString()),
       bump: account.bump,
     };
   }
@@ -354,9 +354,9 @@ export class SolanaGameChain implements GameChainPort {
 
     return {
       vaultPda: vaultPubkey.toBase58(),
-      houseAuthority: account.houseAuthority.toBase58(),
+      houseAuthority: account.house_authority.toBase58(),
       locked: account.locked,
-      totalReserved: BigInt(account.totalReserved.toString()),
+      totalReserved: BigInt(account.total_reserved.toString()),
       bump: account.bump,
     };
   }
@@ -419,11 +419,26 @@ export class SolanaGameChain implements GameChainPort {
       data,
     });
 
-    // Send transaction with wallet
+    // Send transaction with wallet and wait for confirmation
     await this.sendTransaction([instruction]);
 
-    // Fetch session state
-    const state = await this.getSession(sessionPda.toBase58());
+    // IMPORTANT: Transaction is confirmed, but we need a small delay
+    // for the account to be fully propagated through the RPC network
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Fetch session state with retries
+    let state: GameSessionState | null = null;
+    let retries = 3;
+    while (!state && retries > 0) {
+      state = await this.getSession(sessionPda.toBase58());
+      if (!state) {
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+    }
+
     if (!state) {
       throw GameError.invalidSession();
     }
@@ -476,17 +491,31 @@ export class SolanaGameChain implements GameChainPort {
         { pubkey: userPubkey, isSigner: true, isWritable: true },
         { pubkey: configPda, isSigner: false, isWritable: false },
         { pubkey: sessionPubkey, isSigner: false, isWritable: true },
-        { pubkey: session.houseVault, isSigner: false, isWritable: true },
+        { pubkey: session.house_vault, isSigner: false, isWritable: true },
       ],
       programId: PROGRAM_ID(),
       data,
     });
 
-    // Send transaction with wallet
+    // Send transaction with wallet and wait for confirmation
     await this.sendTransaction([instruction]);
 
-    // Fetch updated session state
-    const state = await this.getSession(params.sessionPda);
+    // Small delay for account propagation
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Fetch updated session state with retries
+    let state: GameSessionState | null = null;
+    let retries = 3;
+    while (!state && retries > 0) {
+      state = await this.getSession(params.sessionPda);
+      if (!state) {
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+    }
+
     if (!state) {
       throw GameError.invalidSession();
     }
@@ -518,7 +547,7 @@ export class SolanaGameChain implements GameChainPort {
     }
 
     const treasureBeforeCashout = BigInt(
-      sessionBefore.currentTreasure.toString()
+      sessionBefore.current_treasure.toString()
     );
 
     // Build instruction data
@@ -529,7 +558,7 @@ export class SolanaGameChain implements GameChainPort {
       keys: [
         { pubkey: userPubkey, isSigner: true, isWritable: true },
         { pubkey: sessionPubkey, isSigner: false, isWritable: true },
-        { pubkey: sessionBefore.houseVault, isSigner: false, isWritable: true },
+        { pubkey: sessionBefore.house_vault, isSigner: false, isWritable: true },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ],
       programId: PROGRAM_ID(),
@@ -546,13 +575,14 @@ export class SolanaGameChain implements GameChainPort {
       state: {
         sessionPda: params.sessionPda,
         user: sessionBefore.user.toBase58(),
-        houseVault: sessionBefore.houseVault.toBase58(),
+        houseVault: sessionBefore.house_vault.toBase58(),
         status: SessionStatus.CashedOut,
-        betAmount: BigInt(sessionBefore.betAmount.toString()),
+        betAmount: BigInt(sessionBefore.bet_amount.toString()),
         currentTreasure: BigInt(0),
-        maxPayout: BigInt(sessionBefore.maxPayout.toString()),
-        diveNumber: sessionBefore.diveNumber,
+        maxPayout: BigInt(sessionBefore.max_payout.toString()),
+        diveNumber: sessionBefore.dive_number,
         bump: sessionBefore.bump,
+        lastActiveSlot: BigInt(sessionBefore.last_active_slot.toString()),
       },
     };
   }
@@ -579,7 +609,7 @@ export class SolanaGameChain implements GameChainPort {
       keys: [
         { pubkey: userPubkey, isSigner: true, isWritable: true },
         { pubkey: sessionPubkey, isSigner: false, isWritable: true },
-        { pubkey: session.houseVault, isSigner: false, isWritable: true },
+        { pubkey: session.house_vault, isSigner: false, isWritable: true },
       ],
       programId: PROGRAM_ID(),
       data,
@@ -624,17 +654,32 @@ export class SolanaGameChain implements GameChainPort {
     sessionPubkey: PublicKey,
     account: SessionAccount
   ): GameSessionState {
+    // Convert Anchor's enum format {Active: {}} to SessionStatus enum
+    let status: SessionStatus;
+    const statusObj = account.status as any;
+    if (statusObj.active !== undefined || statusObj.Active !== undefined) {
+      status = SessionStatus.Active;
+    } else if (statusObj.lost !== undefined || statusObj.Lost !== undefined) {
+      status = SessionStatus.Lost;
+    } else if (statusObj.cashedOut !== undefined || statusObj.CashedOut !== undefined) {
+      status = SessionStatus.CashedOut;
+    } else {
+      // Fallback: treat as Active
+      console.warn('[SolanaGameChain] Unknown session status:', statusObj);
+      status = SessionStatus.Active;
+    }
+
     return {
       sessionPda: sessionPubkey.toBase58(),
       user: account.user.toBase58(),
-      houseVault: account.houseVault.toBase58(),
-      status: account.status as SessionStatus,
-      betAmount: BigInt(account.betAmount.toString()),
-      currentTreasure: BigInt(account.currentTreasure.toString()),
-      maxPayout: BigInt(account.maxPayout.toString()),
-      diveNumber: account.diveNumber,
+      houseVault: account.house_vault.toBase58(),
+      status,
+      betAmount: BigInt(account.bet_amount.toString()),
+      currentTreasure: BigInt(account.current_treasure.toString()),
+      maxPayout: BigInt(account.max_payout.toString()),
+      diveNumber: account.dive_number,
       bump: account.bump,
-      lastActiveSlot: BigInt(account.lastActiveSlot.toString()),
+      lastActiveSlot: BigInt(account.last_active_slot.toString()),
     };
   }
 }
