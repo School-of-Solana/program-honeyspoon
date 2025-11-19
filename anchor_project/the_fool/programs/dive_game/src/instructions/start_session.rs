@@ -29,7 +29,17 @@ pub fn start_session(
     let available = vault_balance
         .checked_sub(house_vault.total_reserved)
         .ok_or(GameError::Overflow)?;
-    require!(available >= max_payout, GameError::InsufficientVaultBalance);
+
+    if available < max_payout {
+        msg!(
+            "INSUFFICIENT_VAULT need={} have={} vault={}",
+            max_payout / 1_000_000_000,
+            available / 1_000_000_000,
+            house_vault.key()
+        );
+        return Err(GameError::InsufficientVaultBalance.into());
+    }
+
     house_vault.reserve(max_payout)?;
 
     // Phase 1 RNG Security: No longer generate or store RNG seed

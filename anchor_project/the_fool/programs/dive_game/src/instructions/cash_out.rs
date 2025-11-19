@@ -14,15 +14,28 @@ pub fn cash_out(ctx: Context<CashOut>) -> Result<()> {
     session.last_active_slot = clock.slot;
 
     require!(!house_vault.locked, GameError::HouseLocked);
-    require!(
-        session.current_treasure > session.bet_amount,
-        GameError::InsufficientTreasure
-    );
+
+    if session.current_treasure <= session.bet_amount {
+        msg!(
+            "INSUFFICIENT_TREASURE treasure={} bet={} session={}",
+            session.current_treasure / 1_000_000_000,
+            session.bet_amount / 1_000_000_000,
+            session.key()
+        );
+        return Err(GameError::InsufficientTreasure.into());
+    }
+
     let vault_balance = house_vault.to_account_info().lamports();
-    require!(
-        vault_balance >= session.current_treasure,
-        GameError::InsufficientVaultBalance
-    );
+
+    if vault_balance < session.current_treasure {
+        msg!(
+            "VAULT_UNDERFUNDED need={} have={} vault={}",
+            session.current_treasure / 1_000_000_000,
+            vault_balance / 1_000_000_000,
+            house_vault.key()
+        );
+        return Err(GameError::InsufficientVaultBalance.into());
+    }
 
     // Manual lamport transfer from vault to user
     // Cannot use system_program::transfer() because vault has data
