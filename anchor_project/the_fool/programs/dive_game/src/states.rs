@@ -69,8 +69,8 @@ impl GameConfig {
             10,                 // treasure_multiplier_den (1.9x per dive)
             100,                // max_payout_multiplier (100x max)
             5,                  // max_dives (reduced from 50 to 5)
-            100_000_000,        // min_bet (0.1 SOL)
-            200_000_000,        // max_bet (0.2 SOL, reduced from 10 SOL)
+            50_000_000,         // min_bet (0.05 SOL, reduced from 0.1 SOL)
+            100_000_000,        // max_bet (0.1 SOL, reduced from 0.2 SOL)
         )
     }
 
