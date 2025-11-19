@@ -170,13 +170,27 @@ export class SolanaGameChain implements GameChainPort {
         }
       );
 
-      console.log('[SolanaGameChain] Transaction sent, waiting for confirmation...', signature);
-      const confirmation = await this.connection.confirmTransaction(signature, "confirmed");
-      console.log('[SolanaGameChain] Transaction confirmation result:', confirmation);
+      console.log(
+        "[SolanaGameChain] Transaction sent, waiting for confirmation...",
+        signature
+      );
+      const confirmation = await this.connection.confirmTransaction(
+        signature,
+        "confirmed"
+      );
+      console.log(
+        "[SolanaGameChain] Transaction confirmation result:",
+        confirmation
+      );
 
       if (confirmation.value.err) {
-        console.error('[SolanaGameChain] Transaction failed:', confirmation.value.err);
-        throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+        console.error(
+          "[SolanaGameChain] Transaction failed:",
+          confirmation.value.err
+        );
+        throw new Error(
+          `Transaction failed: ${JSON.stringify(confirmation.value.err)}`
+        );
       }
 
       return signature;
@@ -427,33 +441,40 @@ export class SolanaGameChain implements GameChainPort {
     });
 
     // Send transaction with wallet and wait for confirmation
-    console.log('[SolanaGameChain] Sending startSession transaction...');
+    console.log("[SolanaGameChain] Sending startSession transaction...");
     const signature = await this.sendTransaction([instruction]);
-    console.log('[SolanaGameChain] Transaction confirmed:', signature);
+    console.log("[SolanaGameChain] Transaction confirmed:", signature);
 
     // IMPORTANT: Transaction is confirmed, but we need a small delay
     // for the account to be fully propagated through the RPC network
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Fetch session state with retries
     let state: GameSessionState | null = null;
     let retries = 3;
     while (!state && retries > 0) {
-      console.log(`[SolanaGameChain] Fetching session (attempt ${4 - retries}/3)...`);
+      console.log(
+        `[SolanaGameChain] Fetching session (attempt ${4 - retries}/3)...`
+      );
       state = await this.getSession(sessionPda.toBase58());
       if (!state) {
-        console.log(`[SolanaGameChain] Session not found yet, retries left: ${retries - 1}`);
+        console.log(
+          `[SolanaGameChain] Session not found yet, retries left: ${retries - 1}`
+        );
         retries--;
         if (retries > 0) {
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise((resolve) => setTimeout(resolve, 300));
         }
       } else {
-        console.log('[SolanaGameChain] Session found!', state);
+        console.log("[SolanaGameChain] Session found!", state);
       }
     }
 
     if (!state) {
-      console.error('[SolanaGameChain] Session still not found after retries. Signature:', signature);
+      console.error(
+        "[SolanaGameChain] Session still not found after retries. Signature:",
+        signature
+      );
       throw GameError.invalidSession();
     }
 
@@ -515,7 +536,7 @@ export class SolanaGameChain implements GameChainPort {
     await this.sendTransaction([instruction]);
 
     // Small delay for account propagation
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Fetch updated session state with retries
     let state: GameSessionState | null = null;
@@ -525,7 +546,7 @@ export class SolanaGameChain implements GameChainPort {
       if (!state) {
         retries--;
         if (retries > 0) {
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise((resolve) => setTimeout(resolve, 300));
         }
       }
     }
@@ -572,7 +593,11 @@ export class SolanaGameChain implements GameChainPort {
       keys: [
         { pubkey: userPubkey, isSigner: true, isWritable: true },
         { pubkey: sessionPubkey, isSigner: false, isWritable: true },
-        { pubkey: sessionBefore.house_vault, isSigner: false, isWritable: true },
+        {
+          pubkey: sessionBefore.house_vault,
+          isSigner: false,
+          isWritable: true,
+        },
         { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       ],
       programId: PROGRAM_ID(),
@@ -675,11 +700,14 @@ export class SolanaGameChain implements GameChainPort {
       status = SessionStatus.Active;
     } else if (statusObj.lost !== undefined || statusObj.Lost !== undefined) {
       status = SessionStatus.Lost;
-    } else if (statusObj.cashedOut !== undefined || statusObj.CashedOut !== undefined) {
+    } else if (
+      statusObj.cashedOut !== undefined ||
+      statusObj.CashedOut !== undefined
+    ) {
       status = SessionStatus.CashedOut;
     } else {
       // Fallback: treat as Active
-      console.warn('[SolanaGameChain] Unknown session status:', statusObj);
+      console.warn("[SolanaGameChain] Unknown session status:", statusObj);
       status = SessionStatus.Active;
     }
 
