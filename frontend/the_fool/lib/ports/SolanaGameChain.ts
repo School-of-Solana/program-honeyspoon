@@ -170,7 +170,14 @@ export class SolanaGameChain implements GameChainPort {
         }
       );
 
-      await this.connection.confirmTransaction(signature, "confirmed");
+      console.log('[SolanaGameChain] Transaction sent, waiting for confirmation...', signature);
+      const confirmation = await this.connection.confirmTransaction(signature, "confirmed");
+      console.log('[SolanaGameChain] Transaction confirmation result:', confirmation);
+
+      if (confirmation.value.err) {
+        console.error('[SolanaGameChain] Transaction failed:', confirmation.value.err);
+        throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+      }
 
       return signature;
     } catch (error: any) {
@@ -420,7 +427,9 @@ export class SolanaGameChain implements GameChainPort {
     });
 
     // Send transaction with wallet and wait for confirmation
-    await this.sendTransaction([instruction]);
+    console.log('[SolanaGameChain] Sending startSession transaction...');
+    const signature = await this.sendTransaction([instruction]);
+    console.log('[SolanaGameChain] Transaction confirmed:', signature);
 
     // IMPORTANT: Transaction is confirmed, but we need a small delay
     // for the account to be fully propagated through the RPC network
@@ -430,16 +439,21 @@ export class SolanaGameChain implements GameChainPort {
     let state: GameSessionState | null = null;
     let retries = 3;
     while (!state && retries > 0) {
+      console.log(`[SolanaGameChain] Fetching session (attempt ${4 - retries}/3)...`);
       state = await this.getSession(sessionPda.toBase58());
       if (!state) {
+        console.log(`[SolanaGameChain] Session not found yet, retries left: ${retries - 1}`);
         retries--;
         if (retries > 0) {
           await new Promise(resolve => setTimeout(resolve, 300));
         }
+      } else {
+        console.log('[SolanaGameChain] Session found!', state);
       }
     }
 
     if (!state) {
+      console.error('[SolanaGameChain] Session still not found after retries. Signature:', signature);
       throw GameError.invalidSession();
     }
 

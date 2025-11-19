@@ -1,85 +1,95 @@
 /**
- * Anchor Account Parsers using Official Anchor Coder
+ * Anchor Account Parsers using Borsh Coder
  * 
- * This is the OFFICIAL way to parse Anchor accounts.
- * Uses Anchor's BorshAccountsCoder which is generated from the IDL.
- * 
- * Benefits:
- * - Uses Anchor's official decoder (no manual parsing!)
- * - Automatically handles discriminators
- * - Types are guaranteed to match on-chain layout
- * - Zero-maintenance (updates with IDL)
- * 
- * This replaces our custom parser generator completely.
+ * This implementation uses Anchor's BorshCoder directly to decode accounts
+ * without needing a full Program instance.
  */
 
-import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
-import { Connection, PublicKey } from "@solana/web3.js";
-import type { DiveGame } from "./idl/dive_game";
-import  IDL from "./idl/dive_game.json";
+import { BN, BorshCoder, Idl } from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
+import  IDL_JSON from "./idl/dive_game.json";
 import type { HouseVaultAccount, GameConfigAccount, GameSessionAccount } from "./types";
 
-// Singleton program instance for decoding
-let cachedProgram: Program<DiveGame> | null = null;
+// Singleton coder instance for decoding
+let cachedCoder: BorshCoder | null = null;
 
-function getProgram(connection?: Connection): Program<DiveGame> {
-  if (!cachedProgram) {
-    const conn = connection || new Connection("https://api.devnet.solana.com");
-    // We only need the program for its coder, not for transactions
-    // So we can use a dummy wallet
-    const provider = new AnchorProvider(conn, {} as any, {});
-    cachedProgram = new Program(IDL as DiveGame, provider);
+function getCoder(): BorshCoder {
+  if (!cachedCoder) {
+    console.log('[accountParsers] Creating BorshCoder from IDL');
+    cachedCoder = new BorshCoder(IDL_JSON as Idl);
   }
-  return cachedProgram;
+  return cachedCoder;
 }
 
 /**
- * Parse HouseVault account using Anchor's official coder
+ * Parse HouseVault account using Borsh coder
  */
 export function parseHouseVaultData(
-  dataInput: Uint8Array | Buffer,
-  connection?: Connection
+  dataInput: Uint8Array | Buffer
 ): HouseVaultAccount {
-  const program = getProgram(connection);
-  const data = Buffer.from(dataInput);
-  
-  // Use Anchor's BorshAccountsCoder to decode
-  // Returns account with snake_case field names matching the IDL
-  const decoded = program.coder.accounts.decode("HouseVault", data);
-  
-  return decoded as HouseVaultAccount;
+  try {
+    const coder = getCoder();
+    const data = Buffer.from(dataInput);
+    
+    console.log('[accountParsers] Decoding HouseVault, data length:', data.length);
+    console.log('[accountParsers] First 16 bytes (hex):', data.slice(0, 16).toString('hex'));
+    
+    // Use Borsh coder to decode - it handles the discriminator automatically
+    const decoded = coder.accounts.decode("houseVault", data);
+    console.log('[accountParsers] HouseVault decoded successfully!');
+    
+    return decoded as HouseVaultAccount;
+  } catch (error: any) {
+    console.error('[accountParsers] Error decoding HouseVault:', error);
+    console.error('[accountParsers] Error message:', error.message);
+    console.error('[accountParsers] Error stack:', error.stack);
+    throw error;
+  }
 }
 
 /**
- * Parse GameConfig account using Anchor's official coder
+ * Parse GameConfig account using Borsh coder
  */
 export function parseGameConfigData(
-  dataInput: Uint8Array | Buffer,
-  connection?: Connection
+  dataInput: Uint8Array | Buffer
 ): GameConfigAccount {
-  const program = getProgram(connection);
-  const data = Buffer.from(dataInput);
-  
-  // Returns account with snake_case field names matching the IDL
-  const decoded = program.coder.accounts.decode("GameConfig", data);
-  
-  return decoded as GameConfigAccount;
+  try {
+    const coder = getCoder();
+    const data = Buffer.from(dataInput);
+    
+    console.log('[accountParsers] Decoding GameConfig, data length:', data.length);
+    
+    // Use Borsh coder to decode
+    const decoded = coder.accounts.decode("gameConfig", data);
+    console.log('[accountParsers] GameConfig decoded successfully:', decoded);
+    return decoded as GameConfigAccount;
+  } catch (error) {
+    console.error('[accountParsers] Error decoding GameConfig:', error);
+    throw error;
+  }
 }
 
 /**
- * Parse GameSession account using Anchor's official coder
+ * Parse GameSession account using Borsh coder
  */
 export function parseGameSessionData(
-  dataInput: Uint8Array | Buffer,
-  connection?: Connection
+  dataInput: Uint8Array | Buffer
 ): GameSessionAccount {
-  const program = getProgram(connection);
-  const data = Buffer.from(dataInput);
-  
-  // Returns account with snake_case field names matching the IDL
-  const decoded = program.coder.accounts.decode("GameSession", data);
-  
-  return decoded as GameSessionAccount;
+  try {
+    const coder = getCoder();
+    const data = Buffer.from(dataInput);
+    
+    console.log('[accountParsers] Decoding GameSession, data length:', data.length);
+    
+    // Use Borsh coder to decode
+    const decoded = coder.accounts.decode("gameSession", data);
+    console.log('[accountParsers] GameSession decoded successfully!');
+    
+    return decoded as GameSessionAccount;
+  } catch (error: any) {
+    console.error('[accountParsers] Error decoding GameSession:', error);
+    throw error;
+  }
 }
 
 // Legacy alias
