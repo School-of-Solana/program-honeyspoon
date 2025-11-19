@@ -23,6 +23,7 @@ import { useGameConfig } from "@/lib/hooks/useGameConfig";
 import { useWalletOrUserId } from "@/lib/hooks/useWalletOrUserId";
 import { useWalletSSE } from "@/lib/hooks/useWalletSSE";
 import { useGameChain } from "@/lib/hooks/useGameChain";
+import { useAsyncAction } from "@/lib/hooks/useAsyncAction";
 import { playSound, getSoundManager } from "@/lib/soundManager";
 import { useGameStore } from "@/lib/gameStore";
 import { useChainWalletStore } from "@/lib/chainWalletStore";
