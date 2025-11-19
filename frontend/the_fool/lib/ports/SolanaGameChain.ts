@@ -634,7 +634,7 @@ export class SolanaGameChain implements GameChainPort {
       maxPayout: BigInt(account.maxPayout.toString()),
       diveNumber: account.diveNumber,
       bump: account.bump,
-      rngSeed: new Uint8Array(account.rngSeed),
+      lastActiveSlot: BigInt(account.lastActiveSlot.toString()),
     };
   }
 }

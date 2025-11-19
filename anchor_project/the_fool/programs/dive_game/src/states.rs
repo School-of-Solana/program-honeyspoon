@@ -1,8 +1,17 @@
 use anchor_lang::prelude::*;
+
+#[cfg(feature = "tsify")]
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "tsify")]
+use tsify::Tsify;
+
 pub const HOUSE_VAULT_SEED: &str = "house_vault";
 pub const SESSION_SEED: &str = "session";
 pub const GAME_CONFIG_SEED: &str = "game_config";
+
 #[derive(AnchorDeserialize, AnchorSerialize, Clone, Copy, PartialEq, Eq, InitSpace, Debug)]
+#[cfg_attr(feature = "tsify", derive(Tsify, Serialize, Deserialize))]
+#[cfg_attr(feature = "tsify", tsify(namespace))]
 pub enum SessionStatus {
     Active,
     Lost,
@@ -10,6 +19,8 @@ pub enum SessionStatus {
 }
 #[account]
 #[derive(InitSpace)]
+#[cfg_attr(feature = "tsify", derive(Tsify, Serialize, Deserialize))]
+#[cfg_attr(feature = "tsify", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct HouseVault {
     pub house_authority: Pubkey, // Cold wallet (can withdraw/change config)
     pub game_keeper: Pubkey,     // Hot wallet (signs play_round for server RNG)
@@ -33,6 +44,8 @@ impl HouseVault {
 }
 #[account]
 #[derive(InitSpace)]
+#[cfg_attr(feature = "tsify", derive(Tsify, Serialize, Deserialize))]
+#[cfg_attr(feature = "tsify", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct GameConfig {
     pub admin: Pubkey,
     pub base_survival_ppm: u32,
@@ -106,6 +119,8 @@ impl GameConfig {
 }
 #[account]
 #[derive(InitSpace)]
+#[cfg_attr(feature = "tsify", derive(Tsify, Serialize, Deserialize))]
+#[cfg_attr(feature = "tsify", tsify(into_wasm_abi, from_wasm_abi))]
 pub struct GameSession {
     pub user: Pubkey,
     pub house_vault: Pubkey,

@@ -18,8 +18,9 @@
     "test:frontend": "cd frontend/the_fool && npm test",
     "logs": "solana logs --url localhost",
     "clean": "pkill -9 solana-test-validator; rm -rf test-ledger; cd anchor_project/the_fool && npm run clean",
+    "generate-parsers": "npx ts-node --esm scripts/generate-parsers.ts",
     "sync-idl": "./scripts/sync-idl.sh",
-    "anchor:build": "cd anchor_project/the_fool && anchor build && cd ../.. && npm run sync-idl",
+    "anchor:build": "cd anchor_project/the_fool && anchor build && cd ../.. && npm run sync-idl && npm run generate-parsers",
     "anchor:deploy": "cd anchor_project/the_fool && anchor deploy",
     "anchor:test": "cd anchor_project/the_fool && anchor test",
     "frontend:dev": "cd frontend/the_fool && npm run dev",
@@ -45,5 +46,8 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
   }
 }

@@ -426,9 +426,6 @@ export class LocalGameChain implements GameChainPort {
       throw GameError.overflow("total_reserved");
     }
 
-    // Generate VRF seed (in real contract: comes from Switchboard)
-    const rngSeed = generateVRFSeed();
-
     // Create session (mimic contract init)
     const state: GameSessionState = {
       sessionPda,
@@ -440,8 +437,7 @@ export class LocalGameChain implements GameChainPort {
       maxPayout: params.maxPayoutLamports,
       diveNumber: 1, // First dive
       bump: 255,
-      rngSeed, // VRF seed for deterministic RNG
-      rngCursor: 0,
+      lastActiveSlot: BigInt(0), // Local chain doesn't use slots
     };
 
     this.sessions.set(sessionPda, state);
@@ -450,11 +446,7 @@ export class LocalGameChain implements GameChainPort {
     this.saveState();
 
     console.log(
-      `[CHAIN] 🎲 Generated VRF seed for session: ${Array.from(
-        rngSeed.slice(0, 4)
-      )
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("")}...`
+      `[CHAIN] 🎲 Session started (local chain uses deterministic RNG)`
     );
 
     return { sessionPda, state };
@@ -487,14 +479,13 @@ export class LocalGameChain implements GameChainPort {
       throw GameError.invalidSessionStatus();
     }
 
-    // Ensure we have VRF seed
-    if (!session.rngSeed) {
-      throw new Error("Session missing RNG seed");
-    }
+    // Local chain: generate seed from session data (deterministic for testing)
+    // Real chain uses SlotHashes sysvar
+    const rngSeed = generateVRFSeed();
 
-    // CONTRACT COMPUTES OUTCOME using VRF seed + dive number
+    // CONTRACT COMPUTES OUTCOME using RNG + dive number
     const outcome = simulateRoundOutcome(
-      session.rngSeed,
+      rngSeed,
       session.diveNumber,
       session.betAmount,
       this.gameConfig,

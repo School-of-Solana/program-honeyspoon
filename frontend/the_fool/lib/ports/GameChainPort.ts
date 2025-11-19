@@ -23,9 +23,8 @@ export enum SessionStatus {
 /**
  * GameSession account state - matches contract's GameSession struct
  *
- * NEW (VRF-based RNG):
- * - rngSeed: 32-byte seed from VRF oracle (Switchboard)
- * - rngCursor: which slice of seed has been consumed (optional)
+ * RNG uses SlotHashes sysvar for per-round entropy (no seed stored)
+ * lastActiveSlot tracks when session was last active for cleanup
  */
 export interface GameSessionState {
   sessionPda: SessionHandle;
@@ -37,8 +36,7 @@ export interface GameSessionState {
   maxPayout: bigint; // u64 lamports
   diveNumber: number; // u16
   bump: number; // u8
-  rngSeed?: Uint8Array; // [u8; 32] VRF seed (if using VRF)
-  rngCursor?: number; // u8 cursor into seed stream
+  lastActiveSlot: bigint; // u64 slot number for cleanup
 }
 
 /**
