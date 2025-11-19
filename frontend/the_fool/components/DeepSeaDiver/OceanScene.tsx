@@ -39,26 +39,24 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
   };
 
   useEffect(() => {
-    // Canvas logging is now controlled by the centralized logger // Set to true to see canvas logs
-    logger.canvas.debug({
-      logger.canvas.debug(" 🎬 OceanScene useEffect triggered");
-      logger.canvas.debug(" ✅ Using Zustand store - no more refs!");
-    }
+    // Canvas logging is now controlled by the centralized logger
+    logger.canvas.debug("🎬 OceanScene useEffect triggered");
+    logger.canvas.debug("✅ Using Zustand store - no more refs!");
 
     if (!canvasRef.current) {
-      logger.canvas.debug(" ❌ No canvas ref!");
+      logger.canvas.debug("❌ No canvas ref!");
       return;
     }
 
     // Only initialize Kaplay once
     if (initializedRef.current && kRef.current) {
-      logger.canvas.debug(" ⏭️  Already initialized, skipping");
+      logger.canvas.debug("⏭️  Already initialized, skipping");
       return;
     }
 
     // Clean up previous instance (in case of hot reload)
     if (kRef.current) {
-      logger.canvas.debug(" 🧹 Cleaning up previous instance");
+      logger.canvas.debug("🧹 Cleaning up previous instance");
       try {
         kRef.current.quit();
       } catch {
@@ -67,7 +65,7 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
       kRef.current = null;
     }
 
-    logger.canvas.debug(" 🎨 Initializing Kaplay...");
+    logger.canvas.debug("🎨 Initializing Kaplay...");
 
     // Initialize Kaplay (fullscreen) - only once
     const k = kaplay({
@@ -82,12 +80,12 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
       pixelDensity: window.devicePixelRatio || 1,
     });
 
-    logger.canvas.debug(" ✅ Kaplay initialized!");
+    logger.canvas.debug("✅ Kaplay initialized!");
     kRef.current = k;
     initializedRef.current = true;
 
     // Load all sprites dynamically from config
-    logger.canvas.debug(" 📦 Loading sprites from config...");
+    logger.canvas.debug("📦 Loading sprites from config...");
 
     SPRITE_CONFIGS.forEach((sprite) => {
       k.loadSprite(sprite.name, sprite.file, {
@@ -97,7 +95,7 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
       });
     });
 
-    logger.canvas.debug(" ✅ All sprites loaded!");
+    logger.canvas.debug("✅ All sprites loaded!");
 
     // CENTRALIZED Animation state (not per-object!)
     const diverY = k.height() / 2 - CONST.LAYOUT.DIVER_Y_OFFSET;
@@ -148,9 +146,9 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
     );
 
     // Start at beach scene
-    logger.canvas.debug(" 🚀 Starting at beach...");
+    logger.canvas.debug("🚀 Starting at beach...");
     k.go("beach");
-    logger.canvas.debug(" ✅ Beach scene started!");
+    logger.canvas.debug("✅ Beach scene started!");
 
     // Cleanup only on unmount
     return () => {
@@ -172,11 +170,11 @@ export default function OceanScene({ debugMode = true }: OceanSceneProps) {
 
     // Kaplay's debug mode can be toggled via debug.inspect
     if (kaplayDebug) {
-      logger.canvas.debug(" 🔧 Kaplay debug mode enabled");
+      logger.canvas.debug("🔧 Kaplay debug mode enabled");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (kRef.current as any).debug.inspect = true;
     } else {
-      logger.canvas.debug(" 🔧 Kaplay debug mode disabled");
+      logger.canvas.debug("🔧 Kaplay debug mode disabled");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (kRef.current as any).debug.inspect = false;
     }

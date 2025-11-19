@@ -43,7 +43,7 @@ export function parseHouseVaultData(
     );
 
     // Use Borsh coder to decode - it handles the discriminator automatically
-    const decoded = coder.accounts.decode("houseVault", data);
+    const decoded = coder.accounts.decode("HouseVault", data);
     logger.accountParser.debug("HouseVault decoded successfully!");
 
     return decoded as HouseVaultAccount;
@@ -69,7 +69,7 @@ export function parseGameConfigData(
     );
 
     // Use Borsh coder to decode
-    const decoded = coder.accounts.decode("gameConfig", data);
+    const decoded = coder.accounts.decode("GameConfig", data);
     logger.accountParser.debug("GameConfig decoded successfully:", decoded);
     return decoded as GameConfigAccount;
   } catch (error) {
@@ -93,7 +93,7 @@ export function parseGameSessionData(
     );
 
     // Use Borsh coder to decode
-    const decoded = coder.accounts.decode("gameSession", data);
+    const decoded = coder.accounts.decode("GameSession", data);
     logger.accountParser.debug("GameSession decoded successfully!");
 
     return decoded as GameSessionAccount;
