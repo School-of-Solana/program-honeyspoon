@@ -23,17 +23,17 @@ Logs:
 
 // Mock error 2: INSUFFICIENT_TREASURE
 const mockInsufficientTreasureError = {
-  message: `Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1776
+  message: `Transaction simulation failed: Error processing Instruction 0: custom program error: 0x1777
 Logs:
 [
   "Program CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1 invoke [1]",
   "Program log: Instruction: CashOut",
   "Program log: INSUFFICIENT_TREASURE treasure=0 bet=1 session=AbC123def456ghi789jkl012mno345pqr",
   "Program CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1 consumed 12345 of 200000 compute units",
-  "Program CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1 failed: custom program error: 0x1776"
+  "Program CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1 failed: custom program error: 0x1777"
 ]`,
   err: {
-    InstructionError: [0, { Custom: 6006 }]
+    InstructionError: [0, { Custom: 6007 }]
   }
 };
 
