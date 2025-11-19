@@ -1,31 +1,34 @@
 /**
  * Solana Account Data Parsers
  *
- * Functions to deserialize on-chain account data into TypeScript types.
- *
- * CRITICAL: Parsing logic MUST match the on-chain account layouts exactly!
- * See: anchor_project/the_fool/programs/dive_game/src/states.rs
- *
- * NOTE: Types and parsers are AUTO-GENERATED from Rust structs.
- * Run `npm run generate-parsers` to regenerate from states.rs
+ * DEPRECATED: This file is kept for backwards compatibility only.
+ * 
+ * NEW APPROACH: Use Anchor's official IDL-based parsers
+ * - Types: lib/solana/types.ts (uses IdlAccounts<DiveGame>)
+ * - Parsers: lib/solana/accountParsers.ts (uses Program.coder.accounts.decode())
+ * 
+ * These parsers use Anchor's BorshAccountsCoder which is:
+ * - Automatically generated from IDL
+ * - Guaranteed to match on-chain layout
+ * - Zero-maintenance (updates with sync-idl)
+ * 
+ * See TYPE_GENERATION_APPROACHES.md for full explanation.
  */
 
-// Re-export all generated types and parsers
-export type {
-  SessionStatus,
-  HouseVaultAccount,
-  GameConfigAccount,
-  GameSessionAccount,
-} from "./solanaParsers.generated";
-
+// Re-export from official Anchor-based parsers
 export {
-  parseSessionStatus,
-  SessionStatusToVariant,
   parseHouseVaultData,
   parseGameConfigData,
   parseGameSessionData,
-} from "./solanaParsers.generated";
+  parseSessionData,
+} from "../solana/accountParsers";
 
-// Legacy aliases for backwards compatibility
-export type { GameSessionAccount as SessionAccount } from "./solanaParsers.generated";
-export { parseGameSessionData as parseSessionData } from "./solanaParsers.generated";
+export type {
+  HouseVaultAccount,
+  GameConfigAccount,
+  GameSessionAccount,
+  SessionStatus,
+} from "../solana/types";
+
+// Legacy alias
+export type { GameSessionAccount as SessionAccount } from "../solana/types";
