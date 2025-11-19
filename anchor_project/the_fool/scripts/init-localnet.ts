@@ -59,7 +59,7 @@ async function main() {
   const rpcUrl = process.env.RPC_URL || "http://localhost:8899";
   const networkName = rpcUrl.includes("devnet") ? "devnet" : "localnet";
 
-  console.log(`🚀 Initializing dive_game on ${networkName}...\n`);
+  console.log(`Launch: Initializing dive_game on ${networkName}...\n`);
 
   const connection = new Connection(rpcUrl, "confirmed");
 
@@ -69,7 +69,7 @@ async function main() {
 
   console.log(`📍 Payer: ${payer.publicKey.toBase58()}`);
   const balance = await connection.getBalance(payer.publicKey);
-  console.log(`💰 Balance: ${balance / LAMPORTS_PER_SOL} SOL\n`);
+  console.log(`Amount: Balance: ${balance / LAMPORTS_PER_SOL} SOL\n`);
 
   console.log("Step 1: Initializing GameConfig...");
   const configPda = getConfigPDA();
@@ -78,7 +78,7 @@ async function main() {
   try {
     const configAccount = await connection.getAccountInfo(configPda);
     if (configAccount) {
-      console.log("   ✅ Config already initialized\n");
+      console.log("   OK: Config already initialized\n");
     } else {
       const discriminator = Buffer.from([23, 235, 115, 232, 168, 96, 1, 231]);
       const data = Buffer.concat([
@@ -110,10 +110,10 @@ async function main() {
 
       const tx = new Transaction().add(instruction);
       const sig = await sendAndConfirmTransaction(connection, tx, [payer]);
-      console.log(`   ✅ Config initialized! Signature: ${sig}\n`);
+      console.log(`   OK: Config initialized! Signature: ${sig}\n`);
     }
   } catch (error: any) {
-    console.error(`   ❌ Error initializing config: ${error.message}\n`);
+    console.error(`   ERROR: Error initializing config: ${error.message}\n`);
   }
 
   console.log("Step 2: Initializing HouseVault...");
@@ -125,10 +125,10 @@ async function main() {
   try {
     const vaultAccount = await connection.getAccountInfo(vaultPda);
     if (vaultAccount) {
-      console.log("   ✅ Vault already initialized");
+      console.log("   OK: Vault already initialized");
       const vaultBalance = await connection.getBalance(vaultPda);
       console.log(
-        `   💰 Vault balance: ${vaultBalance / LAMPORTS_PER_SOL} SOL\n`
+        `   Amount: Vault balance: ${vaultBalance / LAMPORTS_PER_SOL} SOL\n`
       );
     } else {
       const discriminator = Buffer.from([82, 247, 65, 25, 166, 239, 30, 112]);
@@ -151,10 +151,10 @@ async function main() {
 
       const tx = new Transaction().add(instruction);
       const sig = await sendAndConfirmTransaction(connection, tx, [payer]);
-      console.log(`   ✅ Vault initialized! Signature: ${sig}\n`);
+      console.log(`   OK: Vault initialized! Signature: ${sig}\n`);
     }
   } catch (error: any) {
-    console.error(`   ❌ Error initializing vault: ${error.message}\n`);
+    console.error(`   ERROR: Error initializing vault: ${error.message}\n`);
   }
 
   console.log("Step 3: Funding house vault...");
@@ -172,18 +172,18 @@ async function main() {
 
       const tx = new Transaction().add(transferIx);
       const sig = await sendAndConfirmTransaction(connection, tx, [payer]);
-      console.log(`   ✅ Sent ${amountToSend / LAMPORTS_PER_SOL} SOL to vault`);
+      console.log(`   OK: Sent ${amountToSend / LAMPORTS_PER_SOL} SOL to vault`);
       console.log(`   Signature: ${sig}\n`);
     } else {
       console.log(
-        `   ✅ Vault already has ${vaultBalance / LAMPORTS_PER_SOL} SOL\n`
+        `   OK: Vault already has ${vaultBalance / LAMPORTS_PER_SOL} SOL\n`
       );
     }
   } catch (error: any) {
-    console.error(`   ❌ Error funding vault: ${error.message}\n`);
+    console.error(`   ERROR: Error funding vault: ${error.message}\n`);
   }
 
-  console.log("✅ Initialization complete!");
+  console.log("OK: Initialization complete!");
   console.log("\nSummary:");
   console.log(`   Program ID: ${PROGRAM_ID.toBase58()}`);
   console.log(`   Config PDA: ${configPda.toBase58()}`);

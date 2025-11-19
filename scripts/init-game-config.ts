@@ -18,7 +18,7 @@ const RPC_URL = process.env.RPC_URL || 'http://localhost:8899';
 const PROGRAM_ID = new PublicKey(process.env.PROGRAM_ID || '9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7');
 
 async function main() {
-  console.log('🚀 Initializing game config...\n');
+  console.log('Launch: Initializing game config...\n');
   
   // Load keypair from ~/.config/solana/id.json
   const keypairPath = join(homedir(), '.config', 'solana', 'id.json');
@@ -46,7 +46,7 @@ async function main() {
   // Check if already initialized
   try {
     const config = await program.account.gameConfig.fetch(configPda);
-    console.log('✅ Config already initialized!');
+    console.log('OK: Config already initialized!');
     console.log('Current settings:', config);
     return;
   } catch (error) {
@@ -54,7 +54,7 @@ async function main() {
   }
   
   // Initialize with default parameters (all None = use contract defaults)
-  console.log('📝 Calling init_config...');
+  console.log('Note: Calling init_config...');
   const tx = await program.methods
     .initConfig(
       null, // baseSurvivalPpm: use default (700000 = 70%)
@@ -73,12 +73,12 @@ async function main() {
     })
     .rpc();
   
-  console.log(`\n✅ Config initialized!`);
+  console.log(`\nOK: Config initialized!`);
   console.log(`Transaction: ${tx}`);
   
   // Fetch and display config
   const config = await program.account.gameConfig.fetch(configPda);
-  console.log('\n📊 Game Configuration:');
+  console.log('\nInfo: Game Configuration:');
   console.log(`  Base Survival: ${config.baseSurvivalPpm / 10000}%`);
   console.log(`  Decay Per Dive: ${config.decayPerDivePpm / 10000}%`);
   console.log(`  Min Survival: ${config.minSurvivalPpm / 10000}%`);
@@ -92,6 +92,6 @@ async function main() {
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error('❌ Error:', error);
+    console.error('ERROR: Error:', error);
     process.exit(1);
   });

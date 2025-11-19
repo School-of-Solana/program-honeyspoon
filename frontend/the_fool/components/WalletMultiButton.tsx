@@ -142,7 +142,7 @@ export function WalletMultiButton() {
                   className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded transition-colors"
                   title="Copy address"
                 >
-                  {copied ? "✓" : "📋"}
+                  {copied ? "-" : "📋"}
                 </button>
               </div>
             </div>
@@ -230,7 +230,7 @@ export function WalletMultiButton() {
         onClick={() => setDropdownOpen(!dropdownOpen)}
         className={`${base} bg-blue-600 hover:bg-blue-700 text-white`}
       >
-        <span>🔗</span>
+        <span>Link:</span>
         Connect Wallet
         <span
           className={`transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
@@ -260,7 +260,7 @@ export function WalletMultiButton() {
                     className="w-5 h-5 rounded"
                   />
                   <span className="text-sm text-white">{w.adapter.name}</span>
-                  <span className="ml-auto text-green-500 text-xs">✓</span>
+                  <span className="ml-auto text-green-500 text-xs">-</span>
                 </button>
               ))}
 

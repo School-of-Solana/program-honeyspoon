@@ -58,7 +58,7 @@ describe("Game State Transitions", () => {
       );
     }
 
-    console.log("✓ State transitions: idle → betting → playing");
+    console.log("- State transitions: idle → betting → playing");
   });
 
   it("should transition from playing → game over (loss)", async () => {
@@ -81,9 +81,9 @@ describe("Game State Transitions", () => {
       assert.strictEqual(wallet.gamesPlayed, 1, "Game should be counted");
       assert.strictEqual(wallet.totalLost, 50, "Loss should be recorded");
 
-      console.log("✓ State transition: playing → game over (loss)");
+      console.log("- State transition: playing → game over (loss)");
     } else {
-      console.log("✓ Survived with roll=1 (lucky!), skipping loss test");
+      console.log("- Survived with roll=1 (lucky!), skipping loss test");
     }
   });
 
@@ -119,7 +119,7 @@ describe("Game State Transitions", () => {
     const wallet = await getWalletInfo(userId);
     assert.strictEqual(wallet.gamesPlayed, 1, "Game should be counted");
 
-    console.log("✓ State transition: playing → surfacing → game over (win)");
+    console.log("- State transition: playing → surfacing → game over (win)");
   });
 
   it("should handle multiple dives (stay in playing state)", async () => {
@@ -161,7 +161,7 @@ describe("Game State Transitions", () => {
       divesCompleted = dive;
     }
 
-    console.log(`✓ Stayed in playing state for ${divesCompleted} dives`);
+    console.log(`- Stayed in playing state for ${divesCompleted} dives`);
   });
 
   it("should prevent actions after game over", async () => {
@@ -191,7 +191,7 @@ describe("Game State Transitions", () => {
         assert.ok(error instanceof Error, "Should throw error");
       }
 
-      console.log("✓ Actions blocked after game over");
+      console.log("- Actions blocked after game over");
     }
   });
 
@@ -238,7 +238,7 @@ describe("Game State Transitions", () => {
     const wallet = await getWalletInfo(userId);
     assert.ok(wallet.gamesPlayed >= 5, "Should have played at least 5 games");
 
-    console.log(`✓ Rapid transitions: ${wallet.gamesPlayed} games completed`);
+    console.log(`- Rapid transitions: ${wallet.gamesPlayed} games completed`);
   });
 });
 
@@ -269,7 +269,7 @@ describe("Session Management", () => {
     assert.ok(session!.startTime > 0, "Should have start time");
     assert.ok(session!.reservedPayout > 0, "Should have reserved funds");
 
-    console.log("✓ Valid session created");
+    console.log("- Valid session created");
   });
 
   it("should clean up session after loss", async () => {
@@ -289,7 +289,7 @@ describe("Session Management", () => {
       "Session should be deleted after loss"
     );
 
-    console.log("✓ Session cleaned up after loss");
+    console.log("- Session cleaned up after loss");
   });
 
   it("should clean up session after win", async () => {
@@ -308,7 +308,7 @@ describe("Session Management", () => {
       "Session should be deleted after win"
     );
 
-    console.log("✓ Session cleaned up after win");
+    console.log("- Session cleaned up after win");
   });
 
   it("should handle multiple concurrent sessions from same user", async () => {
@@ -336,7 +336,7 @@ describe("Session Management", () => {
       assert.ok(s2, "Session 2 should exist");
     }
 
-    console.log(`✓ Multiple concurrent sessions: ${successful}/3 active`);
+    console.log(`- Multiple concurrent sessions: ${successful}/3 active`);
   });
 
   it("should reject actions from wrong user", async () => {
@@ -358,7 +358,7 @@ describe("Session Management", () => {
       );
     }
 
-    console.log("✓ Actions from wrong user rejected");
+    console.log("- Actions from wrong user rejected");
   });
 
   it("should handle very long session IDs", async () => {
@@ -370,7 +370,7 @@ describe("Session Management", () => {
     const session = getGameSession(longSessionId);
     assert.ok(session, "Session should exist with long ID");
 
-    console.log("✓ Long session IDs handled");
+    console.log("- Long session IDs handled");
   });
 
   it("should reject very short session IDs", async () => {
@@ -379,11 +379,11 @@ describe("Session Management", () => {
     try {
       await startGame(50, userId, shortSessionId);
       // If it succeeds, that's fine
-      console.log("✓ Short session ID accepted (no validation)");
+      console.log("- Short session ID accepted (no validation)");
     } catch (error) {
       // If it fails, verify error message
       assert.ok(error instanceof Error, "Should throw error");
-      console.log("✓ Short session ID rejected");
+      console.log("- Short session ID rejected");
     }
   });
 });
@@ -414,7 +414,7 @@ describe("Concurrent Action Prevention", () => {
     // Either one succeeds and one fails, or both fail (race condition)
     assert.ok(succeeded <= 1, "At most one dive should succeed");
 
-    console.log(`✓ Concurrent dives: ${succeeded} succeeded, ${failed} failed`);
+    console.log(`- Concurrent dives: ${succeeded} succeeded, ${failed} failed`);
   });
 
   it("should handle dive during surface", async () => {
@@ -450,11 +450,11 @@ describe("Concurrent Action Prevention", () => {
     );
 
     if (diveResult2.status === "rejected") {
-      console.log("✓ Dive blocked during surface");
+      console.log("- Dive blocked during surface");
     } else {
       console.log("⚠ Dive allowed during surface (race condition)");
     }
   });
 });
 
-console.log("\n✅ All game state transition tests completed!\n");
+console.log("\nOK: All game state transition tests completed!\n");

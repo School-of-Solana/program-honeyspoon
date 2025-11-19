@@ -108,7 +108,7 @@ export function SolanaStatusBanner() {
       <div className="fixed top-0 left-0 right-0 bg-red-600 text-white text-center py-3 text-sm z-50 shadow-lg">
         <div className="container mx-auto px-4">
           <p className="font-bold mb-1">
-            ⚠️ Solana {networkName} Not Connected
+            WARNING: Solana {networkName} Not Connected
           </p>
           {isLocalhost && (
             <p className="text-xs opacity-90">
@@ -144,7 +144,7 @@ export function SolanaStatusBanner() {
       className="fixed top-0 left-0 right-0 text-white text-center py-2 text-xs z-50 transition-opacity duration-500"
       style={bgStyle}
     >
-      ✅ Connected to Solana {networkName} ({rpcUrl})
+      OK: Connected to Solana {networkName} ({rpcUrl})
     </div>
   );
 }

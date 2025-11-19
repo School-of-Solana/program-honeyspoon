@@ -155,7 +155,7 @@ export const useGameStore = create<GameState>((set) => ({
     set({
       isDiving: true,
       animationMessage: "DIVING...",
-      // ✅ FIX: Clear all other animation flags
+      // OK: FIX: Clear all other animation flags
       survived: undefined,
       shouldSurface: false,
     });
@@ -174,7 +174,7 @@ export const useGameStore = create<GameState>((set) => ({
    * End the diving animation
    */
   endDiveAnimation: () => {
-    console.log("[STORE] ✅ Dive animation complete");
+    console.log("[STORE] OK: Dive animation complete");
     set({
       isDiving: false,
       animationMessage: "",
@@ -225,7 +225,7 @@ export const useGameStore = create<GameState>((set) => ({
     set({
       shouldSurface: true,
       animationMessage: "SURFACING!",
-      // ✅ FIX: Clear other animation flags
+      // OK: FIX: Clear other animation flags
       isDiving: false,
       survived: undefined,
     });
@@ -313,7 +313,7 @@ export const useGameStore = create<GameState>((set) => ({
   completeDive: (result) => {
     const { survived, totalTreasure, depth, shipwreck } = result;
 
-    console.log("[STORE] 📊 Dive complete", { survived, totalTreasure, depth });
+    console.log("[STORE] Info: Dive complete", { survived, totalTreasure, depth });
 
     if (survived) {
       // Update game state for next dive

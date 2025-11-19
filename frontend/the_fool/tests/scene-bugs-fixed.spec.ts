@@ -28,7 +28,7 @@ test.describe("Scene Transition Bug Fixes", () => {
     if (await startButton.isVisible()) {
       await startButton.click();
       await page.waitForTimeout(1000);
-      console.log("✓ Game started");
+      console.log("- Game started");
 
       // First dive
       const diveButton = page.locator('button:has-text("DIVE DEEPER")');
@@ -45,9 +45,9 @@ test.describe("Scene Transition Bug Fixes", () => {
         );
 
         console.log(
-          `   Animation started: ${firstDiveAnimationStarted ? "✓" : "✗"}`
+          `   Animation started: ${firstDiveAnimationStarted ? "-" : "✗"}`
         );
-        console.log(`   Animation completed: ${firstDiveComplete ? "✓" : "✗"}`);
+        console.log(`   Animation completed: ${firstDiveComplete ? "-" : "✗"}`);
 
         // Second dive (this should also have animations!)
         if (await diveButton.isVisible()) {
@@ -67,15 +67,15 @@ test.describe("Scene Transition Bug Fixes", () => {
           );
 
           console.log(
-            `   Animation started: ${secondDiveAnimationStarted ? "✓" : "✗"}`
+            `   Animation started: ${secondDiveAnimationStarted ? "-" : "✗"}`
           );
           console.log(
-            `   Animation completed: ${secondDiveComplete ? "✓" : "✗"}`
+            `   Animation completed: ${secondDiveComplete ? "-" : "✗"}`
           );
 
           // Test assertions
           expect(secondDiveAnimationStarted).toBeTruthy();
-          console.log("\n✅ Bug Fix #1 VERIFIED: Second dive has animations!");
+          console.log("\nOK: Bug Fix #1 VERIFIED: Second dive has animations!");
 
           // Print relevant logs
           console.log("\n📋 Animation Logs:");
@@ -101,7 +101,7 @@ test.describe("Scene Transition Bug Fixes", () => {
     if (await startButton.isVisible()) {
       await startButton.click();
       await page.waitForTimeout(1000);
-      console.log("✓ Game started");
+      console.log("- Game started");
 
       // Dive once
       const diveButton = page.locator('button:has-text("DIVE DEEPER")');
@@ -109,7 +109,7 @@ test.describe("Scene Transition Bug Fixes", () => {
         console.log("\n1️⃣  DIVING:");
         await diveButton.click();
         await page.waitForTimeout(3500);
-        console.log("   ✓ Dive completed");
+        console.log("   - Dive completed");
 
         // Surface (cash out)
         const surfaceButton = page.locator('button:has-text("SURFACE")');
@@ -135,17 +135,17 @@ test.describe("Scene Transition Bug Fixes", () => {
           );
 
           console.log(
-            `   Surfacing triggered: ${surfacingTriggered ? "✓" : "✗"}`
+            `   Surfacing triggered: ${surfacingTriggered ? "-" : "✗"}`
           );
           console.log(
-            `   Surfacing complete: ${surfacingComplete ? "✓" : "✗"}`
+            `   Surfacing complete: ${surfacingComplete ? "-" : "✗"}`
           );
-          console.log(`   Returned to beach: ${returnedToBeach ? "✓" : "✗"}`);
+          console.log(`   Returned to beach: ${returnedToBeach ? "-" : "✗"}`);
 
           // Test assertions
           expect(surfacingTriggered || surfacingComplete).toBeTruthy();
           expect(returnedToBeach).toBeTruthy();
-          console.log("\n✅ Bug Fix #2 VERIFIED: Surfacing returns to beach!");
+          console.log("\nOK: Bug Fix #2 VERIFIED: Surfacing returns to beach!");
 
           // Print relevant logs
           console.log("\n📋 Surfacing Logs:");
@@ -162,7 +162,7 @@ test.describe("Scene Transition Bug Fixes", () => {
           await page.waitForTimeout(1000);
           if (await startButton.isVisible()) {
             console.log("\n3️⃣  VERIFYING: Can start new game from beach");
-            console.log("   ✓ Betting card visible - back at beach!");
+            console.log("   - Betting card visible - back at beach!");
           }
         }
       }
@@ -179,7 +179,7 @@ test.describe("Scene Transition Bug Fixes", () => {
     const startButton = page.locator('button:has-text("START GAME")');
     await startButton.click();
     await page.waitForTimeout(1000);
-    console.log("✓ Game started");
+    console.log("- Game started");
 
     const diveButton = page.locator('button:has-text("DIVE DEEPER")');
     const surfaceButton = page.locator('button:has-text("SURFACE")');
@@ -197,10 +197,10 @@ test.describe("Scene Transition Bug Fixes", () => {
         const hadAnimation = newLogs.some((log) =>
           log.includes("dive animation")
         );
-        console.log(`   Animation: ${hadAnimation ? "✓" : "✗"}`);
+        console.log(`   Animation: ${hadAnimation ? "-" : "✗"}`);
 
         if (!hadAnimation) {
-          console.log(`   ⚠️  No animation on dive ${i}!`);
+          console.log(`   WARNING:  No animation on dive ${i}!`);
           // Print debug logs
           console.log("   Debug logs:");
           newLogs
@@ -223,15 +223,15 @@ test.describe("Scene Transition Bug Fixes", () => {
           log.includes("Returning to beach") ||
           log.includes("Surfacing complete")
       );
-      console.log(`   Returned to beach: ${returnedToBeach ? "✓" : "✗"}`);
+      console.log(`   Returned to beach: ${returnedToBeach ? "-" : "✗"}`);
 
       // Verify back at beach
       await page.waitForTimeout(1000);
       if (await startButton.isVisible()) {
-        console.log("   ✓ Betting card visible - successfully returned!");
+        console.log("   - Betting card visible - successfully returned!");
       }
     }
 
-    console.log("\n✅ Complete flow test finished!");
+    console.log("\nOK: Complete flow test finished!");
   });
 });

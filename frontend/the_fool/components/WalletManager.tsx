@@ -99,13 +99,13 @@ export function WalletManager() {
     try {
       const depositAmount = parseFloat(amount);
       if (isNaN(depositAmount) || depositAmount <= 0) {
-        setMessage("❌ Invalid amount");
+        setMessage("ERROR: Invalid amount");
         setIsProcessing(false);
         return;
       }
 
       if (depositAmount > solanaBalance) {
-        setMessage("❌ Insufficient Solana wallet balance");
+        setMessage("ERROR: Insufficient Solana wallet balance");
         setIsProcessing(false);
         return;
       }
@@ -113,12 +113,12 @@ export function WalletManager() {
       // TODO: Call deposit instruction
       // const result = await depositToGameWallet(publicKey.toBase58(), depositAmount);
 
-      setMessage(`✅ Deposited ${depositAmount} SOL to game wallet!`);
+      setMessage(`OK: Deposited ${depositAmount} SOL to game wallet!`);
 
       // Refresh balances
       // await fetchBalances();
     } catch (error) {
-      setMessage(`❌ Deposit failed: ${error}`);
+      setMessage(`ERROR: Deposit failed: ${error}`);
     } finally {
       setIsProcessing(false);
       setTimeout(() => setMessage(""), 5000);
@@ -135,13 +135,13 @@ export function WalletManager() {
     try {
       const withdrawAmount = parseFloat(amount);
       if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
-        setMessage("❌ Invalid amount");
+        setMessage("ERROR: Invalid amount");
         setIsProcessing(false);
         return;
       }
 
       if (withdrawAmount > gameWalletData.balance) {
-        setMessage("❌ Insufficient game wallet balance");
+        setMessage("ERROR: Insufficient game wallet balance");
         setIsProcessing(false);
         return;
       }
@@ -149,12 +149,12 @@ export function WalletManager() {
       // TODO: Call withdraw instruction
       // const result = await withdrawFromGameWallet(publicKey.toBase58(), withdrawAmount);
 
-      setMessage(`✅ Withdrew ${withdrawAmount} SOL to Solana wallet!`);
+      setMessage(`OK: Withdrew ${withdrawAmount} SOL to Solana wallet!`);
 
       // Refresh balances
       // await fetchBalances();
     } catch (error) {
-      setMessage(`❌ Withdraw failed: ${error}`);
+      setMessage(`ERROR: Withdraw failed: ${error}`);
     } finally {
       setIsProcessing(false);
       setTimeout(() => setMessage(""), 5000);
@@ -179,7 +179,7 @@ export function WalletManager() {
             padding: "12px 16px",
           }}
         >
-          💰 WALLET
+          Amount: WALLET
         </button>
       )}
 
@@ -194,7 +194,7 @@ export function WalletManager() {
           }}
         >
           <p className="title" style={{ fontSize: "10px" }}>
-            💰 WALLET MANAGER
+            Amount: WALLET MANAGER
           </p>
 
           {/* Close Button */}
@@ -354,7 +354,7 @@ export function WalletManager() {
                     textAlign: "center",
                     padding: "8px",
                     marginBottom: "12px",
-                    backgroundColor: message.includes("❌")
+                    backgroundColor: message.includes("ERROR:")
                       ? "rgba(244, 67, 54, 0.2)"
                       : "rgba(76, 175, 80, 0.2)",
                   }}
@@ -379,7 +379,7 @@ export function WalletManager() {
                       fontWeight: "bold",
                     }}
                   >
-                    📊 STATISTICS
+                    Info: STATISTICS
                   </div>
 
                   <div
@@ -433,7 +433,7 @@ export function WalletManager() {
                       }}
                     >
                       {isProfit ? "+" : ""}
-                      {netProfit.toFixed(4)} SOL {isProfit ? "✅" : "❌"}
+                      {netProfit.toFixed(4)} SOL {isProfit ? "OK:" : "ERROR:"}
                     </div>
                   </div>
 
@@ -452,7 +452,7 @@ export function WalletManager() {
                   textAlign: "center",
                 }}
               >
-                ⚠️ Keep some SOL in your Solana wallet for transaction fees
+                WARNING: Keep some SOL in your Solana wallet for transaction fees
               </div>
             </>
           )}

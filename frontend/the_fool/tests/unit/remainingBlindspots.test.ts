@@ -62,7 +62,7 @@ describe("Blindspot #5: Session ID Reuse Safety", () => {
     console.log(`    Cashed out: $${cashOut2.finalAmount}`);
 
     console.log("");
-    console.log("✅ Session reuse handled cleanly");
+    console.log("OK: Session reuse handled cleanly");
     console.log("   → No state leakage between games");
     console.log("   → Each game started fresh");
     console.log("=".repeat(60));
@@ -109,7 +109,7 @@ describe("Blindspot #5: Session ID Reuse Safety", () => {
       /current value mismatch/i
     );
 
-    console.log("✅ No treasure leakage between sessions");
+    console.log("OK: No treasure leakage between sessions");
   });
 });
 
@@ -164,7 +164,7 @@ describe("Blindspot #6: Randomness Boundary Behavior", () => {
     );
     assert.equal(justAbove.survived, false, "Roll above threshold should die");
 
-    console.log("✅ Boundary behavior is consistent");
+    console.log("OK: Boundary behavior is consistent");
     console.log("   Rule: survive if roll < threshold");
     console.log("=".repeat(60));
   });
@@ -176,7 +176,7 @@ describe("Blindspot #6: Randomness Boundary Behavior", () => {
       baseWinProbability: 0.95,
     };
 
-    console.log("\n📊 Fairness Verification:");
+    console.log("\nInfo: Fairness Verification:");
     console.log("=".repeat(60));
 
     for (let round = 1; round <= 10; round++) {
@@ -207,7 +207,7 @@ describe("Blindspot #6: Randomness Boundary Behavior", () => {
       }
     }
 
-    console.log("✅ All rounds maintain fair probabilities");
+    console.log("OK: All rounds maintain fair probabilities");
     console.log("=".repeat(60));
   });
 });
@@ -230,7 +230,7 @@ describe("Blindspot #7: Config Invariant Validation", () => {
       "Should reject min > base"
     );
 
-    console.log("✅ Rejected invalid config");
+    console.log("OK: Rejected invalid config");
   });
 
   it("should reject invalid config (maxRounds <= 0)", () => {
@@ -247,7 +247,7 @@ describe("Blindspot #7: Config Invariant Validation", () => {
       "Should reject maxRounds <= 0"
     );
 
-    console.log("✅ Rejected invalid config");
+    console.log("OK: Rejected invalid config");
   });
 
   it("should reject invalid config (decayConstant < 0)", () => {
@@ -264,7 +264,7 @@ describe("Blindspot #7: Config Invariant Validation", () => {
       "Should reject negative decay"
     );
 
-    console.log("✅ Rejected invalid config");
+    console.log("OK: Rejected invalid config");
     console.log("=".repeat(60));
   });
 
@@ -283,7 +283,7 @@ describe("Blindspot #7: Config Invariant Validation", () => {
     assert.ok(stats.winProbability > 0);
     assert.ok(stats.winProbability <= 1);
 
-    console.log("✅ Accepted valid config");
+    console.log("OK: Accepted valid config");
   });
 });
 
@@ -292,7 +292,7 @@ describe("Blindspot #8: Transaction Metadata Consistency", () => {
     const userId = "user-tx-metadata";
     const sessionId = "session-tx-metadata";
 
-    console.log("\n📝 Transaction Metadata Test:");
+    console.log("\nNote: Transaction Metadata Test:");
     console.log("=".repeat(60));
 
     // Start game
@@ -336,7 +336,7 @@ describe("Blindspot #8: Transaction Metadata Consistency", () => {
     );
 
     console.log("");
-    console.log("✅ Transaction metadata is correct");
+    console.log("OK: Transaction metadata is correct");
     console.log(
       `   Cashout recorded as dive #${cashoutTx!.metadata?.diveNumber}`
     );
@@ -380,7 +380,7 @@ describe("Blindspot #8: Transaction Metadata Consistency", () => {
       "Loss metadata should show survived=false"
     );
 
-    console.log("✅ Loss transaction metadata is correct");
+    console.log("OK: Loss transaction metadata is correct");
   });
 
   it("should maintain consistent diveNumber across multiple games", async () => {
@@ -418,6 +418,6 @@ describe("Blindspot #8: Transaction Metadata Consistency", () => {
     assert.equal(game1Cashout!.metadata?.diveNumber, 1, "Game 1 had 1 dive");
     assert.equal(game2Cashout!.metadata?.diveNumber, 2, "Game 2 had 2 dives");
 
-    console.log("✅ Each game tracks dives independently");
+    console.log("OK: Each game tracks dives independently");
   });
 });

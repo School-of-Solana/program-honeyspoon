@@ -40,7 +40,7 @@ describe("Treasure Initialization - Bug Fixes", () => {
     );
 
     console.log(
-      `✓ Game started: bet=$${BET_AMOUNT}, balance=$${walletAfterBet.balance}`
+      `- Game started: bet=$${BET_AMOUNT}, balance=$${walletAfterBet.balance}`
     );
     console.log(`  Expected: treasure display shows $0 (not $${BET_AMOUNT})`);
   });
@@ -80,7 +80,7 @@ describe("Treasure Initialization - Bug Fixes", () => {
     );
 
     console.log(
-      `✓ First dive: $${BET_AMOUNT} * ${diveResult.multiplier.toFixed(2)}x = $${diveResult.totalTreasure}`
+      `- First dive: $${BET_AMOUNT} * ${diveResult.multiplier.toFixed(2)}x = $${diveResult.totalTreasure}`
     );
     console.log(`  Expected: ~44 (not ${BET_AMOUNT}!)`);
   });
@@ -164,7 +164,7 @@ describe("Treasure Initialization - Bug Fixes", () => {
     );
 
     console.log(
-      `✓ Treasure accumulation: $${BET_AMOUNT} → $${treasure1} → $${treasure2} → $${treasure3}`
+      `- Treasure accumulation: $${BET_AMOUNT} → $${treasure1} → $${treasure2} → $${treasure3}`
     );
   });
 
@@ -224,7 +224,7 @@ describe("Treasure Initialization - Bug Fixes", () => {
     );
 
     console.log(
-      `✓ Wallet updates: $${initialBalance} → $${walletInfo.balance}`
+      `- Wallet updates: $${initialBalance} → $${walletInfo.balance}`
     );
     console.log(`  Profit: $${netProfit} (negative due to house edge)`);
   });
@@ -243,9 +243,9 @@ describe("Treasure Initialization - Bug Fixes", () => {
     await startGame(50, newUserId, newSessionId);
 
     let wallet = await getWalletInfo(newUserId);
-    assert.strictEqual(wallet.balance, 950, "Step 1: Balance = 950 ✓");
-    console.log(`  ✓ Step 1: Balance = $${wallet.balance} (bet deducted)`);
-    console.log(`  ✓ Step 1: Treasure = $0 (display shows 0, not 50!)`);
+    assert.strictEqual(wallet.balance, 950, "Step 1: Balance = 950 -");
+    console.log(`  - Step 1: Balance = $${wallet.balance} (bet deducted)`);
+    console.log(`  - Step 1: Treasure = $0 (display shows 0, not 50!)`);
 
     // Step 2: First dive (depth 50m, multiplier ~0.89x)
     const dive1 = await performDive(1, 50, newSessionId, newUserId, "99");
@@ -257,7 +257,7 @@ describe("Treasure Initialization - Bug Fixes", () => {
       `Step 2: Treasure should be ~44, got ${treasure1}`
     );
     console.log(
-      `  ✓ Step 2: First dive successful → Treasure = $${treasure1} (not 50!)`
+      `  - Step 2: First dive successful → Treasure = $${treasure1} (not 50!)`
     );
 
     // Step 3: Second dive (depth 100m, multiplier ~0.78x)
@@ -278,7 +278,7 @@ describe("Treasure Initialization - Bug Fixes", () => {
       `Step 3: Treasure should accumulate to ~${expectedTreasure2}`
     );
     console.log(
-      `  ✓ Step 3: Second dive successful → Treasure = $${treasure2}`
+      `  - Step 3: Second dive successful → Treasure = $${treasure2}`
     );
     console.log(`    (multiplied from $${treasure1}, not added!)`);
 
@@ -297,12 +297,12 @@ describe("Treasure Initialization - Bug Fixes", () => {
       expectedBalance,
       `Step 4: Balance = 950 + ${treasure2} = ${expectedBalance}`
     );
-    console.log(`  ✓ Step 4: Surfaced → Balance = $${wallet.balance}`);
+    console.log(`  - Step 4: Surfaced → Balance = $${wallet.balance}`);
     console.log(
       `    Net result: ${wallet.balance - 1000 > 0 ? "+" : ""}$${wallet.balance - 1000}`
     );
 
-    console.log("\n✅ All steps verified correctly!");
+    console.log("\nOK: All steps verified correctly!");
   });
 
   it("should verify treasure never starts at betAmount (regression test)", async () => {
@@ -337,7 +337,7 @@ describe("Treasure Initialization - Bug Fixes", () => {
     );
 
     console.log(
-      `✓ Regression test passed: treasure = $${dive1.totalTreasure} (not $${BET_AMOUNT})`
+      `- Regression test passed: treasure = $${dive1.totalTreasure} (not $${BET_AMOUNT})`
     );
   });
 });
@@ -366,7 +366,7 @@ describe("Edge Cases - Zero Treasure Handling", () => {
     );
 
     console.log(
-      `✓ First dive with betAmount=50 → treasure=$${dive1.totalTreasure}`
+      `- First dive with betAmount=50 → treasure=$${dive1.totalTreasure}`
     );
   });
 
@@ -397,10 +397,10 @@ describe("Edge Cases - Zero Treasure Handling", () => {
     );
 
     console.log(
-      `✓ FIXED: First dive with value=0 is correctly rejected with treasure mismatch error`
+      `- FIXED: First dive with value=0 is correctly rejected with treasure mismatch error`
     );
     console.log(`  This is why we must pass betAmount on first dive, not 0`);
   });
 });
 
-console.log("\n✅ All treasure initialization tests completed!\n");
+console.log("\nOK: All treasure initialization tests completed!\n");

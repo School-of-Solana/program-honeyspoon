@@ -36,16 +36,16 @@ test.describe("Animation System Tests", () => {
       log.includes("🎬 OceanScene useEffect triggered")
     );
     const hasKaplayInit = canvasLogs.some((log) =>
-      log.includes("✅ Kaplay initialized")
+      log.includes("OK: Kaplay initialized")
     );
     const hasSceneCreated = canvasLogs.some((log) =>
       log.includes("🎮 Ocean scene created")
     );
 
     console.log("\nInitialization Check:");
-    console.log("  UseEffect triggered:", hasInitLog ? "✅" : "❌");
-    console.log("  Kaplay initialized:", hasKaplayInit ? "✅" : "❌");
-    console.log("  Scene created:", hasSceneCreated ? "✅" : "❌");
+    console.log("  UseEffect triggered:", hasInitLog ? "OK:" : "ERROR:");
+    console.log("  Kaplay initialized:", hasKaplayInit ? "OK:" : "ERROR:");
+    console.log("  Scene created:", hasSceneCreated ? "OK:" : "ERROR:");
 
     expect(hasInitLog).toBeTruthy();
     expect(hasKaplayInit).toBeTruthy();
@@ -56,7 +56,7 @@ test.describe("Animation System Tests", () => {
     const hasHeartbeat = canvasLogs.some((log) =>
       log.includes("💓 Update loop heartbeat")
     );
-    console.log("  Update loop running:", hasHeartbeat ? "✅" : "❌");
+    console.log("  Update loop running:", hasHeartbeat ? "OK:" : "ERROR:");
     expect(hasHeartbeat).toBeTruthy();
 
     await page.screenshot({
@@ -93,26 +93,26 @@ test.describe("Animation System Tests", () => {
     );
     console.log(
       "  Props updated (isDiving: true):",
-      hasPropUpdate ? "✅" : "❌"
+      hasPropUpdate ? "OK:" : "ERROR:"
     );
 
     // Check for state logging
     const hasStateLog = canvasLogs.some((log) =>
       log.includes("[CANVAS STATE]")
     );
-    console.log("  State machine logging:", hasStateLog ? "✅" : "❌");
+    console.log("  State machine logging:", hasStateLog ? "OK:" : "ERROR:");
 
     // Check for conditions met
     const hasConditionsMet = canvasLogs.some((log) =>
-      log.includes("✅ Conditions met for diving animation")
+      log.includes("OK: Conditions met for diving animation")
     );
-    console.log("  Conditions met detected:", hasConditionsMet ? "✅" : "❌");
+    console.log("  Conditions met detected:", hasConditionsMet ? "OK:" : "ERROR:");
 
     // Check for animation trigger
     const hasAnimTrigger = canvasLogs.some((log) =>
       log.includes("Triggering diving animation")
     );
-    console.log("  Animation triggered:", hasAnimTrigger ? "✅" : "❌");
+    console.log("  Animation triggered:", hasAnimTrigger ? "OK:" : "ERROR:");
 
     await page.screenshot({
       path: "tests/screenshots/anim-02-during-dive.png",
@@ -124,9 +124,9 @@ test.describe("Animation System Tests", () => {
 
     // Check for completion log
     const hasCompletion = canvasLogs.some((log) =>
-      log.includes("✅ Diving animation complete")
+      log.includes("OK: Diving animation complete")
     );
-    console.log("  Animation completed:", hasCompletion ? "✅" : "❌");
+    console.log("  Animation completed:", hasCompletion ? "OK:" : "ERROR:");
 
     await page.screenshot({
       path: "tests/screenshots/anim-03-after-dive.png",
@@ -170,11 +170,11 @@ test.describe("Animation System Tests", () => {
       log.includes("Triggering death animation")
     );
 
-    console.log("  Treasure animation:", hasTreasureAnim ? "✅" : "❌");
-    console.log("  Death animation:", hasDeathAnim ? "✅" : "❌");
+    console.log("  Treasure animation:", hasTreasureAnim ? "OK:" : "ERROR:");
+    console.log("  Death animation:", hasDeathAnim ? "OK:" : "ERROR:");
 
     const hasResultAnim = hasTreasureAnim || hasDeathAnim;
-    console.log("  Result animation triggered:", hasResultAnim ? "✅" : "❌");
+    console.log("  Result animation triggered:", hasResultAnim ? "OK:" : "ERROR:");
 
     await page.screenshot({
       path: "tests/screenshots/anim-04-result.png",
@@ -218,7 +218,7 @@ test.describe("Animation System Tests", () => {
       const hasAnimTrigger = canvasLogs.some((log) =>
         log.includes("Triggering diving animation")
       );
-      console.log("  Diving animation:", hasAnimTrigger ? "✅" : "❌");
+      console.log("  Diving animation:", hasAnimTrigger ? "OK:" : "ERROR:");
 
       // Check for drowned
       const isDrowned = await page
@@ -232,15 +232,15 @@ test.describe("Animation System Tests", () => {
         const hasDeathAnim = canvasLogs.some((log) =>
           log.includes("Triggering death animation")
         );
-        console.log("  Death animation:", hasDeathAnim ? "✅" : "❌");
+        console.log("  Death animation:", hasDeathAnim ? "OK:" : "ERROR:");
         break;
       } else {
-        console.log("  Result: SURVIVED ✅");
+        console.log("  Result: SURVIVED OK:");
 
         const hasTreasureAnim = canvasLogs.some((log) =>
           log.includes("Triggering treasure animation")
         );
-        console.log("  Treasure animation:", hasTreasureAnim ? "✅" : "❌");
+        console.log("  Treasure animation:", hasTreasureAnim ? "OK:" : "ERROR:");
       }
 
       await page.screenshot({
@@ -249,7 +249,7 @@ test.describe("Animation System Tests", () => {
       });
     }
 
-    console.log(`\n✅ Completed ${diveCount} dives`);
+    console.log(`\nOK: Completed ${diveCount} dives`);
   });
 
   test("State Machine Logging", async ({ page }) => {
@@ -288,9 +288,9 @@ test.describe("Animation System Tests", () => {
     console.log(`Canvas logs: ${canvasLogs.length}`);
 
     if (canvasLogs.length === 0) {
-      console.log("⚠️  WARNING: No canvas logs detected!");
+      console.log("WARNING:  WARNING: No canvas logs detected!");
     } else {
-      console.log("✅ Canvas system is logging");
+      console.log("OK: Canvas system is logging");
     }
   });
 });

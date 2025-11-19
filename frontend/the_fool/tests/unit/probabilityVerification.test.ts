@@ -53,7 +53,7 @@ describe("Probability Verification", () => {
       `Survival rate should be within ${tolerance * 100}% of ${expectedRate * 100}%`
     );
 
-    console.log("✓ Round 1 survival rate verified");
+    console.log("- Round 1 survival rate verified");
   });
 
   it("should verify deeper dives have lower survival rates", async () => {
@@ -111,7 +111,7 @@ describe("Probability Verification", () => {
       "Round 5 should have higher survival than Round 10"
     );
 
-    console.log("✓ Survival rates decrease with depth");
+    console.log("- Survival rates decrease with depth");
   });
 
   it("should verify house edge over many games", async () => {
@@ -177,7 +177,7 @@ describe("Probability Verification", () => {
       "House edge should be roughly 5% (±10%)"
     );
 
-    console.log("✓ House edge verified over many games");
+    console.log("- House edge verified over many games");
   });
 });
 
@@ -192,7 +192,7 @@ describe("Randomness Tests", () => {
     }
 
     assert.strictEqual(ids.size, count, "All session IDs should be unique");
-    console.log(`✓ ${count} unique session IDs generated`);
+    console.log(`- ${count} unique session IDs generated`);
   });
 
   it("should have unpredictable random rolls", async () => {
@@ -238,7 +238,7 @@ describe("Randomness Tests", () => {
     console.log(`  Average roll: ${avg.toFixed(1)}`);
     console.log(`  Unique values: ${unique}/100`);
     console.log(`  Std deviation: ${stdDev.toFixed(1)}`);
-    console.log("✓ Random rolls appear unpredictable");
+    console.log("- Random rolls appear unpredictable");
   });
 
   it("should have uniform distribution of rolls", async () => {
@@ -282,7 +282,7 @@ describe("Randomness Tests", () => {
     // Chi-square critical value for 9 degrees of freedom at p=0.05 is ~16.92
     assert.ok(chiSquare < 25, "Distribution should be reasonably uniform");
 
-    console.log("✓ Rolls have uniform distribution");
+    console.log("- Rolls have uniform distribution");
   });
 });
 
@@ -310,7 +310,7 @@ describe("Multiplier Calculations", () => {
       );
     }
 
-    console.log("✓ All rounds have constant EV (5% house edge)");
+    console.log("- All rounds have constant EV (5% house edge)");
   });
 
   it("should verify treasure decreases on average", async () => {
@@ -348,7 +348,7 @@ describe("Multiplier Calculations", () => {
       "Average should be ~$42.50"
     );
 
-    console.log("✓ Treasure decreases on average (house edge working)");
+    console.log("- Treasure decreases on average (house edge working)");
   });
 
   it("should handle very small treasure values", async () => {
@@ -384,7 +384,7 @@ describe("Multiplier Calculations", () => {
       }
     }
 
-    console.log("✓ Small treasure values handled correctly");
+    console.log("- Small treasure values handled correctly");
   });
 
   it("should handle very large treasure values", async () => {
@@ -418,7 +418,7 @@ describe("Multiplier Calculations", () => {
     }
 
     console.log(`  Max treasure reached: $${maxTreasure}`);
-    console.log("✓ Large treasure values handled correctly");
+    console.log("- Large treasure values handled correctly");
   });
 });
 
@@ -450,7 +450,7 @@ describe("Floating Point Precision", () => {
       treasure = result.totalTreasure;
     }
 
-    console.log("✓ Floating point rounding handled correctly");
+    console.log("- Floating point rounding handled correctly");
   });
 
   it("should maintain precision over many multiplications", async () => {
@@ -476,8 +476,8 @@ describe("Floating Point Precision", () => {
       }
     }
 
-    console.log("✓ Precision maintained over 100 games");
+    console.log("- Precision maintained over 100 games");
   });
 });
 
-console.log("\n✅ All probability verification tests completed!\n");
+console.log("\nOK: All probability verification tests completed!\n");

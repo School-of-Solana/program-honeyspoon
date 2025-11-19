@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 
 function logTransactionFailure(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
-    console.log(`\n❌ Transaction failed: ${context}`);
+    console.log(`\nTransaction failed: ${context}`);
 
     // LiteSVM FailedTransactionMetadata has .err() and .meta() methods
     if (typeof result.err === "function") {
@@ -45,7 +45,7 @@ function logAccountStates(
   playerPubkey: PublicKey,
   context: string
 ): void {
-  console.log(`\n📊 Account States - ${context}`);
+  console.log(`\nAccount States - ${context}`);
 
   const sol = (lamports: BN | bigint | number): number => {
     const lamportsBN =
@@ -6655,7 +6655,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         svm.getAccount(houseVaultPDA)!.data
       );
       console.log(
-        `\n💰 Initial vault reserved: ${
+        `\nAmount: Initial vault reserved: ${
           vaultBeforeStart.totalReserved.toNumber() / LAMPORTS_PER_SOL
         } SOL`
       );
@@ -6698,7 +6698,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         betAmount.toString()
       );
       console.log(
-        `✅ Session created - Dive #${sessionDataAfterStart.diveNumber}, Status: ${sessionDataAfterStart.status}`
+        `OK: Session created - Dive #${sessionDataAfterStart.diveNumber}, Status: ${sessionDataAfterStart.status}`
       );
 
       // Verify vault reserved funds increased
@@ -6710,7 +6710,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       );
       expect(reservedIncrease.toString()).to.equal(maxPayout.toString());
       console.log(
-        `✅ Vault reserved increased by ${
+        `OK: Vault reserved increased by ${
           reservedIncrease.toNumber() / LAMPORTS_PER_SOL
         } SOL`
       );
@@ -6739,8 +6739,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const sessionAfterPlay = svm.getAccount(sessionPDA);
 
       if (!sessionAfterPlay) {
-        console.log("❌ Player LOST - session was closed automatically");
-        console.log("⚠️  Cannot test cash out (session no longer exists)");
+        console.log("ERROR: Player LOST - session was closed automatically");
+        console.log("WARNING:  Cannot test cash out (session no longer exists)");
         console.log("💡 This is expected behavior - player died on first dive");
 
         // Verify vault unreserved the funds
@@ -6750,7 +6750,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         expect(vaultAfterLoss.totalReserved.toString()).to.equal(
           vaultBeforeStart.totalReserved.toString()
         );
-        console.log("✅ Vault funds unreserved correctly after loss");
+        console.log("OK: Vault funds unreserved correctly after loss");
         return; // Test ends here if player lost
       }
 
@@ -6759,10 +6759,10 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       expect(sessionDataAfterPlay.status).to.equal("Active");
       expect(sessionDataAfterPlay.diveNumber).to.equal(2); // Should be dive 2 now
       console.log(
-        `✅ Player SURVIVED! Dive #${sessionDataAfterPlay.diveNumber}`
+        `OK: Player SURVIVED! Dive #${sessionDataAfterPlay.diveNumber}`
       );
       console.log(
-        `💰 Current treasure: ${
+        `Amount: Current treasure: ${
           sessionDataAfterPlay.currentTreasure.toNumber() / LAMPORTS_PER_SOL
         } SOL`
       );
@@ -6803,12 +6803,12 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       }
 
       expect(cashOutResult.constructor.name).to.equal("TransactionMetadata");
-      console.log("✅ Cash out transaction successful");
+      console.log("OK: Cash out transaction successful");
 
       // Verify session was closed
       const sessionAfterCashout = svm.getAccount(sessionPDA);
       expect(sessionAfterCashout).to.be.null;
-      console.log("✅ Session account closed");
+      console.log("OK: Session account closed");
 
       // Verify player received treasure + session rent refund
       const playerBalanceAfterCashout = svm.getAccount(
@@ -6822,7 +6822,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       // Session rent refund is approximately 0.0025 SOL (varies)
       expect(playerBalanceIncrease.gte(treasureAmount)).to.be.true;
       console.log(
-        `✅ Player balance increased by ${
+        `OK: Player balance increased by ${
           playerBalanceIncrease.toNumber() / LAMPORTS_PER_SOL
         } SOL`
       );
@@ -6840,7 +6840,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         vaultBeforeStart.totalReserved.toString()
       );
       console.log(
-        `✅ Vault reserved back to ${
+        `OK: Vault reserved back to ${
           vaultAfterCashout.totalReserved.toNumber() / LAMPORTS_PER_SOL
         } SOL`
       );
@@ -6849,16 +6849,16 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultBalanceAfterCashout = svm.getAccount(houseVaultPDA)!.lamports;
       const vaultBalanceAfterStart = svm.getAccount(houseVaultPDA)!.lamports;
       console.log(
-        `💰 Vault paid out ${
+        `Amount: Vault paid out ${
           treasureAmount.toNumber() / LAMPORTS_PER_SOL
         } SOL to player`
       );
 
-      console.log("\n🎉 Complete game flow test PASSED!");
-      console.log("   ✅ Session started");
-      console.log("   ✅ Player survived round");
-      console.log("   ✅ Player cashed out successfully");
-      console.log("   ✅ All account states verified");
+      console.log("\nSuccess: Complete game flow test PASSED!");
+      console.log("   OK: Session started");
+      console.log("   OK: Player survived round");
+      console.log("   OK: Player cashed out successfully");
+      console.log("   OK: All account states verified");
     });
 
     it("should handle immediate cash out after session start", () => {
@@ -6926,7 +6926,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       // Should fail because treasure (0.1) <= bet (0.1)
       expect(result.constructor.name).to.equal("FailedTransactionMetadata");
-      console.log("✅ Correctly rejected cash out when treasure <= bet");
+      console.log("OK: Correctly rejected cash out when treasure <= bet");
     });
   });
 });

@@ -40,7 +40,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
         fullPage: true,
       });
 
-      console.log("  Error handling tested: ✅");
+      console.log("  Error handling tested: OK:");
     });
 
     test("Slow Network Simulation", async ({ page }) => {
@@ -72,7 +72,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
         .locator('button:has-text("DIVE DEEPER")')
         .isVisible();
       expect(hudVisible).toBeTruthy();
-      console.log("  Game functional on slow network: ✅");
+      console.log("  Game functional on slow network: OK:");
 
       await page.screenshot({
         path: "tests/screenshots/blind-02-slow-network.png",
@@ -124,7 +124,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
       // Game should reset to betting screen
       const bettingCard = await page.locator("text=ABYSS FORTUNE").isVisible();
       expect(bettingCard).toBeTruthy();
-      console.log("  Game reset after refresh: ✅");
+      console.log("  Game reset after refresh: OK:");
 
       await page.screenshot({
         path: "tests/screenshots/blind-03-refresh.png",
@@ -182,7 +182,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
       const isDisabled = await diveButton.isDisabled();
 
       expect(isDisabled).toBeTruthy();
-      console.log("  Button disabled during animation: ✅");
+      console.log("  Button disabled during animation: OK:");
 
       // Try clicking surface button
       const surfaceButton = page
@@ -192,7 +192,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
 
       console.log(
         "  Surface button also disabled:",
-        surfaceDisabled ? "✅" : "⚠️"
+        surfaceDisabled ? "OK:" : "WARNING:"
       );
 
       await page.screenshot({
@@ -243,7 +243,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
         fullPage: true,
       });
 
-      console.log("  Duplicate surface prevented: ✅");
+      console.log("  Duplicate surface prevented: OK:");
     });
   });
 
@@ -284,7 +284,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
       // Check if probability is shown
       const hasPercentage = survivalText?.includes("%");
       expect(hasPercentage).toBeTruthy();
-      console.log("  Survival probability displayed: ✅");
+      console.log("  Survival probability displayed: OK:");
 
       await page.screenshot({
         path: "tests/screenshots/blind-07-ev-calculation.png",
@@ -321,7 +321,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
         // First dive multiplier should be around 1.21x (0.85/0.70)
         expect(multiplier).toBeGreaterThan(1.0);
         expect(multiplier).toBeLessThan(2.0);
-        console.log("  Multiplier in valid range: ✅");
+        console.log("  Multiplier in valid range: OK:");
       }
 
       await page.screenshot({
@@ -391,7 +391,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
 
         // Memory shouldn't increase more than 50MB for 5 games
         expect(increaseMB).toBeLessThan(50);
-        console.log("  No significant memory leak: ✅");
+        console.log("  No significant memory leak: OK:");
       } else {
         console.log("  Memory API not available, skipping check");
       }
@@ -420,7 +420,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
         (el) => el === document.activeElement
       );
 
-      console.log("  Tab to bet input:", isFocused ? "✅" : "⚠️");
+      console.log("  Tab to bet input:", isFocused ? "OK:" : "WARNING:");
 
       // Try Enter to start (should not work if button not focused)
       await page.keyboard.press("Enter");
@@ -431,7 +431,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
         fullPage: true,
       });
 
-      console.log("  Keyboard navigation tested: ✅");
+      console.log("  Keyboard navigation tested: OK:");
     });
 
     test("Screen Reader Labels", async ({ page }) => {
@@ -448,7 +448,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
 
       console.log(
         "  Bet input has label:",
-        hasLabel ? "✅" : "⚠️  (should add aria-label)"
+        hasLabel ? "OK:" : "WARNING:  (should add aria-label)"
       );
 
       // Check buttons
@@ -462,7 +462,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
         fullPage: true,
       });
 
-      console.log("  Accessibility elements checked: ✅");
+      console.log("  Accessibility elements checked: OK:");
     });
   });
 
@@ -487,7 +487,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
       const diveButton = page.locator('button:has-text("DIVE DEEPER")');
       await expect(diveButton).toBeVisible();
 
-      console.log("  Tablet portrait layout: ✅");
+      console.log("  Tablet portrait layout: OK:");
 
       await page.screenshot({
         path: "tests/screenshots/blind-12-tablet.png",
@@ -514,7 +514,7 @@ test.describe("Blind Spot Tests - Uncovered Scenarios", () => {
       await page.locator('button:has-text("START DIVING")').click();
       await page.waitForTimeout(1500);
 
-      console.log("  Large desktop layout: ✅");
+      console.log("  Large desktop layout: OK:");
 
       await page.screenshot({
         path: "tests/screenshots/blind-13-large-desktop.png",

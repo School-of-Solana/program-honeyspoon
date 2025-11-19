@@ -78,7 +78,7 @@ describe("Wallet Logic - calculateMaxPotentialPayout", () => {
     assert.ok(maxPayout > 100, "Max payout should be greater than initial bet");
     assert.ok(maxPayout < 100000, "Max payout should be reasonable");
 
-    console.log(`✓ Max payout for $100 bet: $${maxPayout}`);
+    console.log(`- Max payout for $100 bet: $${maxPayout}`);
   });
 
   it("should calculate max payout for $10 bet", () => {
@@ -86,7 +86,7 @@ describe("Wallet Logic - calculateMaxPotentialPayout", () => {
 
     assert.ok(maxPayout >= 10, "Max payout should be at least initial bet");
 
-    console.log(`✓ Max payout for $10 bet: $${maxPayout}`);
+    console.log(`- Max payout for $10 bet: $${maxPayout}`);
   });
 
   it("should scale linearly with bet amount", () => {
@@ -98,7 +98,7 @@ describe("Wallet Logic - calculateMaxPotentialPayout", () => {
     assert.ok(ratio > 1.9 && ratio < 2.1, `Ratio should be ~2.0, got ${ratio}`);
 
     console.log(
-      `✓ Payout scales linearly: $100→$${payout100}, $200→$${payout200} (ratio: ${ratio.toFixed(2)})`
+      `- Payout scales linearly: $100→$${payout100}, $200→$${payout200} (ratio: ${ratio.toFixed(2)})`
     );
   });
 
@@ -108,7 +108,7 @@ describe("Wallet Logic - calculateMaxPotentialPayout", () => {
 
     assert.ok(payout10 > payout5, "10 dives should have higher payout than 5");
 
-    console.log(`✓ 5 dives: $${payout5}, 10 dives: $${payout10}`);
+    console.log(`- 5 dives: $${payout5}, 10 dives: $${payout10}`);
   });
 });
 
@@ -123,7 +123,7 @@ describe("Wallet Logic - calculateMaxBetFromHouseWallet", () => {
       "Should not exceed absolute max"
     );
 
-    console.log(`✓ Max bet for $50k house: $${maxBet}`);
+    console.log(`- Max bet for $50k house: $${maxBet}`);
   });
 
   it("should reduce max bet when house has reserved funds", () => {
@@ -138,7 +138,7 @@ describe("Wallet Logic - calculateMaxBetFromHouseWallet", () => {
       "Max bet should be lower or equal with reserved funds"
     );
 
-    console.log(`✓ No reserves: $${maxBet1}, With $20k reserves: $${maxBet2}`);
+    console.log(`- No reserves: $${maxBet1}, With $20k reserves: $${maxBet2}`);
   });
 
   it("should return 0 when house is depleted", () => {
@@ -147,7 +147,7 @@ describe("Wallet Logic - calculateMaxBetFromHouseWallet", () => {
 
     assert.ok(maxBet >= 0, "Max bet should not be negative");
 
-    console.log(`✓ Depleted house ($1k) max bet: $${maxBet}`);
+    console.log(`- Depleted house ($1k) max bet: $${maxBet}`);
   });
 });
 
@@ -161,9 +161,9 @@ describe("Wallet Logic - validateBet", () => {
 
     if (validation.valid) {
       assert.strictEqual(validation.error, undefined, "Should have no error");
-      console.log("✓ Valid $50 bet accepted");
+      console.log("- Valid $50 bet accepted");
     } else {
-      console.log(`✓ $50 bet validation: ${validation.error}`);
+      console.log(`- $50 bet validation: ${validation.error}`);
     }
   });
 
@@ -183,7 +183,7 @@ describe("Wallet Logic - validateBet", () => {
       "Error should mention minimum bet"
     );
 
-    console.log(`✓ Bet below minimum rejected: ${validation.error}`);
+    console.log(`- Bet below minimum rejected: ${validation.error}`);
   });
 
   it("should reject bet exceeding user balance", () => {
@@ -207,7 +207,7 @@ describe("Wallet Logic - validateBet", () => {
       "Should return user balance"
     );
 
-    console.log(`✓ Bet exceeding balance rejected: ${validation.error}`);
+    console.log(`- Bet exceeding balance rejected: ${validation.error}`);
   });
 
   it("should reject bet when house cannot cover", () => {
@@ -222,9 +222,9 @@ describe("Wallet Logic - validateBet", () => {
           validation.error?.includes("Maximum bet"),
         "Error should mention house capacity"
       );
-      console.log(`✓ Bet rejected due to house limit: ${validation.error}`);
+      console.log(`- Bet rejected due to house limit: ${validation.error}`);
     } else {
-      console.log("✓ $100 bet accepted by $1k house (within limits)");
+      console.log("- $100 bet accepted by $1k house (within limits)");
     }
   });
 
@@ -240,7 +240,7 @@ describe("Wallet Logic - validateBet", () => {
       "Error should mention maximum bet"
     );
 
-    console.log(`✓ Bet above maximum rejected: ${validation.error}`);
+    console.log(`- Bet above maximum rejected: ${validation.error}`);
   });
 
   it("should validate bet at exact user balance (if within limits)", () => {
@@ -251,9 +251,9 @@ describe("Wallet Logic - validateBet", () => {
     const validation = validateBet(50, user, house);
 
     if (validation.valid) {
-      console.log("✓ Bet at exact balance accepted");
+      console.log("- Bet at exact balance accepted");
     } else {
-      console.log(`✓ Bet at exact balance: ${validation.error}`);
+      console.log(`- Bet at exact balance: ${validation.error}`);
     }
 
     // Should at least not error for insufficient balance
@@ -272,7 +272,7 @@ describe("Wallet Logic - validateBet", () => {
 
     assert.strictEqual(validation.valid, true, "Should accept minimum bet");
 
-    console.log(`✓ Minimum bet ($${DEFAULT_LIMITS.minBet}) accepted`);
+    console.log(`- Minimum bet ($${DEFAULT_LIMITS.minBet}) accepted`);
   });
 });
 
@@ -285,7 +285,7 @@ describe("Wallet Logic - validateDiveDeeper", () => {
 
     assert.strictEqual(validation.valid, true, "Should allow dive");
 
-    console.log("✓ Dive deeper allowed when house can afford");
+    console.log("- Dive deeper allowed when house can afford");
   });
 
   it("should block dive when house cannot afford increase", () => {
@@ -299,9 +299,9 @@ describe("Wallet Logic - validateDiveDeeper", () => {
         validation.error?.includes("House cannot"),
         "Error should mention house capacity"
       );
-      console.log(`✓ Dive blocked due to house limit: ${validation.error}`);
+      console.log(`- Dive blocked due to house limit: ${validation.error}`);
     } else {
-      console.log("✓ Dive allowed (house still has capacity)");
+      console.log("- Dive allowed (house still has capacity)");
     }
   });
 
@@ -318,9 +318,9 @@ describe("Wallet Logic - validateDiveDeeper", () => {
           validation.error?.includes("surface"),
         "Error should mention limit"
       );
-      console.log(`✓ Dive blocked near max win: ${validation.error}`);
+      console.log(`- Dive blocked near max win: ${validation.error}`);
     } else {
-      console.log("✓ Dive allowed (still under max win)");
+      console.log("- Dive allowed (still under max win)");
     }
   });
 });
@@ -333,7 +333,7 @@ describe("Wallet Logic - House Fund Management", () => {
     assert.strictEqual(updated.reservedFunds, 5000, "Should reserve $5k");
     assert.strictEqual(updated.balance, 50000, "Balance should not change");
 
-    console.log("✓ Funds reserved: $5k");
+    console.log("- Funds reserved: $5k");
   });
 
   it("should release funds correctly", () => {
@@ -342,7 +342,7 @@ describe("Wallet Logic - House Fund Management", () => {
 
     assert.strictEqual(updated.reservedFunds, 0, "Should release all reserved");
 
-    console.log("✓ Funds released: $5k");
+    console.log("- Funds released: $5k");
   });
 
   it("should not allow negative reserves", () => {
@@ -351,7 +351,7 @@ describe("Wallet Logic - House Fund Management", () => {
 
     assert.strictEqual(updated.reservedFunds, 0, "Should floor at 0");
 
-    console.log("✓ Reserves cannot go negative");
+    console.log("- Reserves cannot go negative");
   });
 
   it("should accumulate multiple reservations", () => {
@@ -361,7 +361,7 @@ describe("Wallet Logic - House Fund Management", () => {
 
     assert.strictEqual(house.reservedFunds, 8000, "Should accumulate to $8k");
 
-    console.log("✓ Multiple reservations accumulate");
+    console.log("- Multiple reservations accumulate");
   });
 });
 
@@ -377,7 +377,7 @@ describe("Wallet Logic - User Wallet Transactions", () => {
       "Total wagered should be $100"
     );
 
-    console.log("✓ Bet processed: $1000 → $900");
+    console.log("- Bet processed: $1000 → $900");
   });
 
   it("should process win correctly", () => {
@@ -392,7 +392,7 @@ describe("Wallet Logic - User Wallet Transactions", () => {
     );
     assert.strictEqual(updated.gamesPlayed, 1, "Should increment games played");
 
-    console.log("✓ Win processed: $900 + $500 = $1400 (profit: $400)");
+    console.log("- Win processed: $900 + $500 = $1400 (profit: $400)");
   });
 
   it("should process loss correctly", () => {
@@ -407,7 +407,7 @@ describe("Wallet Logic - User Wallet Transactions", () => {
     assert.strictEqual(updated.totalLost, 100, "Total lost should be $100");
     assert.strictEqual(updated.gamesPlayed, 1, "Should increment games played");
 
-    console.log("✓ Loss processed: total lost = $100");
+    console.log("- Loss processed: total lost = $100");
   });
 
   it("should handle multiple bets", () => {
@@ -418,7 +418,7 @@ describe("Wallet Logic - User Wallet Transactions", () => {
     assert.strictEqual(user.balance, 850, "Should be $1000 - $100 - $50");
     assert.strictEqual(user.totalWagered, 150, "Total wagered should be $150");
 
-    console.log("✓ Multiple bets processed: $1000 → $850");
+    console.log("- Multiple bets processed: $1000 → $850");
   });
 });
 
@@ -434,7 +434,7 @@ describe("Wallet Logic - House Wallet Transactions", () => {
       "Total received should be $100"
     );
 
-    console.log("✓ House received bet: $50000 → $50100");
+    console.log("- House received bet: $50000 → $50100");
   });
 
   it("should process payout correctly", () => {
@@ -449,7 +449,7 @@ describe("Wallet Logic - House Wallet Transactions", () => {
     );
     assert.strictEqual(updated.reservedFunds, 0, "Should release reserves");
 
-    console.log("✓ House payout: $50100 → $49600, released $5k reserves");
+    console.log("- House payout: $50100 → $49600, released $5k reserves");
   });
 
   it("should handle partial reserve release", () => {
@@ -462,7 +462,7 @@ describe("Wallet Logic - House Wallet Transactions", () => {
       "Should release only $5k of $10k"
     );
 
-    console.log("✓ Partial reserve release: $10k → $5k");
+    console.log("- Partial reserve release: $10k → $5k");
   });
 });
 
@@ -491,7 +491,7 @@ describe("Wallet Logic - Risk Exposure", () => {
     );
 
     console.log(
-      `✓ Risk exposure: $${exposure.availableFunds} available of $${house.balance}`
+      `- Risk exposure: $${exposure.availableFunds} available of $${house.balance}`
     );
   });
 
@@ -505,7 +505,7 @@ describe("Wallet Logic - Risk Exposure", () => {
       "Should accept new bets"
     );
 
-    console.log("✓ House can accept new bets");
+    console.log("- House can accept new bets");
   });
 
   it("should indicate when house cannot accept bets", () => {
@@ -516,7 +516,7 @@ describe("Wallet Logic - Risk Exposure", () => {
     // Need at least min_bet * 50 = $500 to accept bets
     const canAccept = exposure.canAcceptNewBets;
 
-    console.log(`✓ Small house ($1k) can accept bets: ${canAccept}`);
+    console.log(`- Small house ($1k) can accept bets: ${canAccept}`);
   });
 
   it("should calculate max new bet correctly", () => {
@@ -529,7 +529,7 @@ describe("Wallet Logic - Risk Exposure", () => {
       "Should not exceed absolute max"
     );
 
-    console.log(`✓ Max new bet: $${exposure.maxNewBet}`);
+    console.log(`- Max new bet: $${exposure.maxNewBet}`);
   });
 
   it("should handle edge case: fully reserved house", () => {
@@ -547,7 +547,7 @@ describe("Wallet Logic - Risk Exposure", () => {
       "Should not accept bets"
     );
 
-    console.log("✓ Fully reserved house cannot accept bets");
+    console.log("- Fully reserved house cannot accept bets");
   });
 });
 
@@ -560,7 +560,7 @@ describe("Wallet Logic - Edge Cases", () => {
 
     assert.strictEqual(validation.valid, false, "Should reject zero bet");
 
-    console.log("✓ Zero bet rejected");
+    console.log("- Zero bet rejected");
   });
 
   it("should handle negative bet amount", () => {
@@ -571,7 +571,7 @@ describe("Wallet Logic - Edge Cases", () => {
 
     assert.strictEqual(validation.valid, false, "Should reject negative bet");
 
-    console.log("✓ Negative bet rejected");
+    console.log("- Negative bet rejected");
   });
 
   it("should handle user with zero balance", () => {
@@ -586,7 +586,7 @@ describe("Wallet Logic - Edge Cases", () => {
       "Should reject when balance is zero"
     );
 
-    console.log("✓ Bet rejected for zero balance user");
+    console.log("- Bet rejected for zero balance user");
   });
 
   it("should handle house with zero balance", () => {
@@ -601,7 +601,7 @@ describe("Wallet Logic - Edge Cases", () => {
       "Should reject when house is empty"
     );
 
-    console.log("✓ Bet rejected for empty house");
+    console.log("- Bet rejected for empty house");
   });
 
   it("should handle very large bet amounts", () => {
@@ -616,8 +616,8 @@ describe("Wallet Logic - Edge Cases", () => {
       "Should reject extremely large bets"
     );
 
-    console.log("✓ Extremely large bet rejected");
+    console.log("- Extremely large bet rejected");
   });
 });
 
-console.log("\n✅ All wallet logic tests completed!\n");
+console.log("\nOK: All wallet logic tests completed!\n");

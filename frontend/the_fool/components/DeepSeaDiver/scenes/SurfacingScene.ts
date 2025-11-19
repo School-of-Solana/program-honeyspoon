@@ -174,7 +174,7 @@ export function createSurfacingScene(config: SceneConfig) {
 
       // Complete surfacing
       if (surfacingProgress >= 1) {
-        console.log("[CANVAS] ✅ Surfacing complete! Returning to beach...");
+        console.log("[CANVAS] OK: Surfacing complete! Returning to beach...");
         useGameStore.getState().returnToBeach(); // Reset ocean flag so we can dive again
         k.go("beach");
       }

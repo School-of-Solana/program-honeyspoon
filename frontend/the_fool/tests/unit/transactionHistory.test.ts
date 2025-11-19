@@ -60,7 +60,7 @@ describe("Transaction History Mapping", () => {
       assert.strictEqual(history[0].type, "loss");
       assert.strictEqual(history[0].amount, 100);
 
-      console.log("✅ roundNumber → diveNumber mapping works");
+      console.log("OK: roundNumber → diveNumber mapping works");
     });
 
     it("should map metadata.diveNumber to diveNumber", async () => {
@@ -91,7 +91,7 @@ describe("Transaction History Mapping", () => {
       );
       assert.strictEqual(history[0].profit, 50);
 
-      console.log("✅ diveNumber → diveNumber mapping works");
+      console.log("OK: diveNumber → diveNumber mapping works");
     });
 
     it("should prefer diveNumber over roundNumber when both exist", async () => {
@@ -121,7 +121,7 @@ describe("Transaction History Mapping", () => {
         "Should prefer diveNumber over roundNumber"
       );
 
-      console.log("✅ diveNumber takes precedence over roundNumber");
+      console.log("OK: diveNumber takes precedence over roundNumber");
     });
 
     it("should handle missing metadata gracefully", async () => {
@@ -147,7 +147,7 @@ describe("Transaction History Mapping", () => {
       );
       assert.strictEqual(history[0].profit, undefined);
 
-      console.log("✅ Missing metadata handled gracefully");
+      console.log("OK: Missing metadata handled gracefully");
     });
 
     it("should handle mixed transaction formats in same history", async () => {
@@ -213,7 +213,7 @@ describe("Transaction History Mapping", () => {
       assert.strictEqual(lossTx?.diveNumber, 3, "Loss mapped from roundNumber");
       assert.strictEqual(winTx?.diveNumber, 1, "Win mapped from diveNumber");
 
-      console.log("✅ Mixed transaction formats handled correctly");
+      console.log("OK: Mixed transaction formats handled correctly");
     });
   });
 
@@ -241,7 +241,7 @@ describe("Transaction History Mapping", () => {
       assert.strictEqual(history[0].profit, 50, "Should have profit field");
       assert.strictEqual(history[0].type, "win");
 
-      console.log("✅ Profit field present on cashout");
+      console.log("OK: Profit field present on cashout");
     });
 
     it("should have undefined profit on loss transactions", async () => {
@@ -270,7 +270,7 @@ describe("Transaction History Mapping", () => {
         "Loss should not have profit"
       );
 
-      console.log("✅ Profit undefined on loss");
+      console.log("OK: Profit undefined on loss");
     });
 
     it("should have undefined profit on bet transactions", async () => {
@@ -294,7 +294,7 @@ describe("Transaction History Mapping", () => {
         "Bet should not have profit"
       );
 
-      console.log("✅ Profit undefined on bet");
+      console.log("OK: Profit undefined on bet");
     });
   });
 
@@ -325,7 +325,7 @@ describe("Transaction History Mapping", () => {
         "Should return exactly 10 transactions"
       );
 
-      console.log("✅ Limit parameter respected");
+      console.log("OK: Limit parameter respected");
     });
 
     it("should return transactions in descending timestamp order (most recent first)", async () => {
@@ -374,7 +374,7 @@ describe("Transaction History Mapping", () => {
       assert.strictEqual(history[1].id, "tx_newer", "Newer should be second");
       assert.strictEqual(history[2].id, "tx_old", "Oldest should be last");
 
-      console.log("✅ Transactions ordered by timestamp (newest first)");
+      console.log("OK: Transactions ordered by timestamp (newest first)");
     });
 
     it("should return fewer transactions if user has less than limit", async () => {
@@ -401,7 +401,7 @@ describe("Transaction History Mapping", () => {
         "Should return all 3 available transactions"
       );
 
-      console.log("✅ Returns fewer than limit when not enough transactions");
+      console.log("OK: Returns fewer than limit when not enough transactions");
     });
 
     it("should handle limit edge cases", async () => {
@@ -431,7 +431,7 @@ describe("Transaction History Mapping", () => {
       const historyLarge = await getTransactionHistory(userId, 1000);
       assert.strictEqual(historyLarge.length, 5, "Large limit returns all");
 
-      console.log("✅ Edge case limits handled correctly");
+      console.log("OK: Edge case limits handled correctly");
     });
   });
 
@@ -486,7 +486,7 @@ describe("Transaction History Mapping", () => {
         "User2 only sees own transactions"
       );
 
-      console.log("✅ No cross-user transaction leakage");
+      console.log("OK: No cross-user transaction leakage");
     });
 
     it("should handle empty history for new user", async () => {
@@ -500,7 +500,7 @@ describe("Transaction History Mapping", () => {
         "New user should have empty history"
       );
 
-      console.log("✅ Empty history for new user");
+      console.log("OK: Empty history for new user");
     });
   });
 
@@ -543,7 +543,7 @@ describe("Transaction History Mapping", () => {
         "Cashout should have diveNumber = 1"
       );
 
-      console.log("✅ Real game flow transactions mapped correctly");
+      console.log("OK: Real game flow transactions mapped correctly");
       console.log(`   Bet: $${betTx!.amount}`);
       console.log(
         `   Cashout: $${cashoutTx!.amount} (profit: $${cashoutTx!.profit})`
@@ -576,7 +576,7 @@ describe("Transaction History Mapping", () => {
         "Loss should have diveNumber = 1"
       );
 
-      console.log("✅ Real game loss transaction mapped correctly");
+      console.log("OK: Real game loss transaction mapped correctly");
     });
 
     it("should handle multi-round game transaction history", async () => {
@@ -615,7 +615,7 @@ describe("Transaction History Mapping", () => {
         "Cashout should have dive number"
       );
 
-      console.log("✅ Multi-round game history correct");
+      console.log("OK: Multi-round game history correct");
       console.log(`   Final dive number: ${cashoutTx!.diveNumber}`);
       console.log(`   Final treasure: $${cashoutTx!.amount}`);
     });
@@ -657,7 +657,7 @@ describe("Transaction History Mapping", () => {
       assert.strictEqual(tx.profit, 150, "Profit preserved");
       assert.strictEqual(tx.diveNumber, 7, "Dive number mapped");
 
-      console.log("✅ All transaction fields preserved during mapping");
+      console.log("OK: All transaction fields preserved during mapping");
     });
 
     it("should not mutate original transaction objects", async () => {
@@ -686,9 +686,9 @@ describe("Transaction History Mapping", () => {
         "Multiple calls should return same data"
       );
 
-      console.log("✅ Transaction data immutability maintained");
+      console.log("OK: Transaction data immutability maintained");
     });
   });
 });
 
-console.log("✅ Transaction history tests defined");
+console.log("OK: Transaction history tests defined");

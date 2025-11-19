@@ -420,4 +420,4 @@ describe("Game Logic - Depth Calculations", () => {
   });
 });
 
-console.log("\n✅ All extended game logic tests completed!\n");
+console.log("\nOK: All extended game logic tests completed!\n");

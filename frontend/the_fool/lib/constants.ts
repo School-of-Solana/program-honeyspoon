@@ -177,7 +177,7 @@ export const SEA_CREATURES = [
 
 // Visual emojis for treasure visualization
 export const TREASURE_VISUALS = [
-  "💰",
+  "Amount:",
   "💎",
   "👑",
   "🏺",

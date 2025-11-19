@@ -52,7 +52,7 @@ describe("Wallet + Game Integration - Full Game Flow", () => {
 
     // If still invalid, skip the detailed bet validation
     if (!validation.valid) {
-      console.log(`✓ Skipped: ${validation.error}`);
+      console.log(`- Skipped: ${validation.error}`);
       return;
     }
 
@@ -133,7 +133,7 @@ describe("Wallet + Game Integration - Full Game Flow", () => {
     );
 
     console.log(
-      `✓ Game won: $${initialBet} → $${currentTreasure} (profit: $${profit})`
+      `- Game won: $${initialBet} → $${currentTreasure} (profit: $${profit})`
     );
   });
 
@@ -182,7 +182,7 @@ describe("Wallet + Game Integration - Full Game Flow", () => {
     assert.strictEqual(house.reservedFunds, 0, "Reserves should be released");
 
     console.log(
-      `✓ Game lost: $${initialBet} bet lost, balance: $${userAfterLoss.balance}`
+      `- Game lost: $${initialBet} bet lost, balance: $${userAfterLoss.balance}`
     );
   });
 
@@ -233,7 +233,7 @@ describe("Wallet + Game Integration - Full Game Flow", () => {
     // Game 3: -$50 +$200 = +$150 → $1150
     assert.strictEqual(user.balance, 1150, "Balance should be $1150");
 
-    console.log(`✓ 3 games completed: final balance $${user.balance}`);
+    console.log(`- 3 games completed: final balance $${user.balance}`);
   });
 
   it("should track transaction history", () => {
@@ -273,7 +273,7 @@ describe("Wallet + Game Integration - Full Game Flow", () => {
     assert.strictEqual(txs[0].type, "win", "Newest should be first");
     assert.strictEqual(txs[1].type, "bet", "Oldest should be second");
 
-    console.log("✓ Transaction history tracked correctly");
+    console.log("- Transaction history tracked correctly");
   });
 
   it("should manage game session lifecycle", () => {
@@ -319,7 +319,7 @@ describe("Wallet + Game Integration - Full Game Flow", () => {
     retrieved = getGameSession(sessionId);
     assert.strictEqual(retrieved, undefined, "Session should be deleted");
 
-    console.log("✓ Game session lifecycle managed correctly");
+    console.log("- Game session lifecycle managed correctly");
   });
 
   it("should prevent betting when house cannot cover", () => {
@@ -340,7 +340,7 @@ describe("Wallet + Game Integration - Full Game Flow", () => {
       "Error should mention limit"
     );
 
-    console.log(`✓ Bet rejected: ${validation.error}`);
+    console.log(`- Bet rejected: ${validation.error}`);
   });
 
   it("should handle concurrent games with reserved funds", () => {
@@ -375,9 +375,9 @@ describe("Wallet + Game Integration - Full Game Flow", () => {
         "Reserves should accumulate"
       );
 
-      console.log(`✓ Concurrent games: $${house.reservedFunds} reserved`);
+      console.log(`- Concurrent games: $${house.reservedFunds} reserved`);
     } else {
-      console.log(`✓ Second game rejected due to insufficient house funds`);
+      console.log(`- Second game rejected due to insufficient house funds`);
     }
   });
 
@@ -426,7 +426,7 @@ describe("Wallet + Game Integration - Full Game Flow", () => {
     assert.strictEqual(user.gamesPlayed, 5, "Should track 5 games");
 
     console.log(
-      `✓ After 5 games: balance=$${user.balance}, won=$${user.totalWon}, lost=$${user.totalLost}`
+      `- After 5 games: balance=$${user.balance}, won=$${user.totalWon}, lost=$${user.totalLost}`
     );
   });
 });
@@ -469,7 +469,7 @@ describe("Wallet + Game Integration - Edge Cases", () => {
       "Error should mention balance"
     );
 
-    console.log(`✓ User broke: balance=$${user.balance}`);
+    console.log(`- User broke: balance=$${user.balance}`);
   });
 
   it("should handle house running low on funds", () => {
@@ -488,7 +488,7 @@ describe("Wallet + Game Integration - Edge Cases", () => {
     // Should fail due to insufficient house funds
     assert.strictEqual(validation.valid, false, "Bet should be rejected");
 
-    console.log(`✓ House low: ${validation.error}`);
+    console.log(`- House low: ${validation.error}`);
   });
 
   it("should maintain consistency after many operations", () => {
@@ -543,7 +543,7 @@ describe("Wallet + Game Integration - Edge Cases", () => {
     assert.strictEqual(house.reservedFunds, 0, "No funds should be reserved");
 
     console.log(
-      `✓ 50 games: house profit=$${houseProfit}, balance=$${house.balance}`
+      `- 50 games: house profit=$${houseProfit}, balance=$${house.balance}`
     );
   });
 
@@ -578,7 +578,7 @@ describe("Wallet + Game Integration - Edge Cases", () => {
     assert.ok(house.balance > 0, "House should survive extreme payout");
 
     console.log(
-      `✓ Extreme win: $${bet} → $${treasure}, house balance=$${house.balance}`
+      `- Extreme win: $${bet} → $${treasure}, house balance=$${house.balance}`
     );
   });
 
@@ -611,9 +611,9 @@ describe("Wallet + Game Integration - Edge Cases", () => {
     assert.ok(cumulativeEV < 1, "Expected value decreases (house edge)");
 
     console.log(
-      `✓ House edge: Lucky player wins $${actualPayout}, but average would be $${expectedAverage.toFixed(2)} (${(cumulativeEV * 100).toFixed(1)}% of bet)`
+      `- House edge: Lucky player wins $${actualPayout}, but average would be $${expectedAverage.toFixed(2)} (${(cumulativeEV * 100).toFixed(1)}% of bet)`
     );
   });
 });
 
-console.log("\n✅ All wallet + game integration tests completed!\n");
+console.log("\nOK: All wallet + game integration tests completed!\n");

@@ -77,7 +77,7 @@ test.describe("Abyss Fortune Game Flow", () => {
     await expect(startButton).toBeVisible();
     await expect(startButton).toBeEnabled();
 
-    console.log("✅ Step 1 Complete: Initial page loaded successfully");
+    console.log("OK: Step 1 Complete: Initial page loaded successfully");
     console.log("Console Errors:", consoleErrors.length);
   });
 
@@ -112,7 +112,7 @@ test.describe("Abyss Fortune Game Flow", () => {
       fullPage: true,
     });
 
-    console.log("✅ Step 2 Complete: Bet amount changes correctly");
+    console.log("OK: Step 2 Complete: Bet amount changes correctly");
   });
 
   test("Step 3: Start Game - Betting Card Disappears, HUD Appears", async ({
@@ -140,7 +140,7 @@ test.describe("Abyss Fortune Game Flow", () => {
     );
     expect(hasStartLog).toBeTruthy();
     expect(hasHUDLog).toBeTruthy();
-    console.log("✅ Console logs validated: Game start logs present");
+    console.log("OK: Console logs validated: Game start logs present");
 
     await page.screenshot({
       path: "tests/screenshots/04-game-starting.png",
@@ -171,7 +171,7 @@ test.describe("Abyss Fortune Game Flow", () => {
     const surfaceButton = page.locator('button:has-text("SURFACE NOW")');
     await expect(surfaceButton).toBeVisible();
 
-    console.log("✅ Step 3 Complete: Game started, HUD visible");
+    console.log("OK: Step 3 Complete: Game started, HUD visible");
     console.log("Current treasure: $100");
     console.log("Current depth: 0m");
     console.log("Current oxygen: 100%");
@@ -202,7 +202,7 @@ test.describe("Abyss Fortune Game Flow", () => {
       log.includes("[GAME] Dive initiated - Dive #1")
     );
     expect(hasDiveInitLog).toBeTruthy();
-    console.log("✅ Console log validated: Dive initiation logged");
+    console.log("OK: Console log validated: Dive initiation logged");
 
     // Wait for diving message
     const divingMessage = page.locator("text=Diving deeper");
@@ -223,7 +223,7 @@ test.describe("Abyss Fortune Game Flow", () => {
       log.includes("[GAME] Server response received")
     );
     expect(hasServerLog).toBeTruthy();
-    console.log("✅ Console log validated: Server response received");
+    console.log("OK: Console log validated: Server response received");
 
     await page.screenshot({
       path: "tests/screenshots/08-after-first-dive.png",
@@ -238,7 +238,7 @@ test.describe("Abyss Fortune Game Flow", () => {
     const isSurvived = await survivedMessage.isVisible().catch(() => false);
 
     if (isDrowned) {
-      console.log("❌ Result: DROWNED on first dive");
+      console.log("ERROR: Result: DROWNED on first dive");
       console.log("This is possible but rare (30% chance on first dive)");
 
       // Validate drowned log
@@ -246,7 +246,7 @@ test.describe("Abyss Fortune Game Flow", () => {
         log.includes("[GAME] DROWNED")
       );
       expect(hasDrownedLog).toBeTruthy();
-      console.log("✅ Console log validated: Drowned event logged");
+      console.log("OK: Console log validated: Drowned event logged");
 
       // Wait for reset
       await page.waitForTimeout(3000);
@@ -260,14 +260,14 @@ test.describe("Abyss Fortune Game Flow", () => {
         fullPage: true,
       });
     } else if (isSurvived) {
-      console.log("✅ Result: SURVIVED first dive!");
+      console.log("OK: Result: SURVIVED first dive!");
 
       // Validate survival log
       const hasSurvivalLog = consoleLogs.some((log) =>
         log.includes("[GAME] Dive successful")
       );
       expect(hasSurvivalLog).toBeTruthy();
-      console.log("✅ Console log validated: Survival logged");
+      console.log("OK: Console log validated: Survival logged");
 
       // Check updated depth
       const depthText = await page
@@ -288,7 +288,7 @@ test.describe("Abyss Fortune Game Flow", () => {
       console.log("Oxygen level:", oxygenText);
     }
 
-    console.log("✅ Step 4 Complete: First dive executed");
+    console.log("OK: Step 4 Complete: First dive executed");
   });
 
   test("Step 5: Multiple Dives - Progression Test", async ({ page }) => {
@@ -373,11 +373,11 @@ test.describe("Abyss Fortune Game Flow", () => {
     }
 
     if (!gameOver) {
-      console.log(`\n🎉 Survived ${diveCount} dives!`);
+      console.log(`\nSuccess: Survived ${diveCount} dives!`);
       console.log("This is statistically rare - congratulations!");
     }
 
-    console.log(`✅ Step 5 Complete: Tested ${diveCount} dives`);
+    console.log(`OK: Step 5 Complete: Tested ${diveCount} dives`);
   });
 
   test("Step 6: Surface Successfully", async ({ page }) => {
@@ -419,7 +419,7 @@ test.describe("Abyss Fortune Game Flow", () => {
       log.includes("[GAME] Surfacing with")
     );
     expect(hasSurfaceLog).toBeTruthy();
-    console.log("✅ Console log validated: Surfacing logged");
+    console.log("OK: Console log validated: Surfacing logged");
 
     await page.screenshot({
       path: "tests/screenshots/13-surfacing.png",
@@ -437,14 +437,14 @@ test.describe("Abyss Fortune Game Flow", () => {
       log.includes("[GAME] Surface successful")
     );
     expect(hasSuccessLog).toBeTruthy();
-    console.log("✅ Console log validated: Surface success logged");
+    console.log("OK: Console log validated: Surface success logged");
 
     await page.screenshot({
       path: "tests/screenshots/14-surface-success.png",
       fullPage: true,
     });
 
-    console.log("✅ Surfaced successfully!");
+    console.log("OK: Surfaced successfully!");
 
     // Wait for game reset
     await page.waitForTimeout(5000);
@@ -458,7 +458,7 @@ test.describe("Abyss Fortune Game Flow", () => {
       fullPage: true,
     });
 
-    console.log("✅ Step 6 Complete: Surface and reset successful");
+    console.log("OK: Step 6 Complete: Surface and reset successful");
   });
 
   test("Step 7: Console Errors Check", async ({ page }) => {
@@ -473,12 +473,12 @@ test.describe("Abyss Fortune Game Flow", () => {
     console.log(`Total console errors captured: ${consoleErrors.length}`);
 
     if (consoleErrors.length > 0) {
-      console.log("\n❌ Console Errors Found:");
+      console.log("\nERROR: Console Errors Found:");
       consoleErrors.forEach((error, index) => {
         console.log(`  ${index + 1}. ${error}`);
       });
     } else {
-      console.log("✅ No console errors detected");
+      console.log("OK: No console errors detected");
     }
 
     // Fail test if there are critical errors
@@ -491,7 +491,7 @@ test.describe("Abyss Fortune Game Flow", () => {
 
     expect(criticalErrors.length).toBe(0);
 
-    console.log("✅ Step 7 Complete: No critical errors found");
+    console.log("OK: Step 7 Complete: No critical errors found");
   });
 
   test.afterEach(async ({ page }) => {

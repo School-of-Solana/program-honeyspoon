@@ -153,7 +153,7 @@ describe("Max Rounds & Reservation Horizon", () => {
         "Session should still be active"
       );
 
-      console.log(`✅ Round 51 correctly rejected`);
+      console.log(`OK: Round 51 correctly rejected`);
       console.log(`   Error: "${round51Error!.message}"`);
       console.log(`   No wallet mutations or state changes`);
     });
@@ -200,7 +200,7 @@ describe("Max Rounds & Reservation Horizon", () => {
         "Session should be deleted after cashout"
       );
 
-      console.log(`✅ Cash out at round 50 succeeded`);
+      console.log(`OK: Cash out at round 50 succeeded`);
       console.log(`   Payout: $${cashOutResult.finalAmount}`);
       console.log(`   Profit: $${cashOutResult.profit}`);
     });
@@ -358,15 +358,15 @@ describe("Max Rounds & Reservation Horizon", () => {
       // In practice, probability of surviving 50 rounds is astronomically low (~10^-41).
 
       const actualPayout = currentTreasure;
-      console.log(`  ⚠️  Actual payout: $${actualPayout.toExponential(2)}`);
-      console.log(`  ⚠️  Reserved amount: $${reservedAmount}`);
+      console.log(`  WARNING:  Actual payout: $${actualPayout.toExponential(2)}`);
+      console.log(`  WARNING:  Reserved amount: $${reservedAmount}`);
       console.log(
-        `  ⚠️  House balance: $${houseFinal.balance.toExponential(2)}`
+        `  WARNING:  House balance: $${houseFinal.balance.toExponential(2)}`
       );
 
       if (actualPayout > reservedAmount || houseFinal.balance < 0) {
         console.log(
-          `  ⚠️  WARNING: Payout exceeded reservation / House went negative!`
+          `  WARNING:  WARNING: Payout exceeded reservation / House went negative!`
         );
         console.log(`  This is EXPECTED for forced 50-round win streak.`);
         console.log(
@@ -395,10 +395,10 @@ describe("Max Rounds & Reservation Horizon", () => {
         );
       }
 
-      console.log(`✅ Full 50-round streak completed successfully`);
+      console.log(`OK: Full 50-round streak completed successfully`);
       console.log(`   Payout: $${actualPayout} (reserved: $${reservedAmount})`);
-      console.log(`   Money conserved: ✅`);
-      console.log(`   Funds released: ✅`);
+      console.log(`   Money conserved: OK:`);
+      console.log(`   Funds released: OK:`);
     });
   });
 
@@ -467,7 +467,7 @@ describe("Max Rounds & Reservation Horizon", () => {
         "All reserved funds should be released"
       );
 
-      console.log(`✅ Multiple session reservations handled correctly`);
+      console.log(`OK: Multiple session reservations handled correctly`);
     });
 
     it.skip("should prevent session start when house lacks reserve capacity", async () => {
@@ -496,7 +496,7 @@ describe("Max Rounds & Reservation Horizon", () => {
         `Error should mention capacity: ${error!.message}`
       );
 
-      console.log(`✅ House capacity limit enforced`);
+      console.log(`OK: House capacity limit enforced`);
       console.log(`   Rejected bet: $${hugeBet}`);
       console.log(`   Available: $${availableFunds}`);
     });
@@ -537,7 +537,7 @@ describe("Max Rounds & Reservation Horizon", () => {
         "Total money in system must be conserved"
       );
 
-      console.log(`✅ Money conserved over 20-round streak`);
+      console.log(`OK: Money conserved over 20-round streak`);
       console.log(
         `   System total: $${systemTotalInitial} → $${systemTotalFinal}`
       );
@@ -580,7 +580,7 @@ describe("Max Rounds & Reservation Horizon", () => {
         "Total money must be conserved across mixed scenarios"
       );
 
-      console.log(`✅ Money conserved across mixed scenarios`);
+      console.log(`OK: Money conserved across mixed scenarios`);
       console.log(`   3 games played (win, loss, multi-round win)`);
       console.log(
         `   System total: $${systemTotalInitial} → $${systemTotalFinal}`
@@ -649,7 +649,7 @@ describe("Max Rounds & Reservation Horizon", () => {
       assert.ok(sessionAt50!.reservedPayout > 0, "Reserved payout set");
       assert.ok(sessionAt50!.startTime > 0, "Start time set");
 
-      console.log(`✅ Session state consistent at round 50`);
+      console.log(`OK: Session state consistent at round 50`);
       console.log(`   Next round: ${sessionAt50!.diveNumber}`);
       console.log(`   Treasure: $${sessionAt50!.currentTreasure}`);
       console.log(`   Active: ${sessionAt50!.isActive}`);
@@ -657,4 +657,4 @@ describe("Max Rounds & Reservation Horizon", () => {
   });
 });
 
-console.log("✅ Max rounds and reservation tests defined");
+console.log("OK: Max rounds and reservation tests defined");

@@ -54,7 +54,7 @@ describe("Concurrent Bet Placement", () => {
     );
 
     console.log(
-      `✓ ${successCount}/3 concurrent bets succeeded, balance: $${finalWallet.balance}`
+      `- ${successCount}/3 concurrent bets succeeded, balance: $${finalWallet.balance}`
     );
   });
 
@@ -79,7 +79,7 @@ describe("Concurrent Bet Placement", () => {
     // Balance should never go negative
     assert.ok(finalWallet.balance >= 0, "Balance should not go negative");
 
-    console.log(`✓ Placed ${successCount}/15 bets (balance protection worked)`);
+    console.log(`- Placed ${successCount}/15 bets (balance protection worked)`);
   });
 
   it("should handle rapid balance checks during betting", async () => {
@@ -103,10 +103,10 @@ describe("Concurrent Bet Placement", () => {
       assert.ok(Number.isFinite(check.balance), "Balance should be finite");
     });
 
-    console.log("✓ Balance checks during betting handled correctly");
+    console.log("- Balance checks during betting handled correctly");
   });
 
-  console.log("✓ Concurrent bet placement tests passed");
+  console.log("- Concurrent bet placement tests passed");
 });
 
 describe("Concurrent Game Operations", () => {
@@ -146,7 +146,7 @@ describe("Concurrent Game Operations", () => {
     assert.ok(successCount <= 1, "Only one operation should succeed");
 
     console.log(
-      `✓ Concurrent dive/cash-out: ${successCount} succeeded (race handled)`
+      `- Concurrent dive/cash-out: ${successCount} succeeded (race handled)`
     );
   });
 
@@ -166,7 +166,7 @@ describe("Concurrent Game Operations", () => {
     // At most 1 should succeed (same round number)
     assert.ok(successCount >= 1, "At least one dive should succeed");
 
-    console.log(`✓ Concurrent same-round dives: ${successCount} succeeded`);
+    console.log(`- Concurrent same-round dives: ${successCount} succeeded`);
   });
 
   it("should maintain session state consistency", async () => {
@@ -187,10 +187,10 @@ describe("Concurrent Game Operations", () => {
     assert.ok(session2, "Session should still exist");
     assert.strictEqual(session2!.diveNumber, 3, "Should advance to round 3");
 
-    console.log("✓ Session state consistency maintained");
+    console.log("- Session state consistency maintained");
   });
 
-  console.log("✓ Concurrent game operation tests passed");
+  console.log("- Concurrent game operation tests passed");
 });
 
 describe("House Wallet Race Conditions", () => {
@@ -282,7 +282,7 @@ describe("House Wallet Race Conditions", () => {
     }
 
     console.log(
-      `✓ ${numUsers} concurrent payouts: house $${houseBefore.balance} → $${houseAfter.balance}`
+      `- ${numUsers} concurrent payouts: house $${houseBefore.balance} → $${houseAfter.balance}`
     );
   });
 
@@ -313,11 +313,11 @@ describe("House Wallet Race Conditions", () => {
     );
 
     console.log(
-      `✓ House limits: ${acceptedBets}/100 bets accepted before limit`
+      `- House limits: ${acceptedBets}/100 bets accepted before limit`
     );
   });
 
-  console.log("✓ House wallet race condition tests passed");
+  console.log("- House wallet race condition tests passed");
 });
 
 describe("Session State Corruption", () => {
@@ -348,7 +348,7 @@ describe("Session State Corruption", () => {
         assert.ok((error as Error).message.includes("Invalid or inactive"));
       }
 
-      console.log("✓ Deleted session operations rejected");
+      console.log("- Deleted session operations rejected");
     }
   });
 
@@ -371,7 +371,7 @@ describe("Session State Corruption", () => {
     // Correct treasure should work
     await surfaceWithTreasure(treasure1, sessionId, userId);
 
-    console.log("✓ Treasure manipulation prevented");
+    console.log("- Treasure manipulation prevented");
   });
 
   it("should prevent round number manipulation", async () => {
@@ -388,7 +388,7 @@ describe("Session State Corruption", () => {
     // Trying round 1 again won't match session state
     // The session will have diveNumber = 2, so this creates a mismatch
 
-    console.log(`✓ Session expects round ${expectedRound}`);
+    console.log(`- Session expects round ${expectedRound}`);
   });
 
   it("should handle session data consistency after multiple operations", async () => {
@@ -424,10 +424,10 @@ describe("Session State Corruption", () => {
       "Session should expect dive 6"
     );
 
-    console.log("✓ Session consistency maintained across 5 operations");
+    console.log("- Session consistency maintained across 5 operations");
   });
 
-  console.log("✓ Session state corruption tests passed");
+  console.log("- Session state corruption tests passed");
 });
 
 describe("Balance Update Consistency", () => {
@@ -454,7 +454,7 @@ describe("Balance Update Consistency", () => {
       "Balance update should be atomic"
     );
 
-    console.log(`✓ Atomic update: $${balanceBefore} → $${balanceAfter}`);
+    console.log(`- Atomic update: $${balanceBefore} → $${balanceAfter}`);
   });
 
   it("should track total wagered correctly", async () => {
@@ -477,7 +477,7 @@ describe("Balance Update Consistency", () => {
     );
 
     console.log(
-      `✓ Total wagered tracked: $${initialWallet.totalWagered} → $${finalWallet.totalWagered}`
+      `- Total wagered tracked: $${initialWallet.totalWagered} → $${finalWallet.totalWagered}`
     );
   });
 
@@ -513,11 +513,11 @@ describe("Balance Update Consistency", () => {
     );
 
     console.log(
-      `✓ Win/loss tracking: ${finalWallet.totalWon} won, ${finalWallet.totalLost} lost`
+      `- Win/loss tracking: ${finalWallet.totalWon} won, ${finalWallet.totalLost} lost`
     );
   });
 
-  console.log("✓ Balance update consistency tests passed");
+  console.log("- Balance update consistency tests passed");
 });
 
-console.log("\n✅ All wallet race condition tests completed!\n");
+console.log("\nOK: All wallet race condition tests completed!\n");

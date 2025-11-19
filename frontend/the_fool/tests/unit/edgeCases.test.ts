@@ -50,7 +50,7 @@ describe("Edge Cases - Numeric Boundaries", () => {
       "Should handle max safe integer"
     );
 
-    console.log(`✓ Max safe integer: ${Number.MAX_SAFE_INTEGER}`);
+    console.log(`- Max safe integer: ${Number.MAX_SAFE_INTEGER}`);
   });
 
   it("should handle very small bet amounts", () => {
@@ -63,7 +63,7 @@ describe("Edge Cases - Numeric Boundaries", () => {
       "Should reject fractional bets below minimum"
     );
 
-    console.log("✓ Tiny bets rejected");
+    console.log("- Tiny bets rejected");
   });
 
   it("should handle floating point bet amounts", () => {
@@ -72,7 +72,7 @@ describe("Edge Cases - Numeric Boundaries", () => {
     // Should accept if above minimum
     assert.strictEqual(result.valid, true, "Should accept valid float");
 
-    console.log("✓ Float bets handled");
+    console.log("- Float bets handled");
   });
 
   it("should prevent negative balances", () => {
@@ -86,7 +86,7 @@ describe("Edge Cases - Numeric Boundaries", () => {
     // Balance goes negative (but validation should prevent this)
     assert.ok(updatedUser.balance < 0, "Math allows negative");
 
-    console.log("✓ Negative balance possible (needs validation layer)");
+    console.log("- Negative balance possible (needs validation layer)");
   });
 
   it("should handle zero treasure value", () => {
@@ -102,7 +102,7 @@ describe("Edge Cases - Numeric Boundaries", () => {
       "Zero win should not change balance"
     );
 
-    console.log("✓ Zero treasure handled");
+    console.log("- Zero treasure handled");
   });
 
   it("should handle massive multiplier chain", () => {
@@ -117,7 +117,7 @@ describe("Edge Cases - Numeric Boundaries", () => {
     assert.ok(treasure > 1, "Treasure should grow");
     assert.ok(isFinite(treasure), "Should not overflow to Infinity");
 
-    console.log(`✓ 50 dive treasure: $${treasure.toFixed(2)}`);
+    console.log(`- 50 dive treasure: $${treasure.toFixed(2)}`);
   });
 
   it("should handle integer overflow in cumulative stats", () => {
@@ -132,7 +132,7 @@ describe("Edge Cases - Numeric Boundaries", () => {
       "Overflow occurs"
     );
 
-    console.log("✓ Integer overflow handled by JS");
+    console.log("- Integer overflow handled by JS");
   });
 
   it("should handle precision loss in EV calculations", () => {
@@ -151,7 +151,7 @@ describe("Edge Cases - Numeric Boundaries", () => {
     );
 
     console.log(
-      `✓ Dive 50: ${(stats50.survivalProbability * 100).toFixed(6)}% survival`
+      `- Dive 50: ${(stats50.survivalProbability * 100).toFixed(6)}% survival`
     );
   });
 });
@@ -169,7 +169,7 @@ describe("Edge Cases - Invalid Inputs", () => {
 
     // NaN < minBet evaluates to false, so it passes the < check
     // This is a JavaScript quirk - NaN comparisons are always false
-    console.log(`✓ NaN bet: valid=${result.valid} (JS NaN comparison quirk)`);
+    console.log(`- NaN bet: valid=${result.valid} (JS NaN comparison quirk)`);
   });
 
   it("should handle Infinity bet amount", () => {
@@ -180,7 +180,7 @@ describe("Edge Cases - Invalid Inputs", () => {
 
     assert.strictEqual(result.valid, false, "Infinity should be rejected");
 
-    console.log("✓ Infinity bet rejected");
+    console.log("- Infinity bet rejected");
   });
 
   it("should handle empty string as userId", () => {
@@ -189,7 +189,7 @@ describe("Edge Cases - Invalid Inputs", () => {
     assert.strictEqual(wallet.userId, "", "Should accept empty string");
     assert.strictEqual(wallet.balance, 1000, "Should initialize normally");
 
-    console.log("✓ Empty userId handled");
+    console.log("- Empty userId handled");
   });
 
   it("should handle very long userId", () => {
@@ -198,7 +198,7 @@ describe("Edge Cases - Invalid Inputs", () => {
 
     assert.strictEqual(wallet.userId, longId, "Should handle long IDs");
 
-    console.log(`✓ Long userId (${longId.length} chars) handled`);
+    console.log(`- Long userId (${longId.length} chars) handled`);
   });
 
   it("should handle unicode characters in userId", () => {
@@ -207,7 +207,7 @@ describe("Edge Cases - Invalid Inputs", () => {
 
     assert.strictEqual(wallet.userId, unicodeId, "Should handle unicode");
 
-    console.log(`✓ Unicode userId: ${unicodeId}`);
+    console.log(`- Unicode userId: ${unicodeId}`);
   });
 
   it("should handle negative dive numbers", () => {
@@ -215,7 +215,7 @@ describe("Edge Cases - Invalid Inputs", () => {
       calculateDiveStats(-1);
       assert.fail("Should throw or handle gracefully");
     } catch (error) {
-      console.log("✓ Negative dive number causes error (expected)");
+      console.log("- Negative dive number causes error (expected)");
     }
   });
 
@@ -223,9 +223,9 @@ describe("Edge Cases - Invalid Inputs", () => {
     try {
       const stats = calculateDiveStats(0);
       assert.ok(stats, "Should handle or error gracefully");
-      console.log("✓ Zero dive number handled");
+      console.log("- Zero dive number handled");
     } catch (error) {
-      console.log("✓ Zero dive number causes error (expected)");
+      console.log("- Zero dive number causes error (expected)");
     }
   });
 
@@ -241,7 +241,7 @@ describe("Edge Cases - Invalid Inputs", () => {
 
     assert.ok(retrieved, "Should store even malformed session");
 
-    console.log("✓ Malformed session stored (no runtime validation)");
+    console.log("- Malformed session stored (no runtime validation)");
   });
 });
 
@@ -272,7 +272,7 @@ describe("Edge Cases - Concurrent Operations", () => {
     const successful = results.filter((r) => r.success).length;
     assert.ok(successful >= 0, "Some or all bets should be accepted");
 
-    console.log(`✓ ${successful}/${users.length} concurrent bets accepted`);
+    console.log(`- ${successful}/${users.length} concurrent bets accepted`);
   });
 
   it("should handle rapid balance updates", () => {
@@ -287,7 +287,7 @@ describe("Edge Cases - Concurrent Operations", () => {
     const final = getUserWallet("test");
     assert.strictEqual(final.balance, 1100, "All updates should apply");
 
-    console.log("✓ 100 rapid updates completed");
+    console.log("- 100 rapid updates completed");
   });
 
   it("should handle interleaved game sessions", () => {
@@ -326,7 +326,7 @@ describe("Edge Cases - Concurrent Operations", () => {
     assert.strictEqual(s1?.diveNumber, 2, "Session 1 should be dive 2");
     assert.strictEqual(s2?.diveNumber, 3, "Session 2 should be dive 3");
 
-    console.log("✓ Interleaved session updates work correctly");
+    console.log("- Interleaved session updates work correctly");
   });
 
   it("should handle house fund reservation race condition", () => {
@@ -360,7 +360,7 @@ describe("Edge Cases - Concurrent Operations", () => {
       "Should reject when over-reserved"
     );
 
-    console.log("✓ Race condition handled: over-reservation prevented");
+    console.log("- Race condition handled: over-reservation prevented");
   });
 });
 
@@ -381,7 +381,7 @@ describe("Edge Cases - State Corruption", () => {
       "Corruption persists (no validation)"
     );
 
-    console.log("✓ Negative balance corruption persists (validation needed)");
+    console.log("- Negative balance corruption persists (validation needed)");
   });
 
   it("should handle inconsistent house reserves", () => {
@@ -396,7 +396,7 @@ describe("Edge Cases - State Corruption", () => {
       "Inconsistency persists"
     );
 
-    console.log("✓ House reserve inconsistency persists (validation needed)");
+    console.log("- House reserve inconsistency persists (validation needed)");
   });
 
   it("should handle orphaned game sessions", () => {
@@ -418,7 +418,7 @@ describe("Edge Cases - State Corruption", () => {
 
     assert.strictEqual(sessions.length, 1, "Orphaned session exists");
 
-    console.log("✓ Orphaned sessions can exist (cleanup needed)");
+    console.log("- Orphaned sessions can exist (cleanup needed)");
   });
 
   it("should handle transaction without corresponding wallet", () => {
@@ -436,7 +436,7 @@ describe("Edge Cases - State Corruption", () => {
     const txs = getUserTransactions("ghost_user");
     assert.strictEqual(txs.length, 1, "Transaction exists without wallet");
 
-    console.log("✓ Orphaned transactions can exist");
+    console.log("- Orphaned transactions can exist");
   });
 
   it("should handle double-releasing reserves", () => {
@@ -449,7 +449,7 @@ describe("Edge Cases - State Corruption", () => {
 
     assert.strictEqual(house.reservedFunds, 0, "Should floor at 0");
 
-    console.log("✓ Double-release handled (floors at 0)");
+    console.log("- Double-release handled (floors at 0)");
   });
 
   it("should handle double-processing win", () => {
@@ -464,7 +464,7 @@ describe("Edge Cases - State Corruption", () => {
     assert.strictEqual(win2.balance, 2000, "Both wins apply");
     assert.strictEqual(win2.gamesPlayed, 2, "Game counter increments twice");
 
-    console.log("✓ Double-win processes twice (idempotency needed)");
+    console.log("- Double-win processes twice (idempotency needed)");
   });
 });
 
@@ -484,9 +484,9 @@ describe("Edge Cases - Boundary Conditions", () => {
 
     // Should be valid if within house limits
     if (validation.valid) {
-      console.log("✓ Exact balance bet accepted");
+      console.log("- Exact balance bet accepted");
     } else {
-      console.log(`✓ Exact balance bet rejected: ${validation.error}`);
+      console.log(`- Exact balance bet rejected: ${validation.error}`);
     }
   });
 
@@ -501,7 +501,7 @@ describe("Edge Cases - Boundary Conditions", () => {
 
     assert.strictEqual(validation.valid, false, "Should reject over balance");
 
-    console.log("✓ Over-balance bet rejected");
+    console.log("- Over-balance bet rejected");
   });
 
   it("should handle minimum bet minus 1 cent", () => {
@@ -509,7 +509,7 @@ describe("Edge Cases - Boundary Conditions", () => {
 
     assert.strictEqual(result.valid, false, "Should reject just below min");
 
-    console.log("✓ Just-below-minimum rejected");
+    console.log("- Just-below-minimum rejected");
   });
 
   it("should handle maximum bet plus 1 cent", () => {
@@ -517,7 +517,7 @@ describe("Edge Cases - Boundary Conditions", () => {
 
     assert.strictEqual(result.valid, false, "Should reject just above max");
 
-    console.log("✓ Just-above-maximum rejected");
+    console.log("- Just-above-maximum rejected");
   });
 
   it("should handle house balance exactly matching payout", () => {
@@ -533,7 +533,7 @@ describe("Edge Cases - Boundary Conditions", () => {
     const validation = validateBet(bet, user, house);
 
     // Should be exactly at the limit
-    console.log(`✓ House exactly at limit: valid=${validation.valid}`);
+    console.log(`- House exactly at limit: valid=${validation.valid}`);
   });
 
   it("should handle survival probability at minimum", () => {
@@ -552,7 +552,7 @@ describe("Edge Cases - Boundary Conditions", () => {
     );
 
     console.log(
-      `✓ Round 50 survival probability: ${(stats.survivalProbability * 100).toFixed(2)}%`
+      `- Round 50 survival probability: ${(stats.survivalProbability * 100).toFixed(2)}%`
     );
   });
 
@@ -584,7 +584,7 @@ describe("Edge Cases - Boundary Conditions", () => {
     const txs = getUserTransactions("test");
     assert.strictEqual(txs.length, 2, "Both transactions stored");
 
-    console.log("✓ Timestamp collision handled");
+    console.log("- Timestamp collision handled");
   });
 });
 
@@ -611,7 +611,7 @@ describe("Edge Cases - Determinism & Randomness", () => {
       );
     }
 
-    console.log("✓ 10 shipwrecks perfectly deterministic");
+    console.log("- 10 shipwrecks perfectly deterministic");
   });
 
   it("should handle empty seed string", () => {
@@ -624,7 +624,7 @@ describe("Edge Cases - Determinism & Randomness", () => {
       "Empty seed should be deterministic"
     );
 
-    console.log("✓ Empty seed handled");
+    console.log("- Empty seed handled");
   });
 
   it("should handle seed with special characters", () => {
@@ -633,7 +633,7 @@ describe("Edge Cases - Determinism & Randomness", () => {
 
     assert.ok(wreck.name, "Should generate valid wreck");
 
-    console.log(`✓ Special char seed: "${wreck.name}"`);
+    console.log(`- Special char seed: "${wreck.name}"`);
   });
 
   it("should handle very long seed strings", () => {
@@ -642,7 +642,7 @@ describe("Edge Cases - Determinism & Randomness", () => {
 
     assert.ok(wreck.name, "Should handle long seed");
 
-    console.log("✓ Long seed (10k chars) handled");
+    console.log("- Long seed (10k chars) handled");
   });
 
   it("should produce different results for slightly different seeds", () => {
@@ -654,7 +654,7 @@ describe("Edge Cases - Determinism & Randomness", () => {
 
     assert.ok(different, "Similar seeds should produce different results");
 
-    console.log("✓ Seed sensitivity verified");
+    console.log("- Seed sensitivity verified");
   });
 });
 
@@ -674,7 +674,7 @@ describe("Edge Cases - Performance & Scale", () => {
 
     assert.ok(duration < 1000, "Should create 1000 users in < 1 second");
 
-    console.log(`✓ 1000 users created in ${duration}ms`);
+    console.log(`- 1000 users created in ${duration}ms`);
   });
 
   it("should handle 10000 transactions efficiently", () => {
@@ -697,7 +697,7 @@ describe("Edge Cases - Performance & Scale", () => {
 
     assert.ok(duration < 2000, "Should add 10k transactions in < 2 seconds");
 
-    console.log(`✓ 10000 transactions added in ${duration}ms`);
+    console.log(`- 10000 transactions added in ${duration}ms`);
   });
 
   it("should handle 100 concurrent game sessions", () => {
@@ -723,7 +723,7 @@ describe("Edge Cases - Performance & Scale", () => {
 
     assert.strictEqual(count, 100, "All 100 sessions should exist");
 
-    console.log("✓ 100 concurrent sessions handled");
+    console.log("- 100 concurrent sessions handled");
   });
 
   it("should handle deep calculation nesting", () => {
@@ -743,7 +743,7 @@ describe("Edge Cases - Performance & Scale", () => {
       "Should calculate 1000 dive stats (20x50) in < 500ms"
     );
 
-    console.log(`✓ 1000 dive calculations in ${duration}ms`);
+    console.log(`- 1000 dive calculations in ${duration}ms`);
   });
 
   it("should handle large transaction history queries", () => {
@@ -768,8 +768,8 @@ describe("Edge Cases - Performance & Scale", () => {
     assert.strictEqual(txs.length, 100, "Should limit to 100");
     assert.ok(duration < 100, "Should query in < 100ms");
 
-    console.log(`✓ Queried 100 from 1000 transactions in ${duration}ms`);
+    console.log(`- Queried 100 from 1000 transactions in ${duration}ms`);
   });
 });
 
-console.log("\n✅ All edge case tests completed!\n");
+console.log("\nOK: All edge case tests completed!\n");

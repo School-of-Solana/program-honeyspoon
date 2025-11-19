@@ -69,7 +69,7 @@ const GAME_CONFIG: GameConfig = {
 
 // Validation: Ensure sync in development
 if (process.env.NODE_ENV === "development") {
-  console.log("[CONFIG] ✅ Server config synced from lib/constants.ts");
+  console.log("[CONFIG] OK: Server config synced from lib/constants.ts");
   console.log(`[CONFIG] House edge: ${GAME_CONFIG.houseEdge * 100}%`);
   console.log(
     `[CONFIG] Base win prob: ${GAME_CONFIG.baseWinProbability * 100}%`
@@ -82,8 +82,8 @@ if (process.env.NODE_ENV === "development") {
  */
 async function ensureHouseVault(): Promise<string> {
   try {
-    console.log("[CHAIN] 🏦 ensureHouseVault() called");
-    console.log("[CHAIN] 📊 Current cached PDA:", houseVaultPDA || "(null)");
+    console.log("[CHAIN] Vault: ensureHouseVault() called");
+    console.log("[CHAIN] Info: Current cached PDA:", houseVaultPDA || "(null)");
     console.log("[CHAIN] 🏠 House authority:", HOUSE_AUTHORITY);
 
     // Check if we're in Solana mode
@@ -115,8 +115,8 @@ async function ensureHouseVault(): Promise<string> {
 
     if (existingVault) {
       houseVaultPDA = existingVault.vaultPda;
-      console.log("[CHAIN] ✅ House vault already initialized:", houseVaultPDA);
-      console.log("[CHAIN] 📊 Vault state:", {
+      console.log("[CHAIN] OK: House vault already initialized:", houseVaultPDA);
+      console.log("[CHAIN] Info: Vault state:", {
         locked: existingVault.locked,
         totalReserved: existingVault.totalReserved.toString(),
       });
@@ -131,12 +131,12 @@ async function ensureHouseVault(): Promise<string> {
     });
 
     houseVaultPDA = vaultPda;
-    console.log("[CHAIN] ✅ House vault initialized:", houseVaultPDA);
+    console.log("[CHAIN] OK: House vault initialized:", houseVaultPDA);
     return houseVaultPDA;
   } catch (error) {
-    console.error("[CHAIN] ❌ Failed to initialize house vault:", error);
+    console.error("[CHAIN] ERROR: Failed to initialize house vault:", error);
     console.error(
-      "[CHAIN] ❌ Error details:",
+      "[CHAIN] ERROR: Error details:",
       error instanceof Error ? error.message : String(error)
     );
     throw new Error("Failed to initialize house vault");
@@ -181,7 +181,7 @@ export async function startGameSession(
     const houseReserved = lamportsToSol(houseVault.totalReserved);
     const houseAvailable = houseBalance - houseReserved;
 
-    console.log("[CHAIN] 💰 Wallet balances:", {
+    console.log("[CHAIN] Amount: Wallet balances:", {
       userBalance,
       houseBalance,
       houseReserved,
@@ -191,21 +191,21 @@ export async function startGameSession(
 
     // Validate bet amount
     if (betAmount < GAME_CONFIG.minBet) {
-      console.log("[CHAIN] ❌ Bet below minimum:", {
+      console.log("[CHAIN] ERROR: Bet below minimum:", {
         betAmount,
         minBet: GAME_CONFIG.minBet,
       });
       return { success: false, error: `Minimum bet is ${GAME_CONFIG.minBet}` };
     }
     if (betAmount > GAME_CONFIG.maxBet) {
-      console.log("[CHAIN] ❌ Bet above maximum:", {
+      console.log("[CHAIN] ERROR: Bet above maximum:", {
         betAmount,
         maxBet: GAME_CONFIG.maxBet,
       });
       return { success: false, error: `Maximum bet is ${GAME_CONFIG.maxBet}` };
     }
     if (betAmount > userBalance) {
-      console.log("[CHAIN] ❌ Insufficient user balance:", {
+      console.log("[CHAIN] ERROR: Insufficient user balance:", {
         betAmount,
         userBalance,
       });
@@ -229,7 +229,7 @@ export async function startGameSession(
 
     // Validate house can cover max payout
     if (maxPayout > houseAvailable) {
-      console.log("[CHAIN] ❌ House cannot cover payout:", {
+      console.log("[CHAIN] ERROR: House cannot cover payout:", {
         maxPayout,
         houseAvailable,
         shortfall: maxPayout - houseAvailable,
@@ -284,10 +284,10 @@ export async function startGameSession(
       timestamp: Date.now(),
     });
 
-    console.log(`[CHAIN] ✅ Session started: ${sessionPda}`);
+    console.log(`[CHAIN] OK: Session started: ${sessionPda}`);
     return { success: true, sessionId: sessionPda };
   } catch (error) {
-    console.error("[CHAIN] ❌ Failed to start session:", error);
+    console.error("[CHAIN] ERROR: Failed to start session:", error);
 
     if (GameError.isGameError(error)) {
       return { success: false, error: error.message };
@@ -375,14 +375,14 @@ export async function executeRound(
   });
 
   if (!sessionState || sessionState.status !== SessionStatus.Active) {
-    console.error(`[CHAIN] ❌ Session not found or inactive: ${sessionId}`);
+    console.error(`[CHAIN] ERROR: Session not found or inactive: ${sessionId}`);
     throw new Error("Invalid or inactive game session");
   }
 
   // Validate session belongs to user
   if (sessionState.user !== userId) {
     console.error(
-      `[CHAIN] ❌ Wrong user: session.user=${sessionState.user}, userId=${userId}`
+      `[CHAIN] ERROR: Wrong user: session.user=${sessionState.user}, userId=${userId}`
     );
     throw new Error("Session does not belong to user");
   }
@@ -390,7 +390,7 @@ export async function executeRound(
   // Get local session for legacy data
   const gameSession = getGameSession(sessionId);
   if (!gameSession || gameSession.status !== "ACTIVE") {
-    console.error(`[CHAIN] ❌ Local session missing or inactive: ${sessionId}`);
+    console.error(`[CHAIN] ERROR: Local session missing or inactive: ${sessionId}`);
     throw new Error("Local session data missing");
   }
 
@@ -410,7 +410,7 @@ export async function executeRound(
   // SECURITY: Validate round number matches chain state
   if (roundNumber !== sessionState.diveNumber) {
     console.error(
-      `[CHAIN] ❌ Round mismatch: expected ${sessionState.diveNumber}, got ${roundNumber}`
+      `[CHAIN] ERROR: Round mismatch: expected ${sessionState.diveNumber}, got ${roundNumber}`
     );
     throw new Error(
       `Round number mismatch: chain expects ${sessionState.diveNumber}, client sent ${roundNumber}. Please refresh.`
@@ -430,7 +430,7 @@ export async function executeRound(
 
   if (Math.abs(currentValue - expectedValue) > tolerance) {
     console.error(
-      `[CHAIN] ❌ Value mismatch: chain=${expectedValue}, client=${currentValue}, round=${roundNumber}`
+      `[CHAIN] ERROR: Value mismatch: chain=${expectedValue}, client=${currentValue}, round=${roundNumber}`
     );
     throw new Error(
       `Current value mismatch: chain has ${expectedValue.toFixed(2)}, client sent ${currentValue.toFixed(2)}. Data corruption detected.`
@@ -452,7 +452,7 @@ export async function executeRound(
       // NO client input for outcome - contract determines everything!
     });
 
-    console.log(`[CHAIN] 📊 Chain result:`, {
+    console.log(`[CHAIN] Info: Chain result:`, {
       survived: chainResult.survived,
       randomRoll: chainResult.randomRoll,
       newStatus: chainResult.state.status,
@@ -470,7 +470,7 @@ export async function executeRound(
       // Player survived
       setGameSession(gameSession);
       console.log(
-        `[CHAIN] ✅ Round ${roundNumber} survived: ${gameSession.currentTreasure}`
+        `[CHAIN] OK: Round ${roundNumber} survived: ${gameSession.currentTreasure}`
       );
     } else {
       // Player lost (chain already updated status to Lost and released funds)
@@ -505,7 +505,7 @@ export async function executeRound(
       });
 
       deleteGameSession(sessionId);
-      console.log(`[CHAIN] ❌ Round ${roundNumber} lost`);
+      console.log(`[CHAIN] ERROR: Round ${roundNumber} lost`);
     }
 
     // Build RoundResult for server response (matches old format)
@@ -525,7 +525,7 @@ export async function executeRound(
 
     return result;
   } catch (error) {
-    console.error("[CHAIN] ❌ Failed to execute round:", error);
+    console.error("[CHAIN] ERROR: Failed to execute round:", error);
 
     if (GameError.isGameError(error)) {
       throw new Error(`Chain error: ${error.message}`);
@@ -623,7 +623,7 @@ export async function cashOut(
     deleteGameSession(sessionId);
 
     console.log(
-      `[CHAIN] ✅ Cashed out: ${actualFinalAmount} (profit: ${profit})`
+      `[CHAIN] OK: Cashed out: ${actualFinalAmount} (profit: ${profit})`
     );
 
     return {
@@ -632,7 +632,7 @@ export async function cashOut(
       profit,
     };
   } catch (error) {
-    console.error("[CHAIN] ❌ Failed to cash out:", error);
+    console.error("[CHAIN] ERROR: Failed to cash out:", error);
 
     if (GameError.isGameError(error)) {
       throw new Error(`Chain error: ${error.message}`);

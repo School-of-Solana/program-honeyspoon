@@ -120,7 +120,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "No new transaction should be added"
       );
 
-      console.log("✅ Double cashout correctly rejected");
+      console.log("OK: Double cashout correctly rejected");
       console.log(`   First cashout: $${firstCashout.finalAmount}`);
       console.log(
         `   Second cashout: Rejected with "${secondCashoutError!.message}"`
@@ -160,7 +160,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "Failed cashout should have correct error message"
       );
 
-      console.log("✅ Race condition double cashout prevented");
+      console.log("OK: Race condition double cashout prevented");
     });
   });
 
@@ -235,7 +235,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "Session should be deleted or inactive"
       );
 
-      console.log("✅ executeRound after cashout correctly rejected");
+      console.log("OK: executeRound after cashout correctly rejected");
     });
 
     it("should reject multiple executeRound attempts after cashout", async () => {
@@ -262,7 +262,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
       );
 
       console.log(
-        "✅ Multiple executeRound attempts after cashout all rejected"
+        "OK: Multiple executeRound attempts after cashout all rejected"
       );
     });
   });
@@ -327,7 +327,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "Session should be deleted after loss"
       );
 
-      console.log("✅ executeRound after loss correctly rejected");
+      console.log("OK: executeRound after loss correctly rejected");
     });
 
     it("should handle retry storms after loss gracefully", async () => {
@@ -356,7 +356,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         );
       }
 
-      console.log("✅ Retry storm after loss handled gracefully");
+      console.log("OK: Retry storm after loss handled gracefully");
     });
   });
 
@@ -402,7 +402,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "House balance unchanged"
       );
 
-      console.log("✅ cashOut after loss correctly rejected");
+      console.log("OK: cashOut after loss correctly rejected");
     });
   });
 
@@ -429,7 +429,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         `Should mention round mismatch: ${wrongRoundError!.message}`
       );
 
-      console.log("✅ Wrong round number correctly rejected");
+      console.log("OK: Wrong round number correctly rejected");
     });
 
     it("should reject executeRound with round number going backwards", async () => {
@@ -454,7 +454,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "Should mention round mismatch"
       );
 
-      console.log("✅ Backwards round number correctly rejected");
+      console.log("OK: Backwards round number correctly rejected");
     });
   });
 
@@ -477,7 +477,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "Should mention invalid session"
       );
 
-      console.log("✅ Non-existent session correctly rejected");
+      console.log("OK: Non-existent session correctly rejected");
     });
 
     it("should reject cashOut on non-existent session", async () => {
@@ -498,7 +498,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "Should mention invalid session"
       );
 
-      console.log("✅ Non-existent session cashOut correctly rejected");
+      console.log("OK: Non-existent session cashOut correctly rejected");
     });
   });
 
@@ -527,7 +527,7 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "No spurious transactions added"
       );
 
-      console.log("✅ Transaction log integrity maintained");
+      console.log("OK: Transaction log integrity maintained");
     });
 
     it("should prevent session resurrection after deletion", async () => {
@@ -561,9 +561,9 @@ describe("Session Lifecycle - Illegal Sequences", () => {
         "Session should still be deleted"
       );
 
-      console.log("✅ Session resurrection prevented");
+      console.log("OK: Session resurrection prevented");
     });
   });
 });
 
-console.log("✅ Session lifecycle tests defined");
+console.log("OK: Session lifecycle tests defined");

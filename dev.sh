@@ -129,9 +129,9 @@ cleanup() {
     # Only kill validator if doing a clean start
     if [ "$CLEAN_START" = true ]; then
         pkill -9 solana-test-validator 2>/dev/null || true
-        echo -e "${GREEN}   ✅ Stopped all processes${NC}"
+        echo -e "${GREEN}   OK: Stopped all processes${NC}"
     else
-        echo -e "${GREEN}   ✅ Stopped frontend (validator still running)${NC}"
+        echo -e "${GREEN}   OK: Stopped frontend (validator still running)${NC}"
     fi
     
     exit 0
@@ -166,16 +166,16 @@ if [ "$USE_LOCAL" = false ]; then
         rm -rf ~/.local/share/solana/test-ledger 2>/dev/null || true
         
         VALIDATOR_RUNNING=false
-        echo -e "${GREEN}   ✅ Cleaned${NC}"
+        echo -e "${GREEN}   OK: Cleaned${NC}"
         echo ""
     fi
 
     if [ "$VALIDATOR_RUNNING" = true ]; then
-        echo -e "${GREEN}✅ Validator already running${NC}"
+        echo -e "${GREEN}OK: Validator already running${NC}"
         VALIDATOR_PID=$(pgrep -f solana-test-validator)
         echo -e "${CYAN}   PID: $VALIDATOR_PID${NC}"
     else
-        echo -e "${BLUE}🚀 Starting validator...${NC}"
+        echo -e "${BLUE}>>> Starting validator...${NC}"
         cd "$ANCHOR_DIR"
         # Filter out repetitive slot status logs
         solana-test-validator --reset 2>&1 | grep -v "Processed Slot:" > "$VALIDATOR_LOG" &
@@ -190,12 +190,12 @@ if [ "$USE_LOCAL" = false ]; then
             echo -n "."
             if solana cluster-version > /dev/null 2>&1; then
                 echo ""
-                echo -e "${GREEN}   ✅ Validator ready${NC}"
+                echo -e "${GREEN}   OK: Validator ready${NC}"
                 break
             fi
             if [ $i -eq 20 ]; then
                 echo ""
-                echo -e "${RED}   ❌ Validator failed to start (timeout)${NC}"
+                echo -e "${RED}   ERROR: Validator failed to start (timeout)${NC}"
                 echo -e "${YELLOW}   Check logs: tail -f $VALIDATOR_LOG${NC}"
                 exit 1
             fi
@@ -230,26 +230,26 @@ if [ "$USE_LOCAL" = false ]; then
         echo -e "${BLUE}🔨 Building program...${NC}"
         cd "$ANCHOR_DIR"
         anchor build
-        echo -e "${GREEN}   ✅ Built${NC}"
+        echo -e "${GREEN}   OK: Built${NC}"
         echo ""
         
         # Sync IDL to frontend
         echo -e "${BLUE}📋 Syncing IDL to frontend...${NC}"
         cd "$PROJECT_ROOT"
         bash "$SCRIPTS_DIR/sync-idl.sh"
-        echo -e "${GREEN}   ✅ IDL synced${NC}"
+        echo -e "${GREEN}   OK: IDL synced${NC}"
         echo ""
         
         # Deploy program
-        echo -e "${BLUE}🚀 Deploying program...${NC}"
+        echo -e "${BLUE}>>> Deploying program...${NC}"
         cd "$ANCHOR_DIR"
         DEPLOY_OUTPUT=$(anchor deploy --provider.cluster localnet 2>&1)
         PROGRAM_ID=$(echo "$DEPLOY_OUTPUT" | grep "Program Id:" | awk '{print $3}')
         echo -e "${CYAN}   Program ID: $PROGRAM_ID${NC}"
-        echo -e "${GREEN}   ✅ Deployed${NC}"
+        echo -e "${GREEN}   OK: Deployed${NC}"
         cd "$PROJECT_ROOT"
     else
-        echo -e "${GREEN}✅ Program up to date (no rebuild needed)${NC}"
+        echo -e "${GREEN}OK: Program up to date (no rebuild needed)${NC}"
         # Get existing program ID
         PROGRAM_ID=$(solana address -k "$ANCHOR_DIR/target/deploy/dive_game-keypair.json" 2>/dev/null || echo "")
         if [ -n "$PROGRAM_ID" ]; then
@@ -288,9 +288,9 @@ if [ "$USE_LOCAL" = false ]; then
         if [ -z "$HOUSE_AUTH" ]; then
             HOUSE_AUTH=$(solana address ~/.config/solana/id.json 2>/dev/null || echo "7qdd7r1CJdnXVcr3bFD5CyBRyDF9eW4taoJqABhN5hXW")
         fi
-        echo -e "${GREEN}   ✅ Initialization complete${NC}"
+        echo -e "${GREEN}   OK: Initialization complete${NC}"
     else
-        echo -e "${RED}   ⚠️  Initialization had errors (might be already initialized)${NC}"
+        echo -e "${RED}   WARNING:  Initialization had errors (might be already initialized)${NC}"
         HOUSE_AUTH=$(solana address ~/.config/solana/id.json 2>/dev/null || echo "7qdd7r1CJdnXVcr3bFD5CyBRyDF9eW4taoJqABhN5hXW")
     fi
     
@@ -339,7 +339,7 @@ EOF
     echo -e "${CYAN}   House Authority: $HOUSE_AUTH${NC}"
 fi
 
-echo -e "${GREEN}   ✅ Configuration updated${NC}"
+echo -e "${GREEN}   OK: Configuration updated${NC}"
 echo ""
 
 ################################################################################
@@ -355,7 +355,7 @@ echo ""
 pkill -f "next dev" 2>/dev/null || true
 sleep 1
 
-echo -e "${BLUE}🚀 Starting Next.js dev server...${NC}"
+echo -e "${BLUE}>>> Starting Next.js dev server...${NC}"
 cd "$FRONTEND_DIR"
 npm run dev:$([ "$USE_LOCAL" = true ] && echo "local" || echo "solana") > "$FRONTEND_LOG" 2>&1 &
 FRONTEND_PID=$!
@@ -368,13 +368,13 @@ for i in {1..30}; do
     echo -n "."
     if curl -s http://localhost:3000 > /dev/null 2>&1; then
         echo ""
-        echo -e "${GREEN}   ✅ Frontend ready${NC}"
+        echo -e "${GREEN}   OK: Frontend ready${NC}"
         echo -e "${CYAN}   URL: http://localhost:3000${NC}"
         break
     fi
     if [ $i -eq 30 ]; then
         echo ""
-        echo -e "${RED}   ❌ Frontend failed to start (timeout)${NC}"
+        echo -e "${RED}   ERROR: Frontend failed to start (timeout)${NC}"
         echo -e "${YELLOW}   Check logs: tail -f $FRONTEND_LOG${NC}"
         exit 1
     fi
@@ -386,10 +386,10 @@ echo ""
 ################################################################################
 
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✨ Development Environment Ready!${NC}"
+echo -e "${GREEN}>>> Development Environment Ready!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo -e "${BLUE}📊 Status:${NC}"
+echo -e "${BLUE}Info: Status:${NC}"
 if [ "$USE_LOCAL" = false ]; then
     echo -e "   ${GREEN}●${NC} Validator:   Running (PID: ${VALIDATOR_PID:-unknown})"
 fi

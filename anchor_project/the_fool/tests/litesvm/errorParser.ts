@@ -181,7 +181,7 @@ export function parseTransactionError(result: any): ParsedTestError | null {
  * Formats error for console output
  */
 export function formatErrorForConsole(parsed: ParsedTestError): string {
-  let output = `\n❌ ${parsed.errorMessage}\n`;
+  let output = `\nERROR: ${parsed.errorMessage}\n`;
   output += `   Error Code: ${parsed.errorCode}`;
   if (parsed.errorCodeNumber !== undefined) {
     output += ` (${parsed.errorCodeNumber})`;
@@ -189,7 +189,7 @@ export function formatErrorForConsole(parsed: ParsedTestError): string {
   output += "\n";
 
   if (parsed.amounts) {
-    output += "\n💰 Amounts:\n";
+    output += "\nAmounts:\n";
     if (parsed.amounts.bet) output += `   Bet: ${parsed.amounts.bet}\n`;
     if (parsed.amounts.treasure) output += `   Treasure: ${parsed.amounts.treasure}\n`;
     if (parsed.amounts.need) output += `   Needed: ${parsed.amounts.need}\n`;
@@ -198,7 +198,7 @@ export function formatErrorForConsole(parsed: ParsedTestError): string {
   }
 
   if (parsed.addresses) {
-    output += "\n🔗 Addresses:\n";
+    output += "\nAddresses:\n";
     if (parsed.addresses.vault) output += `   Vault: ${parsed.addresses.vault}\n`;
     if (parsed.addresses.session) output += `   Session: ${parsed.addresses.session}\n`;
   }

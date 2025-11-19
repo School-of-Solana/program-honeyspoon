@@ -13,7 +13,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}🚀 Fresh Setup - Dive Game${NC}"
+echo -e "${BLUE}>>> Fresh Setup - Dive Game${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -21,14 +21,14 @@ echo ""
 echo -e "${YELLOW}1️⃣  Stopping existing validator...${NC}"
 pkill -9 solana-test-validator 2>/dev/null || true
 sleep 2
-echo -e "${GREEN}   ✅ Validator stopped${NC}"
+echo -e "${GREEN}   OK: Validator stopped${NC}"
 echo ""
 
 # Step 2: Clean ledger
 echo -e "${YELLOW}2️⃣  Cleaning ledger data...${NC}"
 rm -rf anchor_project/the_fool/test-ledger 2>/dev/null || true
 rm -rf ~/.local/share/solana/test-ledger 2>/dev/null || true
-echo -e "${GREEN}   ✅ Ledger cleaned${NC}"
+echo -e "${GREEN}   OK: Ledger cleaned${NC}"
 echo ""
 
 # Step 3: Start fresh validator
@@ -46,7 +46,7 @@ for i in {1..10}; do
     echo -n "."
     if solana cluster-version > /dev/null 2>&1; then
         echo ""
-        echo -e "${GREEN}   ✅ Validator ready${NC}"
+        echo -e "${GREEN}   OK: Validator ready${NC}"
         break
     fi
 done
@@ -56,14 +56,14 @@ echo ""
 echo -e "${YELLOW}4️⃣  Building Anchor program...${NC}"
 cd anchor_project/the_fool
 anchor build > /dev/null 2>&1
-echo -e "${GREEN}   ✅ Program built${NC}"
+echo -e "${GREEN}   OK: Program built${NC}"
 echo ""
 
 # Step 5: Sync IDL
 echo -e "${YELLOW}5️⃣  Syncing IDL to frontend...${NC}"
 cd ../..
 npm run sync-idl > /dev/null 2>&1
-echo -e "${GREEN}   ✅ IDL synced${NC}"
+echo -e "${GREEN}   OK: IDL synced${NC}"
 echo ""
 
 # Step 6: Deploy program
@@ -72,7 +72,7 @@ cd anchor_project/the_fool
 DEPLOY_OUTPUT=$(anchor deploy --provider.cluster localnet 2>&1)
 PROGRAM_ID=$(echo "$DEPLOY_OUTPUT" | grep "Program Id:" | awk '{print $3}')
 echo "   Program ID: $PROGRAM_ID"
-echo -e "${GREEN}   ✅ Program deployed${NC}"
+echo -e "${GREEN}   OK: Program deployed${NC}"
 echo ""
 
 # Step 7: Initialize
@@ -86,9 +86,9 @@ if [ $? -eq 0 ]; then
     echo "   Config PDA: $CONFIG_PDA"
     echo "   Vault PDA: $VAULT_PDA"
     echo "   House Authority: $HOUSE_AUTH"
-    echo -e "${GREEN}   ✅ Initialized${NC}"
+    echo -e "${GREEN}   OK: Initialized${NC}"
 else
-    echo -e "${RED}   ❌ Initialization failed${NC}"
+    echo -e "${RED}   ERROR: Initialization failed${NC}"
     cat /tmp/init-output.txt
     exit 1
 fi
@@ -119,12 +119,12 @@ NEXT_PUBLIC_VAULT_PDA=$VAULT_PDA
 # Set to "false" to use LocalGameChain instead of real Solana
 EOF
 
-echo -e "${GREEN}   ✅ .env.local updated${NC}"
+echo -e "${GREEN}   OK: .env.local updated${NC}"
 echo ""
 
 # Step 9: Success summary
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}✨ Setup Complete!${NC}"
+echo -e "${GREEN}>>> Setup Complete!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${BLUE}📋 Configuration:${NC}"
@@ -133,7 +133,7 @@ echo "   Config PDA:      $CONFIG_PDA"
 echo "   Vault PDA:       $VAULT_PDA"
 echo "   House Authority: $HOUSE_AUTH"
 echo ""
-echo -e "${BLUE}🚀 Next Steps:${NC}"
+echo -e "${BLUE}>>> Next Steps:${NC}"
 echo "   1. Start frontend: cd frontend/the_fool && npm run dev"
 echo "   2. Open browser: http://localhost:3000"
 echo "   3. Connect wallet (Phantom/Solflare to Localhost)"

@@ -66,7 +66,7 @@ describe("Money Conservation - Single Game", () => {
       );
 
       console.log(
-        `✓ Money conserved on loss: $${totalBefore} → $${totalAfter}`
+        `- Money conserved on loss: $${totalBefore} → $${totalAfter}`
       );
     } else {
       console.log("⚠ Survived with roll=0, skipping");
@@ -112,7 +112,7 @@ describe("Money Conservation - Single Game", () => {
       "Money transfer should sum to zero"
     );
 
-    console.log(`✓ Money conserved on win: $${totalBefore} → $${totalAfter}`);
+    console.log(`- Money conserved on win: $${totalBefore} → $${totalAfter}`);
     console.log(
       `  User: ${userChange > 0 ? "+" : ""}$${userChange}, House: ${houseChange > 0 ? "+" : ""}$${houseChange}`
     );
@@ -155,11 +155,11 @@ describe("Money Conservation - Single Game", () => {
     );
 
     console.log(
-      `✓ Money conserved with 3 dives (survived=${survived}): $${totalBefore} → $${totalAfter}`
+      `- Money conserved with 3 dives (survived=${survived}): $${totalBefore} → $${totalAfter}`
     );
   });
 
-  console.log("✓ Money conservation single game tests passed");
+  console.log("- Money conservation single game tests passed");
 });
 
 describe("Money Conservation - Multiple Games", () => {
@@ -206,7 +206,7 @@ describe("Money Conservation - Multiple Games", () => {
     );
 
     console.log(
-      `✓ Money conserved across 10 games: $${totalBefore} → $${totalAfter}`
+      `- Money conserved across 10 games: $${totalBefore} → $${totalAfter}`
     );
   });
 
@@ -257,11 +257,11 @@ describe("Money Conservation - Multiple Games", () => {
     );
 
     console.log(
-      `✓ Money conserved with 3 concurrent users: $${totalBefore} → $${totalAfter}`
+      `- Money conserved with 3 concurrent users: $${totalBefore} → $${totalAfter}`
     );
   });
 
-  console.log("✓ Money conservation multiple games tests passed");
+  console.log("- Money conservation multiple games tests passed");
 });
 
 describe("House Fund Reservation", () => {
@@ -286,7 +286,7 @@ describe("House Fund Reservation", () => {
     assert.ok(reservedAfter > reservedBefore, "Reserved funds should increase");
 
     console.log(
-      `✓ Reserved funds: $${reservedBefore} → $${reservedAfter} (+$${reservedAfter - reservedBefore})`
+      `- Reserved funds: $${reservedBefore} → $${reservedAfter} (+$${reservedAfter - reservedBefore})`
     );
   });
 
@@ -311,7 +311,7 @@ describe("House Fund Reservation", () => {
       );
 
       console.log(
-        `✓ Reserved funds released: $${reservedMid} → $${reservedAfter}`
+        `- Reserved funds released: $${reservedMid} → $${reservedAfter}`
       );
     } else {
       console.log("⚠ Survived with roll=0, skipping");
@@ -338,7 +338,7 @@ describe("House Fund Reservation", () => {
     );
 
     console.log(
-      `✓ Reserved funds released on win: $${reservedMid} → $${reservedAfter}`
+      `- Reserved funds released on win: $${reservedMid} → $${reservedAfter}`
     );
   });
 
@@ -364,11 +364,11 @@ describe("House Fund Reservation", () => {
     );
 
     console.log(
-      `✓ No reserve leaks: $${houseBefore.reservedFunds} → $${houseAfter.reservedFunds}`
+      `- No reserve leaks: $${houseBefore.reservedFunds} → $${houseAfter.reservedFunds}`
     );
   });
 
-  console.log("✓ House fund reservation tests passed");
+  console.log("- House fund reservation tests passed");
 });
 
 describe("Treasure Accumulation Correctness", () => {
@@ -405,7 +405,7 @@ describe("Treasure Accumulation Correctness", () => {
     }
 
     console.log(`  Treasure progression: ${treasures.join(" → ")}`);
-    console.log("✓ Treasure multiplication correct");
+    console.log("- Treasure multiplication correct");
   });
 
   it("should never increase treasure on loss", async () => {
@@ -419,7 +419,7 @@ describe("Treasure Accumulation Correctness", () => {
         0,
         "Treasure should be 0 on loss"
       );
-      console.log("✓ Treasure correctly zeroed on loss");
+      console.log("- Treasure correctly zeroed on loss");
     }
   });
 
@@ -446,7 +446,7 @@ describe("Treasure Accumulation Correctness", () => {
       }
     }
 
-    console.log("✓ Small treasure values handled correctly");
+    console.log("- Small treasure values handled correctly");
   });
 
   it("should handle large treasure values without overflow", async () => {
@@ -496,10 +496,10 @@ describe("Treasure Accumulation Correctness", () => {
     console.log(
       `  Max treasure reached: $${maxTreasure} after ${diveCount} dives`
     );
-    console.log("✓ Large treasure values handled correctly");
+    console.log("- Large treasure values handled correctly");
   });
 
-  console.log("✓ Treasure accumulation correctness tests passed");
+  console.log("- Treasure accumulation correctness tests passed");
 });
 
-console.log("\n✅ All money conservation tests completed!\n");
+console.log("\nOK: All money conservation tests completed!\n");

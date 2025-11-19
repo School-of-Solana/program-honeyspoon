@@ -85,11 +85,11 @@ class Logger {
     const emojis: Record<string, string> = {
       canvas: "🎨",
       game: "🎮",
-      solana: "🔗",
-      wallet: "💰",
+      solana: "Link:",
+      wallet: "Amount:",
       sse: "📡",
       sound: "🎵",
-      accountParser: "📦",
+      accountParser: "Package:",
     };
     return emojis[category] || "📋";
   }

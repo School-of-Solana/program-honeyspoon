@@ -62,7 +62,7 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
-      console.log("[SSE Hook] ✅ Connected to wallet events stream");
+      console.log("[SSE Hook] OK: Connected to wallet events stream");
       setIsConnected(true);
       setError(null);
       reconnectAttemptsRef.current = 0; // Reset reconnect counter on success
@@ -75,11 +75,11 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
 
         if (message.type === "connected") {
           console.log(
-            "[SSE Hook] 🎉 Connection established at",
+            "[SSE Hook] Success: Connection established at",
             new Date(message.timestamp).toISOString()
           );
         } else if (message.type === "balance-update") {
-          console.log("[SSE Hook] 💰 Balance update received:", {
+          console.log("[SSE Hook] Amount: Balance update received:", {
             userBalance: message.userBalance,
             houseVaultBalance: message.houseVaultBalance,
             houseVaultReserved: message.houseVaultReserved,
@@ -97,7 +97,7 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
     };
 
     eventSource.onerror = (err) => {
-      console.error("[SSE Hook] ❌ SSE connection error:", err);
+      console.error("[SSE Hook] ERROR: SSE connection error:", err);
       setIsConnected(false);
 
       // Exponential backoff for reconnection

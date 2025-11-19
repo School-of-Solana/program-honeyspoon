@@ -39,7 +39,7 @@ describe("Server Actions - Basic Operations", () => {
     );
 
     console.log(
-      `✓ Generated unique IDs: ${id1.substring(0, 8)}..., ${id2.substring(0, 8)}...`
+      `- Generated unique IDs: ${id1.substring(0, 8)}..., ${id2.substring(0, 8)}...`
     );
   });
 
@@ -55,7 +55,7 @@ describe("Server Actions - Basic Operations", () => {
     assert.ok(info.houseBalance > 0, "House should have balance");
 
     console.log(
-      `✓ Initial wallet: balance=$${info.balance}, maxBet=$${info.maxBet}`
+      `- Initial wallet: balance=$${info.balance}, maxBet=$${info.maxBet}`
     );
   });
 
@@ -73,7 +73,7 @@ describe("Server Actions - Basic Operations", () => {
     assert.strictEqual(tooHigh.valid, false, "Should reject bet above maximum");
 
     console.log(
-      `✓ Bet validation: $50=${valid.valid}, $5=${tooLow.valid}, $10k=${tooHigh.valid}`
+      `- Bet validation: $50=${valid.valid}, $5=${tooLow.valid}, $10k=${tooHigh.valid}`
     );
   });
 
@@ -90,7 +90,7 @@ describe("Server Actions - Basic Operations", () => {
     );
 
     console.log(
-      `✓ House status: balance=$${status.balance}, available=$${status.availableFunds}`
+      `- House status: balance=$${status.balance}, available=$${status.availableFunds}`
     );
   });
 
@@ -113,7 +113,7 @@ describe("Server Actions - Basic Operations", () => {
       "Wallet should reflect change"
     );
 
-    console.log(`✓ Added balance: $${before.balance} → $${after.balance}`);
+    console.log(`- Added balance: $${before.balance} → $${after.balance}`);
   });
 });
 
@@ -143,7 +143,7 @@ describe("Server Actions - Single Game Flow", () => {
     assert.strictEqual(afterBet.totalWagered, initialBet, "Wager tracked");
 
     console.log(
-      `✓ Game started: bet=$${initialBet}, balance=$${afterBet.balance}`
+      `- Game started: bet=$${initialBet}, balance=$${afterBet.balance}`
     );
 
     // 2. Perform dive with deterministic outcome (use test seed)
@@ -163,7 +163,7 @@ describe("Server Actions - Single Game Flow", () => {
     );
 
     console.log(
-      `✓ Dive 1: survived=${diveResult.survived}, treasure=$${diveResult.totalTreasure}`
+      `- Dive 1: survived=${diveResult.survived}, treasure=$${diveResult.totalTreasure}`
     );
 
     if (diveResult.survived) {
@@ -195,7 +195,7 @@ describe("Server Actions - Single Game Flow", () => {
       );
 
       console.log(
-        `✓ Surfaced: profit=$${surfaceResult.profit}, balance=$${afterSurface.balance}`
+        `- Surfaced: profit=$${surfaceResult.profit}, balance=$${afterSurface.balance}`
       );
     } else {
       // Player drowned
@@ -209,7 +209,7 @@ describe("Server Actions - Single Game Flow", () => {
       assert.strictEqual(afterDrown.totalLost, initialBet, "Loss tracked");
 
       console.log(
-        `✓ Drowned: lost=$${initialBet}, balance=$${afterDrown.balance}`
+        `- Drowned: lost=$${initialBet}, balance=$${afterDrown.balance}`
       );
     }
   });
@@ -238,10 +238,10 @@ describe("Server Actions - Single Game Flow", () => {
       assert.strictEqual(afterGame.gamesPlayed, 1, "Game counted");
 
       console.log(
-        `✓ Lost with roll=${diveResult.randomRoll}: balance=$${afterGame.balance}`
+        `- Lost with roll=${diveResult.randomRoll}: balance=$${afterGame.balance}`
       );
     } else {
-      console.log(`✓ Survived with roll=${diveResult.randomRoll} (lucky!)`);
+      console.log(`- Survived with roll=${diveResult.randomRoll} (lucky!)`);
     }
   });
 
@@ -281,7 +281,7 @@ describe("Server Actions - Single Game Flow", () => {
     assert.strictEqual(afterGame.gamesPlayed, 1, "Game counted");
 
     console.log(
-      `✓ Won: profit=$${surfaceResult.profit}, balance=$${afterGame.balance}`
+      `- Won: profit=$${surfaceResult.profit}, balance=$${afterGame.balance}`
     );
   });
 });
@@ -344,7 +344,7 @@ describe("Server Actions - Multi-Turn Games", () => {
       const profit = surfaceResult.profit;
 
       console.log(
-        `✓ 10 dives successful: $${initialBet} → $${currentTreasure} (profit: $${profit})`
+        `- 10 dives successful: $${initialBet} → $${currentTreasure} (profit: $${profit})`
       );
       assert.ok(finalWallet.balance > 1000, "Should be profitable");
     }
@@ -397,7 +397,7 @@ describe("Server Actions - Multi-Turn Games", () => {
     );
 
     console.log(
-      `✓ ${gamesCompleted} games completed: final balance=$${finalWallet.balance}`
+      `- ${gamesCompleted} games completed: final balance=$${finalWallet.balance}`
     );
   });
 
@@ -438,7 +438,7 @@ describe("Server Actions - Multi-Turn Games", () => {
     }
 
     if (divesCompleted === 20) {
-      console.log(`✓ Survived all 20 dives! Treasure: $${currentTreasure}`);
+      console.log(`- Survived all 20 dives! Treasure: $${currentTreasure}`);
 
       // Surface
       await surfaceWithTreasure(currentTreasure, sessionId, userId);
@@ -446,7 +446,7 @@ describe("Server Actions - Multi-Turn Games", () => {
       const finalWallet = await getWalletInfo(userId);
       assert.ok(finalWallet.balance > 1000, "Should be very profitable");
     } else {
-      console.log(`✓ Died after ${divesCompleted} dives`);
+      console.log(`- Died after ${divesCompleted} dives`);
     }
   });
 
@@ -478,7 +478,7 @@ describe("Server Actions - Multi-Turn Games", () => {
     assert.strictEqual(wins + losses, 20, "All games accounted for");
 
     console.log(
-      `✓ Marathon: 20 games (${wins}W-${losses}L), balance=$${finalWallet.balance}`
+      `- Marathon: 20 games (${wins}W-${losses}L), balance=$${finalWallet.balance}`
     );
     console.log(`  Total wagered: $${finalWallet.totalWagered}`);
     console.log(`  Total won: $${finalWallet.totalWon}`);
@@ -517,7 +517,7 @@ describe("Server Actions - Edge Cases", () => {
       "Should reject bet above maximum"
     );
 
-    console.log(`✓ Invalid bets rejected: ${tooLow.error}`);
+    console.log(`- Invalid bets rejected: ${tooLow.error}`);
   });
 
   it("should reject diving with invalid session", async () => {
@@ -526,7 +526,7 @@ describe("Server Actions - Edge Cases", () => {
       assert.fail("Should throw error");
     } catch (error) {
       assert.ok(error instanceof Error, "Should throw error");
-      console.log(`✓ Invalid session rejected: ${(error as Error).message}`);
+      console.log(`- Invalid session rejected: ${(error as Error).message}`);
     }
   });
 
@@ -539,7 +539,7 @@ describe("Server Actions - Edge Cases", () => {
       assert.fail("Should throw error");
     } catch (error) {
       assert.ok(error instanceof Error, "Should throw error");
-      console.log(`✓ Zero treasure rejected: ${(error as Error).message}`);
+      console.log(`- Zero treasure rejected: ${(error as Error).message}`);
     }
   });
 
@@ -551,13 +551,13 @@ describe("Server Actions - Edge Cases", () => {
     const result = await startGame(wallet.balance, userId, sessionId);
 
     if (result.success) {
-      console.log("✓ Entire balance bet accepted");
+      console.log("- Entire balance bet accepted");
 
       // Wallet should be at 0
       const afterBet = await getWalletInfo(userId);
       assert.strictEqual(afterBet.balance, 0, "Balance should be 0");
     } else {
-      console.log(`✓ Entire balance bet rejected: ${result.error}`);
+      console.log(`- Entire balance bet rejected: ${result.error}`);
     }
   });
 
@@ -573,7 +573,7 @@ describe("Server Actions - Edge Cases", () => {
       "Error should mention insufficient balance"
     );
 
-    console.log(`✓ Over-balance bet rejected: ${result.error}`);
+    console.log(`- Over-balance bet rejected: ${result.error}`);
   });
 
   it("should handle rapid consecutive games", async () => {
@@ -608,7 +608,7 @@ describe("Server Actions - Edge Cases", () => {
     );
 
     console.log(
-      `✓ ${gamesCompleted} rapid games completed in ${duration}ms (${gamesCompleted > 0 ? (duration / gamesCompleted).toFixed(1) : "N/A"}ms/game)`
+      `- ${gamesCompleted} rapid games completed in ${duration}ms (${gamesCompleted > 0 ? (duration / gamesCompleted).toFixed(1) : "N/A"}ms/game)`
     );
   });
 
@@ -627,7 +627,7 @@ describe("Server Actions - Edge Cases", () => {
     // Should succeed (creates new session) or might have validation
 
     console.log(
-      `✓ Session reuse: second attempt ${result2.success ? "allowed" : "blocked"}`
+      `- Session reuse: second attempt ${result2.success ? "allowed" : "blocked"}`
     );
   });
 
@@ -641,7 +641,7 @@ describe("Server Actions - Edge Cases", () => {
       console.log("⚠ Invalid dive number allowed (no validation)");
     } catch (error) {
       console.log(
-        `✓ Invalid dive number rejected: ${(error as Error).message}`
+        `- Invalid dive number rejected: ${(error as Error).message}`
       );
     }
   });
@@ -654,7 +654,7 @@ describe("Server Actions - Edge Cases", () => {
       await performDive(1, -100, sessionId, userId);
       console.log("⚠ Negative treasure allowed (no validation)");
     } catch (error) {
-      console.log(`✓ Negative treasure rejected: ${(error as Error).message}`);
+      console.log(`- Negative treasure rejected: ${(error as Error).message}`);
     }
   });
 
@@ -675,7 +675,7 @@ describe("Server Actions - Edge Cases", () => {
       );
 
       console.log(
-        `✓ House reserves: $${startReserves} → $${houseAfter.reservedFunds}`
+        `- House reserves: $${startReserves} → $${houseAfter.reservedFunds}`
       );
 
       // Complete game (lose with low roll)
@@ -688,9 +688,9 @@ describe("Server Actions - Edge Cases", () => {
         "Reserves should decrease or stay same"
       );
 
-      console.log(`✓ Reserves after game: $${houseEnd.reservedFunds}`);
+      console.log(`- Reserves after game: $${houseEnd.reservedFunds}`);
     } else {
-      console.log(`✓ Game rejected: ${startResult.error}`);
+      console.log(`- Game rejected: ${startResult.error}`);
     }
   });
 });
@@ -736,7 +736,7 @@ describe("Server Actions - Stress Testing", () => {
 
     const houseStatus = await getHouseStatus();
     console.log(
-      `✓ 100 concurrent users: ${successful} successful (${((successful / 100) * 100).toFixed(0)}%), house balance=$${houseStatus.balance}`
+      `- 100 concurrent users: ${successful} successful (${((successful / 100) * 100).toFixed(0)}%), house balance=$${houseStatus.balance}`
     );
   });
 
@@ -763,7 +763,7 @@ describe("Server Actions - Stress Testing", () => {
     const wins = results.filter((r) => r).length;
     const losses = results.length - wins;
 
-    console.log(`✓ 50 parallel games: ${wins}W-${losses}L`);
+    console.log(`- 50 parallel games: ${wins}W-${losses}L`);
   });
 
   it("should handle very long game session", async () => {
@@ -799,7 +799,7 @@ describe("Server Actions - Stress Testing", () => {
       }
 
       console.log(
-        `✓ Marathon session: ${dives} dives completed, treasure=$${treasure}`
+        `- Marathon session: ${dives} dives completed, treasure=$${treasure}`
       );
 
       if (dives > 0 && treasure > 0) {
@@ -812,9 +812,9 @@ describe("Server Actions - Stress Testing", () => {
         }
       }
     } else {
-      console.log(`✓ Game rejected: ${startResult.error}`);
+      console.log(`- Game rejected: ${startResult.error}`);
     }
   });
 });
 
-console.log("\n✅ All server action tests completed!\n");
+console.log("\nOK: All server action tests completed!\n");

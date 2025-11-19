@@ -21,11 +21,11 @@ async function main() {
   const amountSol = parseFloat(process.argv[2] || '100');
   
   if (isNaN(amountSol) || amountSol <= 0) {
-    console.error('❌ Invalid amount. Usage: npm run fund-vault -- <amount_in_sol>');
+    console.error('ERROR: Invalid amount. Usage: npm run fund-vault -- <amount_in_sol>');
     process.exit(1);
   }
 
-  console.log('🏦 Funding House Vault on Devnet');
+  console.log('Vault: Funding House Vault on Devnet');
   console.log('================================\n');
 
   // Load environment
@@ -34,7 +34,7 @@ async function main() {
   const HOUSE_AUTHORITY = process.env.NEXT_PUBLIC_HOUSE_AUTHORITY;
 
   if (!PROGRAM_ID || !HOUSE_AUTHORITY) {
-    console.error('❌ Missing environment variables:');
+    console.error('ERROR: Missing environment variables:');
     console.error('   NEXT_PUBLIC_PROGRAM_ID:', PROGRAM_ID);
     console.error('   NEXT_PUBLIC_HOUSE_AUTHORITY:', HOUSE_AUTHORITY);
     process.exit(1);
@@ -53,7 +53,7 @@ async function main() {
   const keypairPath = path.join(process.env.HOME || '', '.config/solana/id.json');
   
   if (!fs.existsSync(keypairPath)) {
-    console.error(`❌ Keypair not found at: ${keypairPath}`);
+    console.error(`ERROR: Keypair not found at: ${keypairPath}`);
     console.error('   Run: solana-keygen new');
     process.exit(1);
   }
@@ -63,14 +63,14 @@ async function main() {
 
   // Verify the keypair matches the house authority
   if (houseAuthKeypair.publicKey.toBase58() !== HOUSE_AUTHORITY) {
-    console.error('❌ Keypair mismatch!');
+    console.error('ERROR: Keypair mismatch!');
     console.error(`   Expected: ${HOUSE_AUTHORITY}`);
     console.error(`   Got: ${houseAuthKeypair.publicKey.toBase58()}`);
     console.error('\n   Make sure your Solana CLI keypair matches NEXT_PUBLIC_HOUSE_AUTHORITY');
     process.exit(1);
   }
 
-  console.log('✅ House authority keypair loaded\n');
+  console.log('OK: House authority keypair loaded\n');
 
   // Derive vault PDA
   const programId = new PublicKey(PROGRAM_ID);
@@ -89,14 +89,14 @@ async function main() {
   const houseAuthBalance = await connection.getBalance(houseAuthKeypair.publicKey);
   const vaultBalance = await connection.getBalance(vaultPda);
 
-  console.log('💰 Current Balances:');
+  console.log('Amount: Current Balances:');
   console.log(`   House Authority: ${(houseAuthBalance / 1e9).toFixed(4)} SOL`);
   console.log(`   Vault PDA: ${(vaultBalance / 1e9).toFixed(4)} SOL\n`);
 
   // Check if house has enough balance
   const amountLamports = amountSol * 1e9;
   if (houseAuthBalance < amountLamports) {
-    console.error(`❌ Insufficient balance in house authority wallet`);
+    console.error(`ERROR: Insufficient balance in house authority wallet`);
     console.error(`   Need: ${amountSol} SOL`);
     console.error(`   Have: ${(houseAuthBalance / 1e9).toFixed(4)} SOL`);
     console.error('\n   Request airdrop first:');
@@ -124,21 +124,21 @@ async function main() {
     { commitment: 'confirmed' }
   );
 
-  console.log(`✅ Transaction confirmed: ${signature}\n`);
+  console.log(`OK: Transaction confirmed: ${signature}\n`);
 
   // Check new balances
   const newHouseAuthBalance = await connection.getBalance(houseAuthKeypair.publicKey);
   const newVaultBalance = await connection.getBalance(vaultPda);
 
-  console.log('💰 New Balances:');
+  console.log('Amount: New Balances:');
   console.log(`   House Authority: ${(newHouseAuthBalance / 1e9).toFixed(4)} SOL`);
   console.log(`   Vault PDA: ${(newVaultBalance / 1e9).toFixed(4)} SOL`);
-  console.log(`\n🎉 Successfully transferred ${amountSol} SOL to vault!`);
+  console.log(`\nSuccess: Successfully transferred ${amountSol} SOL to vault!`);
   console.log(`\n   View on explorer:`);
   console.log(`   https://explorer.solana.com/tx/${signature}?cluster=devnet`);
 }
 
 main().catch((error) => {
-  console.error('\n❌ Error:', error.message);
+  console.error('\nERROR: Error:', error.message);
   process.exit(1);
 });

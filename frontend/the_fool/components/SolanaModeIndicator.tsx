@@ -27,7 +27,7 @@ export function SolanaModeIndicator() {
           useSolana ? "Using real Solana blockchain" : "Using local simulation"
         }
       >
-        {useSolana ? "🔗 Solana Mode" : "💻 Local Mode"}
+        {useSolana ? "Link: Solana Mode" : "💻 Local Mode"}
       </div>
     </div>
   );

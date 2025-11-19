@@ -290,7 +290,7 @@ function parseConfigData(dataInput: Uint8Array): {
 
 function logTransactionFailure(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
-    console.log(`\n❌ Transaction failed: ${context}`);
+    console.log(`\nERROR: Transaction failed: ${context}`);
     if (typeof result.err === "function") {
       const err = result.err();
       console.log("Error:", err?.toString() || JSON.stringify(err, null, 2));

@@ -32,7 +32,7 @@ let bubblePool: ObjectPool<PooledBubble> | null = null;
  */
 export function initBubblePool(k: KAPLAYCtx): void {
   if (bubblePool) {
-    console.warn("[POOL] ⚠️ Bubble pool already initialized");
+    console.warn("[POOL] WARNING: Bubble pool already initialized");
     return;
   }
 
@@ -132,7 +132,7 @@ export function initBubblePool(k: KAPLAYCtx): void {
     100 // Max pool size (up to 100 bubbles can be created)
   );
 
-  console.log("[POOL] ✅ Bubble pool initialized (size: 20, max: 100)");
+  console.log("[POOL] OK: Bubble pool initialized (size: 20, max: 100)");
 }
 
 /**
@@ -153,14 +153,14 @@ export function getBubbleFromPool(
 ): PooledBubble | null {
   if (!bubblePool) {
     console.error(
-      "[POOL] ❌ Bubble pool not initialized! Call initBubblePool() first."
+      "[POOL] ERROR: Bubble pool not initialized! Call initBubblePool() first."
     );
     return null;
   }
 
   const bubble = bubblePool.get();
   if (!bubble) {
-    console.warn("[POOL] ⚠️ Bubble pool exhausted (max: 100 reached)");
+    console.warn("[POOL] WARNING: Bubble pool exhausted (max: 100 reached)");
     return null;
   }
 

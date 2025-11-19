@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
       // Send initial update immediately
       sendUpdate();
 
-      // ⚠️ DO NOT poll! SSE should only send updates when triggered by events
+      // WARNING: DO NOT poll! SSE should only send updates when triggered by events
       // Polling defeats the purpose of SSE and wastes resources
       // Updates should be triggered by:
       // - Airdrops (via broadcastEvent)

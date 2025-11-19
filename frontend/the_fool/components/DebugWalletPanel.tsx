@@ -58,7 +58,7 @@ export default function DebugWalletPanel() {
     try {
       const amount = parseFloat(topUpAmount);
       if (isNaN(amount) || amount <= 0) {
-        setMessage("❌ Invalid amount");
+        setMessage("ERROR: Invalid amount");
         setIsTopping(false);
         return;
       }
@@ -66,14 +66,14 @@ export default function DebugWalletPanel() {
       const result = await debugTopUpUserWallet(userId, amount);
 
       if (result.success) {
-        setMessage(`✅ Topped up ${amount} SOL!`);
+        setMessage(`OK: Topped up ${amount} SOL!`);
         // Refresh balance to show new value
         await refreshBalance();
       } else {
-        setMessage(`❌ Error: ${result.error}`);
+        setMessage(`ERROR: Error: ${result.error}`);
       }
     } catch (error) {
-      setMessage(`❌ Failed: ${error}`);
+      setMessage(`ERROR: Failed: ${error}`);
     } finally {
       setIsTopping(false);
       // Clear message after 3 seconds
@@ -89,7 +89,7 @@ export default function DebugWalletPanel() {
     try {
       const amount = parseFloat(topUpAmount);
       if (isNaN(amount) || amount <= 0) {
-        setMessage("❌ Invalid amount");
+        setMessage("ERROR: Invalid amount");
         setIsTopping(false);
         return;
       }
@@ -99,14 +99,14 @@ export default function DebugWalletPanel() {
       const result = await debugTopUpHouseVault(vaultPda, amount);
 
       if (result.success) {
-        setMessage(`✅ Topped up house ${amount} SOL!`);
+        setMessage(`OK: Topped up house ${amount} SOL!`);
         // Refresh balance to show new value
         await refreshBalance();
       } else {
-        setMessage(`❌ Error: ${result.error}`);
+        setMessage(`ERROR: Error: ${result.error}`);
       }
     } catch (error) {
-      setMessage(`❌ Failed: ${error}`);
+      setMessage(`ERROR: Failed: ${error}`);
     } finally {
       setIsTopping(false);
       // Clear message after 3 seconds
@@ -133,7 +133,7 @@ export default function DebugWalletPanel() {
             display: "block",
           }}
         >
-          💰 WALLET
+          Amount: WALLET
         </button>
       )}
 
@@ -147,7 +147,7 @@ export default function DebugWalletPanel() {
           }}
         >
           <p className="title" style={{ fontSize: "10px" }}>
-            💰 WALLET INFO {isDevelopment && "🔧"}
+            Amount: WALLET INFO {isDevelopment && "🔧"}
           </p>
 
           {/* Close Button */}
@@ -221,7 +221,7 @@ export default function DebugWalletPanel() {
             style={{ marginBottom: "12px" }}
           >
             <div style={{ marginBottom: "8px" }}>
-              <strong>🏦 HOUSE VAULT</strong>
+              <strong>Vault: HOUSE VAULT</strong>
             </div>
             <div style={{ marginBottom: "4px" }}>
               <span style={{ opacity: 0.7 }}>Total:</span>{" "}
@@ -283,7 +283,7 @@ export default function DebugWalletPanel() {
                   className={`nes-btn ${isTopping || !userId ? "is-disabled" : "is-warning"}`}
                   style={{ fontSize: "7px", padding: "6px", flex: 1 }}
                 >
-                  {isTopping ? "..." : "💰 Top Up User"}
+                  {isTopping ? "..." : "Amount: Top Up User"}
                 </button>
                 <button
                   onClick={handleTopUpHouse}
@@ -291,7 +291,7 @@ export default function DebugWalletPanel() {
                   className={`nes-btn ${isTopping ? "is-disabled" : "is-warning"}`}
                   style={{ fontSize: "7px", padding: "6px", flex: 1 }}
                 >
-                  {isTopping ? "..." : "🏦 Top Up House"}
+                  {isTopping ? "..." : "Vault: Top Up House"}
                 </button>
               </div>
 

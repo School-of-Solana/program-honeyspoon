@@ -126,7 +126,7 @@ export async function debugTopUpUserWallet(
 ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
   // Security check: only allow in development
   if (process.env.NODE_ENV === "production") {
-    console.error("[WALLET ACTIONS] ❌ Debug action called in production!");
+    console.error("[WALLET ACTIONS] ERROR: Debug action called in production!");
     return {
       success: false,
       error: "Debug actions are not available in production",
@@ -151,7 +151,7 @@ export async function debugTopUpUserWallet(
       const newBalance = lamportsToSol(newBalanceLamports);
 
       console.log(
-        `[WALLET ACTIONS] ✅ DEBUG: User wallet topped up. New balance: ${newBalance} SOL`
+        `[WALLET ACTIONS] OK: DEBUG: User wallet topped up. New balance: ${newBalance} SOL`
       );
 
       return {
@@ -165,7 +165,7 @@ export async function debugTopUpUserWallet(
       };
     }
   } catch (error) {
-    console.error("[WALLET ACTIONS] ❌ Failed to top up wallet:", error);
+    console.error("[WALLET ACTIONS] ERROR: Failed to top up wallet:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -189,7 +189,7 @@ export async function debugTopUpHouseVault(
 ): Promise<{ success: boolean; newBalance?: number; error?: string }> {
   // Security check: only allow in development
   if (process.env.NODE_ENV === "production") {
-    console.error("[WALLET ACTIONS] ❌ Debug action called in production!");
+    console.error("[WALLET ACTIONS] ERROR: Debug action called in production!");
     return {
       success: false,
       error: "Debug actions are not available in production",
@@ -214,7 +214,7 @@ export async function debugTopUpHouseVault(
       const newBalance = lamportsToSol(newBalanceLamports);
 
       console.log(
-        `[WALLET ACTIONS] ✅ DEBUG: House vault topped up. New balance: ${newBalance} SOL`
+        `[WALLET ACTIONS] OK: DEBUG: House vault topped up. New balance: ${newBalance} SOL`
       );
 
       return {
@@ -228,7 +228,7 @@ export async function debugTopUpHouseVault(
       };
     }
   } catch (error) {
-    console.error("[WALLET ACTIONS] ❌ Failed to top up vault:", error);
+    console.error("[WALLET ACTIONS] ERROR: Failed to top up vault:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -330,7 +330,7 @@ export async function airdropSol(
     const balance = await connection.getBalance(publicKey);
     const newBalance = balance / LAMPORTS_PER_SOL;
 
-    console.log(`[WALLET ACTIONS] ✅ Airdrop confirmed!`, {
+    console.log(`[WALLET ACTIONS] OK: Airdrop confirmed!`, {
       signature,
       newBalance,
     });
@@ -350,7 +350,7 @@ export async function airdropSol(
       network: networkName,
     };
   } catch (error) {
-    console.error("[WALLET ACTIONS] ❌ Airdrop failed:", error);
+    console.error("[WALLET ACTIONS] ERROR: Airdrop failed:", error);
 
     let errorMessage = error instanceof Error ? error.message : "Unknown error";
 

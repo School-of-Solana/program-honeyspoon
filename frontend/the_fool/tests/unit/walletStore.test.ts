@@ -39,7 +39,7 @@ describe("Wallet Store - User Wallets", () => {
     assert.strictEqual(wallet.totalWagered, 0, "Total wagered should be 0");
     assert.strictEqual(wallet.gamesPlayed, 0, "Games played should be 0");
 
-    console.log("✓ New user wallet created with $1000");
+    console.log("- New user wallet created with $1000");
   });
 
   it("should return same wallet on multiple calls", () => {
@@ -48,7 +48,7 @@ describe("Wallet Store - User Wallets", () => {
 
     assert.deepStrictEqual(wallet1, wallet2, "Should return same wallet");
 
-    console.log("✓ Same wallet returned on multiple calls");
+    console.log("- Same wallet returned on multiple calls");
   });
 
   it("should create different wallets for different users", () => {
@@ -61,7 +61,7 @@ describe("Wallet Store - User Wallets", () => {
       "User IDs should differ"
     );
 
-    console.log("✓ Different wallets for different users");
+    console.log("- Different wallets for different users");
   });
 
   it("should update user wallet", () => {
@@ -79,7 +79,7 @@ describe("Wallet Store - User Wallets", () => {
       "Total wagered should be updated"
     );
 
-    console.log("✓ User wallet updated successfully");
+    console.log("- User wallet updated successfully");
   });
 
   it("should add balance to user", () => {
@@ -101,7 +101,7 @@ describe("Wallet Store - User Wallets", () => {
       "Change should persist"
     );
 
-    console.log("✓ Balance added to user wallet");
+    console.log("- Balance added to user wallet");
   });
 
   it("should handle negative balance addition", () => {
@@ -111,7 +111,7 @@ describe("Wallet Store - User Wallets", () => {
 
     assert.strictEqual(updated.balance, 900, "Should subtract $100 from $1000");
 
-    console.log("✓ Negative balance addition handled");
+    console.log("- Negative balance addition handled");
   });
 });
 
@@ -132,7 +132,7 @@ describe("Wallet Store - House Wallet", () => {
     assert.strictEqual(house.totalPaidOut, 0, "Total paid out should be 0");
     assert.strictEqual(house.totalReceived, 0, "Total received should be 0");
 
-    console.log("✓ House wallet initialized with $500k");
+    console.log("- House wallet initialized with $500k");
   });
 
   it("should update house wallet", () => {
@@ -150,7 +150,7 @@ describe("Wallet Store - House Wallet", () => {
       "Reserved funds should be updated"
     );
 
-    console.log("✓ House wallet updated successfully");
+    console.log("- House wallet updated successfully");
   });
 
   it("should return copy of house wallet", () => {
@@ -164,7 +164,7 @@ describe("Wallet Store - House Wallet", () => {
       "Should not affect actual wallet"
     );
 
-    console.log("✓ House wallet returns copy (immutable)");
+    console.log("- House wallet returns copy (immutable)");
   });
 
   it("should persist changes after update", () => {
@@ -175,7 +175,7 @@ describe("Wallet Store - House Wallet", () => {
     house = getHouseWallet();
     assert.strictEqual(house.balance, 40000, "Changes should persist");
 
-    console.log("✓ House wallet changes persist");
+    console.log("- House wallet changes persist");
   });
 });
 
@@ -202,7 +202,7 @@ describe("Wallet Store - Transactions", () => {
     assert.strictEqual(txs.length, 1, "Should have 1 transaction");
     assert.strictEqual(txs[0].id, "tx1", "Transaction ID should match");
 
-    console.log("✓ Transaction added successfully");
+    console.log("- Transaction added successfully");
   });
 
   it("should retrieve transactions for specific user", () => {
@@ -239,7 +239,7 @@ describe("Wallet Store - Transactions", () => {
       "Transaction should be for user1"
     );
 
-    console.log("✓ Transactions filtered by user");
+    console.log("- Transactions filtered by user");
   });
 
   it("should sort transactions by timestamp (newest first)", () => {
@@ -272,7 +272,7 @@ describe("Wallet Store - Transactions", () => {
     assert.strictEqual(txs[0].id, "tx2", "Newest transaction should be first");
     assert.strictEqual(txs[1].id, "tx1", "Oldest transaction should be second");
 
-    console.log("✓ Transactions sorted by timestamp");
+    console.log("- Transactions sorted by timestamp");
   });
 
   it("should limit transaction results", () => {
@@ -293,7 +293,7 @@ describe("Wallet Store - Transactions", () => {
 
     assert.strictEqual(txs.length, 5, "Should limit to 5 transactions");
 
-    console.log("✓ Transaction results limited");
+    console.log("- Transaction results limited");
   });
 
   it("should handle different transaction types", () => {
@@ -322,7 +322,7 @@ describe("Wallet Store - Transactions", () => {
     const txs = getUserTransactions("user1", 10);
     assert.strictEqual(txs.length, 6, "Should have all transaction types");
 
-    console.log("✓ All transaction types supported");
+    console.log("- All transaction types supported");
   });
 });
 
@@ -355,7 +355,7 @@ describe("Wallet Store - Game Sessions", () => {
     );
     assert.strictEqual(retrieved?.initialBet, 100, "Initial bet should match");
 
-    console.log("✓ Game session created and retrieved");
+    console.log("- Game session created and retrieved");
   });
 
   it("should update existing game session", () => {
@@ -389,7 +389,7 @@ describe("Wallet Store - Game Sessions", () => {
       "Dive number should be updated"
     );
 
-    console.log("✓ Game session updated");
+    console.log("- Game session updated");
   });
 
   it("should delete game session", () => {
@@ -411,7 +411,7 @@ describe("Wallet Store - Game Sessions", () => {
     const retrieved = getGameSession("session1");
     assert.strictEqual(retrieved, undefined, "Session should be deleted");
 
-    console.log("✓ Game session deleted");
+    console.log("- Game session deleted");
   });
 
   it("should return undefined for non-existent session", () => {
@@ -419,7 +419,7 @@ describe("Wallet Store - Game Sessions", () => {
 
     assert.strictEqual(session, undefined, "Should return undefined");
 
-    console.log("✓ Non-existent session returns undefined");
+    console.log("- Non-existent session returns undefined");
   });
 
   it("should retrieve active sessions for user", () => {
@@ -476,7 +476,7 @@ describe("Wallet Store - Game Sessions", () => {
       "Should be session1"
     );
 
-    console.log("✓ Active sessions retrieved for user");
+    console.log("- Active sessions retrieved for user");
   });
 
   it("should handle multiple sessions per user", () => {
@@ -497,7 +497,7 @@ describe("Wallet Store - Game Sessions", () => {
     const sessions = getUserActiveSessions("user1");
     assert.strictEqual(sessions.length, 3, "Should have 3 sessions");
 
-    console.log("✓ Multiple sessions per user supported");
+    console.log("- Multiple sessions per user supported");
   });
 });
 
@@ -524,7 +524,7 @@ describe("Wallet Store - Statistics", () => {
       "House balance should be $500k"
     );
 
-    console.log("✓ Wallet statistics retrieved");
+    console.log("- Wallet statistics retrieved");
   });
 
   it("should track active sessions in stats", () => {
@@ -543,7 +543,7 @@ describe("Wallet Store - Statistics", () => {
     const stats = getWalletStats();
     assert.strictEqual(stats.activeSessions, 1, "Should have 1 active session");
 
-    console.log("✓ Active sessions tracked in stats");
+    console.log("- Active sessions tracked in stats");
   });
 
   it("should track transaction count in stats", () => {
@@ -576,7 +576,7 @@ describe("Wallet Store - Statistics", () => {
       "Should have 2 transactions"
     );
 
-    console.log("✓ Transaction count tracked in stats");
+    console.log("- Transaction count tracked in stats");
   });
 
   it("should update stats after wallet changes", () => {
@@ -600,7 +600,7 @@ describe("Wallet Store - Statistics", () => {
       "House balance should update"
     );
 
-    console.log("✓ Stats reflect wallet changes");
+    console.log("- Stats reflect wallet changes");
   });
 });
 
@@ -649,7 +649,7 @@ describe("Wallet Store - Reset", () => {
       "House should be reset to $500k"
     );
 
-    console.log("✓ Wallet store reset successfully");
+    console.log("- Wallet store reset successfully");
   });
 
   it("should allow new data after reset", () => {
@@ -658,7 +658,7 @@ describe("Wallet Store - Reset", () => {
     const wallet = getUserWallet("user1");
     assert.strictEqual(wallet.balance, 1000, "New wallet should have $1000");
 
-    console.log("✓ New data can be created after reset");
+    console.log("- New data can be created after reset");
   });
 });
 
@@ -672,7 +672,7 @@ describe("Wallet Store - Edge Cases", () => {
 
     assert.strictEqual(txs.length, 0, "Should return empty array");
 
-    console.log("✓ Empty transaction history handled");
+    console.log("- Empty transaction history handled");
   });
 
   it("should handle empty active sessions", () => {
@@ -680,14 +680,14 @@ describe("Wallet Store - Edge Cases", () => {
 
     assert.strictEqual(sessions.length, 0, "Should return empty array");
 
-    console.log("✓ Empty active sessions handled");
+    console.log("- Empty active sessions handled");
   });
 
   it("should handle deleting non-existent session", () => {
     // Should not throw error
     deleteGameSession("nonexistent");
 
-    console.log("✓ Deleting non-existent session handled");
+    console.log("- Deleting non-existent session handled");
   });
 
   it("should handle very long user IDs", () => {
@@ -696,7 +696,7 @@ describe("Wallet Store - Edge Cases", () => {
 
     assert.strictEqual(wallet.userId, longId, "Should handle long user IDs");
 
-    console.log("✓ Long user IDs handled");
+    console.log("- Long user IDs handled");
   });
 
   it("should handle special characters in user IDs", () => {
@@ -709,7 +709,7 @@ describe("Wallet Store - Edge Cases", () => {
       "Should handle special characters"
     );
 
-    console.log("✓ Special characters in user IDs handled");
+    console.log("- Special characters in user IDs handled");
   });
 
   it("should maintain separate state for multiple users", () => {
@@ -730,8 +730,8 @@ describe("Wallet Store - Edge Cases", () => {
       "Balances should be independent"
     );
 
-    console.log("✓ Multiple users maintain separate state");
+    console.log("- Multiple users maintain separate state");
   });
 });
 
-console.log("\n✅ All wallet store tests completed!\n");
+console.log("\nOK: All wallet store tests completed!\n");

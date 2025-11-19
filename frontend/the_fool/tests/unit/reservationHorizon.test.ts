@@ -35,7 +35,7 @@ describe("Blindspot #3: House Reservation Horizon", () => {
   it("should calculate max potential payouts for different round counts", () => {
     const bet = 100;
 
-    console.log("\n📊 Reservation Analysis:");
+    console.log("\nInfo: Reservation Analysis:");
     console.log("=".repeat(60));
 
     const roundCounts = [5, 10, 15, 20, 30, 50];
@@ -58,11 +58,11 @@ describe("Blindspot #3: House Reservation Horizon", () => {
     const maxWin = GAME_CONFIG.maxPotentialWin;
 
     if (tenRoundPayout >= maxWin) {
-      console.log("✅ SAFE: 10-round reservation hits the cap");
+      console.log("OK: SAFE: 10-round reservation hits the cap");
       console.log(`   Reserved: $${tenRoundPayout.toLocaleString()}`);
       console.log(`   Cap: $${maxWin.toLocaleString()}`);
     } else {
-      console.log("⚠️  RISK: 10-round reservation does NOT hit the cap");
+      console.log("WARNING:  RISK: 10-round reservation does NOT hit the cap");
       console.log(`   Reserved: $${tenRoundPayout.toLocaleString()}`);
       console.log(`   Cap: $${maxWin.toLocaleString()}`);
       console.log(`   Gap: $${(maxWin - tenRoundPayout).toLocaleString()}`);
@@ -71,7 +71,7 @@ describe("Blindspot #3: House Reservation Horizon", () => {
 
     // Document that 10 rounds is NOT sufficient (this is expected to show the gap)
     // The actual game now reserves for maxRounds, not 10
-    console.log("📝 This test documents why we MUST reserve for maxRounds");
+    console.log("Note: This test documents why we MUST reserve for maxRounds");
     console.log(
       "   The gap shows the financial risk of only reserving for 10 rounds"
     );
@@ -151,11 +151,11 @@ describe("Blindspot #3: House Reservation Horizon", () => {
 
     // CRITICAL: House should never pay more than it reserved
     if (housePaidOut <= reservedFunds) {
-      console.log("✅ SAFE: House paid out ≤ reserved funds");
+      console.log("OK: SAFE: House paid out ≤ reserved funds");
       const margin = reservedFunds - housePaidOut;
       console.log(`   Margin: $${margin.toLocaleString()}`);
     } else {
-      console.log("❌ DANGER: House paid out MORE than reserved!");
+      console.log("ERROR: DANGER: House paid out MORE than reserved!");
       const overage = housePaidOut - reservedFunds;
       console.log(`   Overage: $${overage.toLocaleString()}`);
     }
@@ -178,7 +178,7 @@ describe("Blindspot #3: House Reservation Horizon", () => {
     const session = getGameSession(sessionId)!;
     const reservedFunds = session.reservedPayout;
 
-    console.log("\n💰 Maximum Payout Scenario:");
+    console.log("\nAmount: Maximum Payout Scenario:");
     console.log("=".repeat(60));
     console.log(`  Max bet: $${bet}`);
     console.log(`  Reserved: $${reservedFunds.toLocaleString()}`);
@@ -192,7 +192,7 @@ describe("Blindspot #3: House Reservation Horizon", () => {
       `Reserved funds should not exceed max potential win`
     );
 
-    console.log("✅ Reservation is properly capped");
+    console.log("OK: Reservation is properly capped");
     console.log("=".repeat(60));
   });
 
@@ -227,14 +227,14 @@ describe("Blindspot #3: House Reservation Horizon", () => {
     console.log("");
 
     if (actualReserved === reserveFor50) {
-      console.log("✅ FIXED: Game now reserves for maxRounds (50)");
+      console.log("OK: FIXED: Game now reserves for maxRounds (50)");
       console.log("   → Safe against long winning streaks");
     } else if (actualReserved === reserveFor10) {
-      console.log("❌ NOT FIXED: Game still reserves for only 10 rounds");
+      console.log("ERROR: NOT FIXED: Game still reserves for only 10 rounds");
       console.log("   → Vulnerable to overpayment");
     } else {
       console.log(
-        `⚠️  Unexpected reservation: $${actualReserved.toLocaleString()}`
+        `WARNING:  Unexpected reservation: $${actualReserved.toLocaleString()}`
       );
     }
     console.log("=".repeat(60));

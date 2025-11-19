@@ -36,7 +36,7 @@ describe("Error Parser Demo (with mock data)", () => {
     // Parse the error
     const parsed = parseTransactionError(mockResult);
 
-    console.log("\n📊 Parsed Error:");
+    console.log("\nParsed Error:");
     console.log(formatErrorForConsole(parsed!));
 
     // Verify parsing worked
@@ -78,7 +78,7 @@ describe("Error Parser Demo (with mock data)", () => {
 
     const parsed = parseTransactionError(mockResult);
 
-    console.log("\n📊 Parsed Error:");
+    console.log("\nInfo: Parsed Error:");
     console.log(formatErrorForConsole(parsed!));
 
     expect(parsed).to.exist;
@@ -116,7 +116,7 @@ describe("Error Parser Demo (with mock data)", () => {
 
     const parsed = parseTransactionError(mockResult);
 
-    console.log("\n📊 Parsed Error:");
+    console.log("\nInfo: Parsed Error:");
     console.log(formatErrorForConsole(parsed!));
 
     expect(parsed).to.exist;
@@ -162,7 +162,7 @@ describe("Error Parser Demo (with mock data)", () => {
     console.log("BEFORE: Generic Error (what users saw before)");
     console.log("=".repeat(60));
     console.log("Error: custom program error: 0x1775");
-    console.log("❌ No context, no amounts, no addresses");
+    console.log("ERROR: No context, no amounts, no addresses");
 
     console.log("\n" + "=".repeat(60));
     console.log("AFTER: Parsed Error (what users see now)");
@@ -179,12 +179,12 @@ describe("Error Parser Demo (with mock data)", () => {
     const parsed = parseTransactionError(mockResult);
     console.log(formatErrorForConsole(parsed!));
 
-    console.log("\n✨ Benefits:");
-    console.log("   ✓ Clear error name");
-    console.log("   ✓ Amounts in SOL");
-    console.log("   ✓ Shortage calculation");
-    console.log("   ✓ Vault address for debugging");
-    console.log("   ✓ Ready for Solana Explorer");
+    console.log("\nBenefits:");
+    console.log("   - Clear error name");
+    console.log("   - Amounts in SOL");
+    console.log("   - Shortage calculation");
+    console.log("   - Vault address for debugging");
+    console.log("   - Ready for Solana Explorer");
     console.log("=".repeat(60) + "\n");
 
     expect(parsed).to.exist;

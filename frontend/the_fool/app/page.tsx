@@ -102,7 +102,7 @@ export default function Home() {
     // Check if we already have a userId in the store
     if (userIdFromStore) {
       console.log(
-        "[GAME] 📦 Using existing userId from store:",
+        "[GAME] Package: Using existing userId from store:",
         userIdFromStore.substring(0, 30) + "..."
       );
       return;
@@ -112,7 +112,7 @@ export default function Home() {
     const storedUserId = localStorage.getItem("game_user_id");
     if (storedUserId) {
       console.log(
-        "[GAME] 📦 Migrating userId from localStorage:",
+        "[GAME] Package: Migrating userId from localStorage:",
         storedUserId.substring(0, 30) + "..."
       );
       setUserId(storedUserId);
@@ -129,7 +129,7 @@ export default function Home() {
         );
         if (userWallets.length > 0) {
           console.log(
-            "[GAME] 📦 Using existing wallet from localStorage:",
+            "[GAME] Package: Using existing wallet from localStorage:",
             userWallets[0].substring(0, 30) + "..."
           );
           setUserId(userWallets[0]);
@@ -260,7 +260,7 @@ export default function Home() {
 
   // Sync wallet balance to game state (without regenerating session ID)
   useEffect(() => {
-    console.log("[GAME] 💰 Syncing balance to game state", {
+    console.log("[GAME] Amount: Syncing balance to game state", {
       zustandBalance: userBalance,
       previousGameBalance: gameState.walletBalance,
     });
@@ -305,7 +305,7 @@ export default function Home() {
 
     // Check if user has enough balance for fixed bet
     if (betAmount > (gameState.walletBalance || 0)) {
-      console.log("[GAME] ❌ Insufficient balance check failed!");
+      console.log("[GAME] ERROR: Insufficient balance check failed!");
       showError(
         `Insufficient balance. Need ${betAmount} SOL, have ${gameState.walletBalance || 0} SOL`,
         "warning"
@@ -328,7 +328,7 @@ export default function Home() {
       let newSessionId = gameState.sessionId; // Default to current session ID
 
       if (useSolana) {
-        console.log("[GAME] 🔗 Using client-side Solana chain for transaction");
+        console.log("[GAME] Link: Using client-side Solana chain for transaction");
 
         try {
           // Call chain directly on client (wallet will sign)
@@ -340,7 +340,7 @@ export default function Home() {
             betAmount * maxPayoutMultiplier
           );
 
-          console.log("[GAME] 💰 Transaction parameters:", {
+          console.log("[GAME] Amount: Transaction parameters:", {
             betAmount: `${betAmount} SOL`,
             betLamports: betLamports.toString(),
             maxPayoutMultiplier,
@@ -358,8 +358,8 @@ export default function Home() {
           );
           const [vaultPda] = getHouseVaultAddress(houseAuthPubkey, programId);
 
-          console.log("[GAME] 🏦 Vault PDA derived:", vaultPda.toBase58());
-          console.log("[GAME] 📝 Calling startSession with params:", {
+          console.log("[GAME] Vault: Vault PDA derived:", vaultPda.toBase58());
+          console.log("[GAME] Note: Calling startSession with params:", {
             userPubkey: userId,
             betLamports: betLamports.toString(),
             maxPayoutLamports: maxPayoutLamports.toString(),
@@ -373,7 +373,7 @@ export default function Home() {
             houseVaultPda: vaultPda.toBase58(),
           });
 
-          console.log("[GAME] ✅ Solana session started on-chain!", {
+          console.log("[GAME] OK: Solana session started on-chain!", {
             sessionPda,
             currentTreasure: lamportsToSol(state.currentTreasure),
             currentTreasureLamports: state.currentTreasure.toString(),
@@ -384,10 +384,10 @@ export default function Home() {
           // Store session ID for later use
           newSessionId = sessionPda;
 
-          console.log("[GAME] 📊 Session created with ID:", newSessionId);
+          console.log("[GAME] Info: Session created with ID:", newSessionId);
         } catch (error) {
-          console.error("[GAME] ❌ Solana transaction failed:", error);
-          console.error("[GAME] ❌ Error details:", {
+          console.error("[GAME] ERROR: Solana transaction failed:", error);
+          console.error("[GAME] ERROR: Error details:", {
             message: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
           });
@@ -395,7 +395,7 @@ export default function Home() {
         }
       } else {
         // LocalGameChain mode - use server action
-        console.log("[GAME] 🔗 Using server action for LocalGameChain");
+        console.log("[GAME] Link: Using server action for LocalGameChain");
         const result = await startGame(betAmount, userId, gameState.sessionId);
 
         if (!result.success) {
@@ -407,7 +407,7 @@ export default function Home() {
           return;
         }
 
-        console.log("[GAME] ✅ Game started successfully", {
+        console.log("[GAME] OK: Game started successfully", {
           sessionId: result.sessionId,
         });
 
@@ -423,7 +423,7 @@ export default function Home() {
 
       // Wait for card to fade, then start game and show HUD
       setTimeout(() => {
-        // ✅ Reset all flow state for new game
+        // OK: Reset all flow state for new game
         resetForNewGame();
 
         setGameState({
@@ -433,7 +433,7 @@ export default function Home() {
           initialBet: betAmount,
           depth: 0,
           oxygenLevel: 100,
-          sessionId: newSessionId, // ✅ Use new session ID (from either Solana or LocalGameChain)
+          sessionId: newSessionId, // OK: Use new session ID (from either Solana or LocalGameChain)
           userId: gameState.userId,
           discoveredShipwrecks: [],
           walletBalance: (gameState.walletBalance ?? 0) - betAmount,
@@ -450,11 +450,11 @@ export default function Home() {
         });
       }, 500);
     } catch (error) {
-      console.error("[GAME] ❌ handleStartGame caught error:", error);
+      console.error("[GAME] ERROR: handleStartGame caught error:", error);
       const message = error instanceof Error ? error.message : "Unknown error";
       const stack = error instanceof Error ? error.stack : undefined;
 
-      console.error("[GAME] ❌ Error details:", {
+      console.error("[GAME] ERROR: Error details:", {
         message,
         stack,
         type: error?.constructor?.name,
@@ -480,7 +480,7 @@ export default function Home() {
   // Dive deeper
   const handleDiveDeeper = async () => {
     if (isProcessing) {
-      console.warn("[GAME] ⚠️ Dive blocked - already processing");
+      console.warn("[GAME] WARNING: Dive blocked - already processing");
       return;
     }
 
@@ -522,7 +522,7 @@ export default function Home() {
 
       if (useSolana) {
         // Solana mode - call chain directly (wallet will sign)
-        console.log("[GAME] 🔗 Solana mode: calling playRound on-chain...");
+        console.log("[GAME] Link: Solana mode: calling playRound on-chain...");
 
         const { state, survived } = await gameChain.playRound({
           sessionPda: gameState.sessionId,
@@ -554,14 +554,14 @@ export default function Home() {
           shipwreck: shipwreck ? { ...shipwreck, discovered: true } : undefined,
         };
 
-        console.log("[GAME] ✅ On-chain playRound result:", {
+        console.log("[GAME] OK: On-chain playRound result:", {
           survived,
           newDiveNumber: state.diveNumber,
           treasure: lamportsToSol(state.currentTreasure),
         });
       } else {
         // LocalGameChain mode - use server action
-        console.log("[GAME] 🔗 LocalGameChain mode: using server action...");
+        console.log("[GAME] Link: LocalGameChain mode: using server action...");
         result = await performDive(
           gameState.diveNumber,
           valueToMultiply,
@@ -570,7 +570,7 @@ export default function Home() {
         );
       }
 
-      console.log(`[GAME] 📊 Server response`, {
+      console.log(`[GAME] Info: Server response`, {
         requestId,
         survived: result.survived,
         randomRoll: result.randomRoll,
@@ -597,7 +597,7 @@ export default function Home() {
 
       // STEP 4: Update game state
       if (result.survived) {
-        console.log(`[GAME] ✅ Dive successful!`, {
+        console.log(`[GAME] OK: Dive successful!`, {
           newTreasure: result.totalTreasure,
           depth: result.depth,
           multiplierApplied: result.multiplier,
@@ -628,7 +628,7 @@ export default function Home() {
           });
         }
 
-        // ✅ FIX: Don't reset survived here - the canvas handles it now
+        // OK: FIX: Don't reset survived here - the canvas handles it now
         // This prevents race conditions with the animation state machine
       } else {
         console.log(`[GAME] 💀 DROWNED - Game Over`, {
@@ -640,7 +640,7 @@ export default function Home() {
 
         // Update wallet balance
         const walletInfo = await getWalletInfo(userId);
-        console.log("[GAME] 💰 Wallet after loss", {
+        console.log("[GAME] Amount: Wallet after loss", {
           newBalance: walletInfo.balance,
           totalLost: walletInfo.totalLost,
         });
@@ -665,7 +665,7 @@ export default function Home() {
           oxygenLevel: 100,
           discoveredShipwrecks: [],
           walletBalance: walletInfo.balance,
-          sessionId: newSessionId, // ✅ NEW SESSION ID
+          sessionId: newSessionId, // OK: NEW SESSION ID
         }));
 
         // Canvas state will be reset by returnToBeach() from death animation
@@ -677,10 +677,10 @@ export default function Home() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      console.error("[GAME] ❌ Dive error:", error);
-      console.error("[GAME] ❌ Error message:", message);
+      console.error("[GAME] ERROR: Dive error:", error);
+      console.error("[GAME] ERROR: Error message:", message);
 
-      // ✅ NEW: Use typed error parsing instead of string matching
+      // OK: NEW: Use typed error parsing instead of string matching
       const gameError = parseServerError(message);
       const action = getErrorAction(gameError);
 
@@ -723,11 +723,11 @@ export default function Home() {
   // Surface with treasure
   const handleSurface = async () => {
     if (isProcessing) {
-      console.warn("[GAME] ⚠️ Surface blocked - already processing");
+      console.warn("[GAME] WARNING: Surface blocked - already processing");
       return;
     }
     if (gameState.currentTreasure <= 0) {
-      console.warn("[GAME] ⚠️ Surface blocked - no treasure");
+      console.warn("[GAME] WARNING: Surface blocked - no treasure");
       return;
     }
 
@@ -749,7 +749,7 @@ export default function Home() {
 
       if (useSolana) {
         // Solana mode - call chain directly (wallet will sign)
-        console.log("[GAME] 🔗 Solana mode: calling cashOut on-chain...");
+        console.log("[GAME] Link: Solana mode: calling cashOut on-chain...");
 
         const { finalTreasureLamports, state } = await gameChain.cashOut({
           sessionPda: gameState.sessionId,
@@ -766,7 +766,7 @@ export default function Home() {
           profit,
         };
 
-        console.log("[GAME] ✅ On-chain cashOut result:", {
+        console.log("[GAME] OK: On-chain cashOut result:", {
           finalTreasureLamports: finalTreasureLamports.toString(),
           finalAmount,
           profit,
@@ -774,7 +774,7 @@ export default function Home() {
         });
       } else {
         // LocalGameChain mode - use server action
-        console.log("[GAME] 🔗 LocalGameChain mode: using server action...");
+        console.log("[GAME] Link: LocalGameChain mode: using server action...");
         result = await surfaceWithTreasure(
           gameState.currentTreasure,
           gameState.sessionId,
@@ -782,7 +782,7 @@ export default function Home() {
         );
       }
 
-      console.log("[GAME] 💰 Surface result", {
+      console.log("[GAME] Amount: Surface result", {
         success: result.success,
         finalAmount: result.finalAmount,
         profit: result.profit,
@@ -792,7 +792,7 @@ export default function Home() {
       setAnimationMessage("");
 
       if (result.success) {
-        console.log(`[GAME] ✅ Surface successful!`, {
+        console.log(`[GAME] OK: Surface successful!`, {
           finalAmount: result.finalAmount,
           profit: result.profit,
           profitPercent: `${((result.profit / gameState.initialBet) * 100).toFixed(1)}%`,
@@ -801,7 +801,7 @@ export default function Home() {
         // Update wallet balance
         const walletInfo = await getWalletInfo(userId);
         const profitOrLoss = result.profit >= 0 ? "profit" : "loss";
-        console.log(`[GAME] 💰 Wallet after cashout (${profitOrLoss})`, {
+        console.log(`[GAME] Amount: Wallet after cashout (${profitOrLoss})`, {
           newBalance: walletInfo.balance,
           profitAmount: result.profit,
           totalWon: walletInfo.totalWon,
@@ -826,7 +826,7 @@ export default function Home() {
           oxygenLevel: 100,
           discoveredShipwrecks: [],
           walletBalance: walletInfo.balance,
-          sessionId: newSessionId, // ✅ NEW SESSION ID
+          sessionId: newSessionId, // OK: NEW SESSION ID
         }));
 
         // Canvas state will be reset by returnToBeach() from surfacing scene
@@ -839,16 +839,16 @@ export default function Home() {
         setTimeout(() => setShowBettingCard(true), 500);
       }
     } catch (error) {
-      console.error("[GAME] ❌ Cash out error:", error);
+      console.error("[GAME] ERROR: Cash out error:", error);
       console.error(
-        "[GAME] ❌ Error stack:",
+        "[GAME] ERROR: Error stack:",
         error instanceof Error ? error.stack : "No stack"
       );
-      console.error("[GAME] ❌ Error type:", error?.constructor?.name);
+      console.error("[GAME] ERROR: Error type:", error?.constructor?.name);
 
       const message = error instanceof Error ? error.message : "Unknown error";
 
-      // ✅ NEW: Use typed error parsing instead of string matching
+      // OK: NEW: Use typed error parsing instead of string matching
       const gameError = parseServerError(message);
       const action = getErrorAction(gameError);
 
@@ -1029,7 +1029,7 @@ export default function Home() {
                     <span
                       style={{ fontSize: "16px", fontWeight: "bold" }}
                       onClick={() =>
-                        console.log("[UI] 💰 Balance clicked - gameState:", {
+                        console.log("[UI] Amount: Balance clicked - gameState:", {
                           walletBalance: gameState.walletBalance,
                           userBalance,
                           fullGameState: gameState,

@@ -417,4 +417,4 @@ describe("Advanced Edge Cases - Multiplier Behavior", () => {
   });
 });
 
-console.log("\n✅ All advanced edge case tests completed!\n");
+console.log("\nOK: All advanced edge case tests completed!\n");

@@ -55,17 +55,17 @@ class SoundManager {
 
         // Handle load events
         audio.addEventListener("canplaythrough", () => {
-          console.log(`[SOUND] ✅ Loaded: ${key} (${path})`);
+          console.log(`[SOUND] OK: Loaded: ${key} (${path})`);
         });
 
         audio.addEventListener("error", (e) => {
-          console.error(`[SOUND] ❌ Failed to load: ${key} (${path})`, e);
+          console.error(`[SOUND] ERROR: Failed to load: ${key} (${path})`, e);
         });
 
         this.sounds.set(key as SoundType, audio);
-        console.log(`[SOUND] 📦 Registered: ${key}`);
+        console.log(`[SOUND] Package: Registered: ${key}`);
       } catch (error) {
-        console.error(`[SOUND] ❌ Exception loading ${key}:`, error);
+        console.error(`[SOUND] ERROR: Exception loading ${key}:`, error);
       }
     });
   }
@@ -89,7 +89,7 @@ class SoundManager {
 
     const sound = this.sounds.get(soundType);
     if (!sound) {
-      console.warn(`[SOUND] ⚠️ Sound not found in map: ${soundType}`);
+      console.warn(`[SOUND] WARNING: Sound not found in map: ${soundType}`);
       console.log("[SOUND] Available sounds:", Array.from(this.sounds.keys()));
       return;
     }
@@ -106,7 +106,7 @@ class SoundManager {
         (options?.volume ?? DEFAULT_VOLUMES[soundType]) * this.masterVolume;
 
       console.log(
-        `[SOUND] 📊 Volume: ${playSound.volume}, Loop: ${playSound.loop}`
+        `[SOUND] Info: Volume: ${playSound.volume}, Loop: ${playSound.loop}`
       );
 
       // Play
@@ -116,12 +116,12 @@ class SoundManager {
         playPromise
           .then(() => {
             console.log(
-              `[SOUND] ✅ Playing: ${soundType} (duration: ${playSound.duration}s)`
+              `[SOUND] OK: Playing: ${soundType} (duration: ${playSound.duration}s)`
             );
           })
           .catch((error) => {
             console.error(
-              `[SOUND] ❌ Playback failed for ${soundType}:`,
+              `[SOUND] ERROR: Playback failed for ${soundType}:`,
               error
             );
           });
@@ -135,7 +135,7 @@ class SoundManager {
         });
       }
     } catch (error) {
-      console.error(`[SOUND] ❌ Exception playing ${soundType}:`, error);
+      console.error(`[SOUND] ERROR: Exception playing ${soundType}:`, error);
     }
   }
 

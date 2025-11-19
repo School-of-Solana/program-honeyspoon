@@ -49,7 +49,7 @@ export function createDivingScene(
   k.scene("diving", () => {
     console.log("[CANVAS] 🤿 Diving scene created!");
 
-    // ✅ CANVAS STATE RESET (Owner: DivingScene)
+    // OK: CANVAS STATE RESET (Owner: DivingScene)
     // Reset animation state every time scene is created
     // This state object persists across scene transitions, so we must reset it
     // Called: Every time k.go("diving") is executed (new dives, new games)
@@ -522,7 +522,7 @@ export function createDivingScene(
           state.divingSpeed = 0;
           state.divingElapsed = 0;
           useGameStore.getState().endDiveAnimation(); // Clear isDiving flag
-          console.log("[CANVAS] ✅ Diving animation complete");
+          console.log("[CANVAS] OK: Diving animation complete");
         }
       }
 
@@ -537,14 +537,14 @@ export function createDivingScene(
           state.isAnimating = false;
           state.treasurePulseTime = 0;
           console.log(
-            "[CANVAS] ✅ Treasure animation complete - ready for next action"
+            "[CANVAS] OK: Treasure animation complete - ready for next action"
           );
-          // ✅ FIX: Clear survived flag to prevent re-trigger
+          // OK: FIX: Clear survived flag to prevent re-trigger
           useGameStore.getState().setSurvived(undefined);
         }
       }
 
-      // ✅ FIX: Check animations in priority order
+      // OK: FIX: Check animations in priority order
       // Priority 1: Surfacing (player cashing out)
       if (
         useGameStore.getState().shouldSurface &&
@@ -566,7 +566,7 @@ export function createDivingScene(
         // Immediately set to animating to prevent duplicate triggers
         state.isAnimating = true;
         state.animationType = AnimationType.DEATH;
-        // ✅ FIX: Clear survived flag immediately
+        // OK: FIX: Clear survived flag immediately
         useGameStore.getState().setSurvived(undefined);
         triggerDeathAnimation(
           k,
@@ -587,11 +587,11 @@ export function createDivingScene(
         !state.isAnimating &&
         state.animationType === AnimationType.IDLE
       ) {
-        console.log("[CANVAS] 💰 Treasure collected! Playing celebration");
+        console.log("[CANVAS] Amount: Treasure collected! Playing celebration");
         state.isAnimating = true;
         state.animationType = AnimationType.TREASURE;
         state.treasurePulseTime = 0;
-        // ✅ FIX: Clear survived flag immediately to prevent re-trigger
+        // OK: FIX: Clear survived flag immediately to prevent re-trigger
         useGameStore.getState().setSurvived(undefined);
         createTreasureParticles(k, diver.pos.x, diver.pos.y);
       } else if (

@@ -47,7 +47,7 @@ describe("Session Creation Security", () => {
     const wallet = await getWalletInfo(userId);
     assert.strictEqual(wallet.balance, 1000, "Balance should be unchanged");
 
-    console.log("✓ Insufficient balance rejected");
+    console.log("- Insufficient balance rejected");
   });
 
   it("should reject bet below minimum", async () => {
@@ -107,7 +107,7 @@ describe("Session Creation Security", () => {
     assert.strictEqual(result.success, false, "Should reject empty sessionId");
   });
 
-  console.log("✓ Session creation security tests passed");
+  console.log("- Session creation security tests passed");
 });
 
 describe("Session Hijacking Prevention", () => {
@@ -137,7 +137,7 @@ describe("Session Hijacking Prevention", () => {
       );
     }
 
-    console.log("✓ Dive hijacking blocked");
+    console.log("- Dive hijacking blocked");
   });
 
   it("should reject cash-out from wrong user", async () => {
@@ -156,7 +156,7 @@ describe("Session Hijacking Prevention", () => {
       );
     }
 
-    console.log("✓ Cash-out hijacking blocked");
+    console.log("- Cash-out hijacking blocked");
   });
 
   it("should reject dive on non-existent session", async () => {
@@ -193,7 +193,7 @@ describe("Session Hijacking Prevention", () => {
         );
       }
 
-      console.log("✓ Inactive session diving blocked");
+      console.log("- Inactive session diving blocked");
     } else {
       console.log(
         "⚠ Survived with roll=0 (unlikely), skipping inactive session test"
@@ -201,7 +201,7 @@ describe("Session Hijacking Prevention", () => {
     }
   });
 
-  console.log("✓ Session hijacking prevention tests passed");
+  console.log("- Session hijacking prevention tests passed");
 });
 
 describe("Double Cash-Out Prevention", () => {
@@ -248,7 +248,7 @@ describe("Double Cash-Out Prevention", () => {
       "Balance should not change on second cash-out"
     );
 
-    console.log("✓ Double cash-out blocked");
+    console.log("- Double cash-out blocked");
   });
 
   it("should reject cash-out after death", async () => {
@@ -269,13 +269,13 @@ describe("Double Cash-Out Prevention", () => {
         );
       }
 
-      console.log("✓ Cash-out after death blocked");
+      console.log("- Cash-out after death blocked");
     } else {
       console.log("⚠ Survived with roll=0 (unlikely), skipping test");
     }
   });
 
-  console.log("✓ Double cash-out prevention tests passed");
+  console.log("- Double cash-out prevention tests passed");
 });
 
 describe("Cash-Out Tampering Prevention", () => {
@@ -306,7 +306,7 @@ describe("Cash-Out Tampering Prevention", () => {
     }
 
     console.log(
-      `✓ Inflated cash-out blocked (${actualTreasure} → ${inflatedAmount})`
+      `- Inflated cash-out blocked (${actualTreasure} → ${inflatedAmount})`
     );
   });
 
@@ -328,7 +328,7 @@ describe("Cash-Out Tampering Prevention", () => {
     }
 
     console.log(
-      `✓ Deflated cash-out blocked (${actualTreasure} → ${deflatedAmount})`
+      `- Deflated cash-out blocked (${actualTreasure} → ${deflatedAmount})`
     );
   });
 
@@ -362,7 +362,7 @@ describe("Cash-Out Tampering Prevention", () => {
     }
   });
 
-  console.log("✓ Cash-out tampering prevention tests passed");
+  console.log("- Cash-out tampering prevention tests passed");
 });
 
 describe("Round Execution Edge Cases", () => {
@@ -430,7 +430,7 @@ describe("Round Execution Edge Cases", () => {
     }
   });
 
-  console.log("✓ Round execution edge case tests passed");
+  console.log("- Round execution edge case tests passed");
 });
 
 describe("Concurrent Operations", () => {
@@ -483,7 +483,7 @@ describe("Concurrent Operations", () => {
     console.log(`  ${successful}/3 concurrent sessions started`);
   });
 
-  console.log("✓ Concurrent operation tests passed");
+  console.log("- Concurrent operation tests passed");
 });
 
-console.log("\n✅ All server blindspot tests completed!\n");
+console.log("\nOK: All server blindspot tests completed!\n");

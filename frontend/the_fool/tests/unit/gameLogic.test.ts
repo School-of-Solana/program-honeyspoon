@@ -39,7 +39,7 @@ describe("Game Logic - calculateDiveStats", () => {
     assert.strictEqual(stats.oxygenRemaining, 96, "Oxygen should be 96%");
 
     console.log(
-      `✓ Dive 1: ${(stats.survivalProbability * 100).toFixed(1)}% survival, ${stats.multiplier}x multiplier`
+      `- Dive 1: ${(stats.survivalProbability * 100).toFixed(1)}% survival, ${stats.multiplier}x multiplier`
     );
   });
 
@@ -56,7 +56,7 @@ describe("Game Logic - calculateDiveStats", () => {
     assert.strictEqual(stats.oxygenRemaining, 80, "Oxygen should be 80%");
 
     console.log(
-      `✓ Dive 5: ${(stats.survivalProbability * 100).toFixed(1)}% survival, ${stats.multiplier}x multiplier`
+      `- Dive 5: ${(stats.survivalProbability * 100).toFixed(1)}% survival, ${stats.multiplier}x multiplier`
     );
   });
 
@@ -73,7 +73,7 @@ describe("Game Logic - calculateDiveStats", () => {
     assert.strictEqual(stats.oxygenRemaining, 60, "Oxygen should be 60%");
 
     console.log(
-      `✓ Dive 10: ${(stats.survivalProbability * 100).toFixed(1)}% survival, ${stats.multiplier}x multiplier`
+      `- Dive 10: ${(stats.survivalProbability * 100).toFixed(1)}% survival, ${stats.multiplier}x multiplier`
     );
   });
 
@@ -92,7 +92,7 @@ describe("Game Logic - calculateDiveStats", () => {
     );
 
     console.log(
-      `✓ Survival decreases: ${(dive1.survivalProbability * 100).toFixed(1)}% → ${(dive5.survivalProbability * 100).toFixed(1)}% → ${(dive10.survivalProbability * 100).toFixed(1)}%`
+      `- Survival decreases: ${(dive1.survivalProbability * 100).toFixed(1)}% → ${(dive5.survivalProbability * 100).toFixed(1)}% → ${(dive10.survivalProbability * 100).toFixed(1)}%`
     );
   });
 
@@ -111,7 +111,7 @@ describe("Game Logic - calculateDiveStats", () => {
     );
 
     console.log(
-      `✓ Multiplier increases: ${dive1.multiplier}x → ${dive5.multiplier}x → ${dive10.multiplier}x`
+      `- Multiplier increases: ${dive1.multiplier}x → ${dive5.multiplier}x → ${dive10.multiplier}x`
     );
   });
 
@@ -125,7 +125,7 @@ describe("Game Logic - calculateDiveStats", () => {
       );
     }
 
-    console.log("✓ EV constant at 0.95 for dives 1-20 (5% house edge)");
+    console.log("- EV constant at 0.95 for dives 1-20 (5% house edge)");
   });
 
   it("should calculate mathematically correct EV", () => {
@@ -141,7 +141,7 @@ describe("Game Logic - calculateDiveStats", () => {
     }
 
     console.log(
-      "✓ EV calculation mathematically verified (survivalProb × multiplier = 0.95)"
+      "- EV calculation mathematically verified (survivalProb × multiplier = 0.95)"
     );
   });
 
@@ -158,7 +158,7 @@ describe("Game Logic - calculateDiveStats", () => {
     );
 
     console.log(
-      `✓ Threshold: ${stats.threshold} (roll must be < ${stats.threshold} to survive)`
+      `- Threshold: ${stats.threshold} (roll must be < ${stats.threshold} to survive)`
     );
   });
 
@@ -175,7 +175,7 @@ describe("Game Logic - calculateDiveStats", () => {
     );
     assert.strictEqual(dive30.oxygenRemaining, 5, "Oxygen should floor at 5%");
 
-    console.log(`✓ Oxygen depletion: 96% → 20% → 5% (min)`);
+    console.log(`- Oxygen depletion: 96% → 20% → 5% (min)`);
   });
 
   it("should increase depth linearly", () => {
@@ -187,7 +187,7 @@ describe("Game Logic - calculateDiveStats", () => {
     assert.strictEqual(dive2.depth, 100, "Dive 2 depth should be 100m");
     assert.strictEqual(dive10.depth, 500, "Dive 10 depth should be 500m");
 
-    console.log("✓ Depth increases linearly: 50m per dive");
+    console.log("- Depth increases linearly: 50m per dive");
   });
 
   it("should respect minimum survival probability", () => {
@@ -205,7 +205,7 @@ describe("Game Logic - calculateDiveStats", () => {
     );
 
     console.log(
-      `✓ Survival probability floors at ${GAME_CONFIG.MIN_WIN_PROB} (${(GAME_CONFIG.MIN_WIN_PROB * 100).toFixed(1)}%)`
+      `- Survival probability floors at ${GAME_CONFIG.MIN_WIN_PROB} (${(GAME_CONFIG.MIN_WIN_PROB * 100).toFixed(1)}%)`
     );
   });
 
@@ -216,7 +216,7 @@ describe("Game Logic - calculateDiveStats", () => {
     assert.ok(dive1.depthZone.name, "Depth zone should have name");
     assert.ok(dive1.depthZone.color, "Depth zone should have color");
 
-    console.log(`✓ Dive 1 depth zone: ${dive1.depthZone.name}`);
+    console.log(`- Dive 1 depth zone: ${dive1.depthZone.name}`);
   });
 });
 
@@ -227,7 +227,7 @@ describe("Game Logic - getDepthZone", () => {
     assert.strictEqual(zone.name, "SUNLIGHT", "Should be SUNLIGHT zone");
     assert.ok(zone.max >= 50, "Zone max should include depth");
 
-    console.log(`✓ 50m = ${zone.name} zone`);
+    console.log(`- 50m = ${zone.name} zone`);
   });
 
   it("should return TWILIGHT zone for medium depths", () => {
@@ -235,7 +235,7 @@ describe("Game Logic - getDepthZone", () => {
 
     assert.strictEqual(zone.name, "TWILIGHT", "Should be TWILIGHT zone");
 
-    console.log(`✓ 250m = ${zone.name} zone`);
+    console.log(`- 250m = ${zone.name} zone`);
   });
 
   it("should return ABYSS zone for deep depths", () => {
@@ -243,7 +243,7 @@ describe("Game Logic - getDepthZone", () => {
 
     assert.strictEqual(zone.name, "ABYSS", "Should be ABYSS zone");
 
-    console.log(`✓ 5000m = ${zone.name} zone`);
+    console.log(`- 5000m = ${zone.name} zone`);
   });
 
   it("should return HADAL zone for extreme depths", () => {
@@ -251,7 +251,7 @@ describe("Game Logic - getDepthZone", () => {
 
     assert.strictEqual(zone.name, "HADAL", "Should be HADAL zone");
 
-    console.log(`✓ 10000m = ${zone.name} zone`);
+    console.log(`- 10000m = ${zone.name} zone`);
   });
 
   it("should assign zones correctly across all depths", () => {
@@ -266,7 +266,7 @@ describe("Game Logic - getDepthZone", () => {
       );
     }
 
-    console.log("✓ All depth ranges covered by zones");
+    console.log("- All depth ranges covered by zones");
   });
 
   it("should include zone properties", () => {
@@ -277,7 +277,7 @@ describe("Game Logic - getDepthZone", () => {
     assert.ok(typeof zone.max === "number", "Zone should have max depth");
 
     console.log(
-      `✓ Zone properties: color=${zone.color}, light=${zone.light}, max=${zone.max}m`
+      `- Zone properties: color=${zone.color}, light=${zone.light}, max=${zone.max}m`
     );
   });
 });
@@ -293,7 +293,7 @@ describe("Game Logic - generateShipwreck", () => {
       "Same seed should generate identical shipwreck"
     );
 
-    console.log(`✓ Deterministic: "${wreck1.name}"`);
+    console.log(`- Deterministic: "${wreck1.name}"`);
   });
 
   it("should generate different shipwrecks for different dives", () => {
@@ -307,7 +307,7 @@ describe("Game Logic - generateShipwreck", () => {
     );
     assert.notStrictEqual(wreck1.id, wreck2.id, "Different IDs");
 
-    console.log(`✓ Dive 1: "${wreck1.name}", Dive 2: "${wreck2.name}"`);
+    console.log(`- Dive 1: "${wreck1.name}", Dive 2: "${wreck2.name}"`);
   });
 
   it("should generate different shipwrecks for different seeds", () => {
@@ -321,7 +321,7 @@ describe("Game Logic - generateShipwreck", () => {
       "Different seeds should likely generate different wrecks"
     );
 
-    console.log(`✓ Seed A: "${wreck1.name}", Seed B: "${wreck2.name}"`);
+    console.log(`- Seed A: "${wreck1.name}", Seed B: "${wreck2.name}"`);
   });
 
   it("should include all required shipwreck properties", () => {
@@ -341,7 +341,7 @@ describe("Game Logic - generateShipwreck", () => {
     );
     assert.strictEqual(wreck.discovered, false, "Should start undiscovered");
 
-    console.log(`✓ Complete shipwreck: ${wreck.name} (${wreck.era})`);
+    console.log(`- Complete shipwreck: ${wreck.name} (${wreck.era})`);
   });
 
   it("should increase treasure value with depth", () => {
@@ -359,7 +359,7 @@ describe("Game Logic - generateShipwreck", () => {
     );
 
     console.log(
-      `✓ Treasure value scales: $${wreck1.treasureValue} → $${wreck5.treasureValue} → $${wreck10.treasureValue}`
+      `- Treasure value scales: $${wreck1.treasureValue} → $${wreck5.treasureValue} → $${wreck10.treasureValue}`
     );
   });
 
@@ -370,7 +370,7 @@ describe("Game Logic - generateShipwreck", () => {
     assert.strictEqual(wreck1.depth, 50, "Dive 1 should be 50m");
     assert.strictEqual(wreck3.depth, 150, "Dive 3 should be 150m");
 
-    console.log("✓ Depth calculation correct");
+    console.log("- Depth calculation correct");
   });
 
   it("should format ID correctly", () => {
@@ -382,7 +382,7 @@ describe("Game Logic - generateShipwreck", () => {
       "ID should be seed-diveNumber"
     );
 
-    console.log(`✓ ID format: ${wreck.id}`);
+    console.log(`- ID format: ${wreck.id}`);
   });
 
   it("should generate valid ship names", () => {
@@ -397,7 +397,7 @@ describe("Game Logic - generateShipwreck", () => {
       );
     }
 
-    console.log("✓ All ship names properly formatted");
+    console.log("- All ship names properly formatted");
   });
 
   it("should handle extreme dive numbers", () => {
@@ -411,7 +411,7 @@ describe("Game Logic - generateShipwreck", () => {
     );
 
     console.log(
-      `✓ Dive 100: depth=${wreck100.depth}m, treasure=$${wreck100.treasureValue}`
+      `- Dive 100: depth=${wreck100.depth}m, treasure=$${wreck100.treasureValue}`
     );
   });
 });
@@ -424,7 +424,7 @@ describe("Game Logic - getTreasureVisual", () => {
     assert.strictEqual(visual.particles, 5, "Should have 5 particles");
 
     console.log(
-      `✓ $50 treasure: size=${visual.size}, particles=${visual.particles}`
+      `- $50 treasure: size=${visual.size}, particles=${visual.particles}`
     );
   });
 
@@ -435,7 +435,7 @@ describe("Game Logic - getTreasureVisual", () => {
     assert.strictEqual(visual.particles, 15, "Should have 15 particles");
 
     console.log(
-      `✓ $300 treasure: size=${visual.size}, particles=${visual.particles}`
+      `- $300 treasure: size=${visual.size}, particles=${visual.particles}`
     );
   });
 
@@ -446,7 +446,7 @@ describe("Game Logic - getTreasureVisual", () => {
     assert.strictEqual(visual.particles, 30, "Should have 30 particles");
 
     console.log(
-      `✓ $750 treasure: size=${visual.size}, particles=${visual.particles}`
+      `- $750 treasure: size=${visual.size}, particles=${visual.particles}`
     );
   });
 
@@ -457,7 +457,7 @@ describe("Game Logic - getTreasureVisual", () => {
     assert.strictEqual(visual.particles, 50, "Should have 50 particles");
 
     console.log(
-      `✓ $2000 treasure: size=${visual.size}, particles=${visual.particles}`
+      `- $2000 treasure: size=${visual.size}, particles=${visual.particles}`
     );
   });
 
@@ -471,7 +471,7 @@ describe("Game Logic - getTreasureVisual", () => {
     assert.ok(visual3.size > visual2.size, "Size should increase");
     assert.ok(visual4.size > visual3.size, "Size should increase");
 
-    console.log("✓ Visual size scales with treasure value");
+    console.log("- Visual size scales with treasure value");
   });
 
   it("should include all visual properties", () => {
@@ -483,7 +483,7 @@ describe("Game Logic - getTreasureVisual", () => {
     assert.ok(visual.color, "Should have color");
 
     console.log(
-      `✓ Visual properties: size=${visual.size}, glow=${visual.glow}, color=${visual.color}`
+      `- Visual properties: size=${visual.size}, glow=${visual.glow}, color=${visual.color}`
     );
   });
 });
@@ -495,7 +495,7 @@ describe("Game Logic - validateBet", () => {
     assert.strictEqual(result.valid, true, "Should accept $100 bet");
     assert.strictEqual(result.error, undefined, "Should have no error");
 
-    console.log("✓ $100 bet accepted");
+    console.log("- $100 bet accepted");
   });
 
   it("should reject bet below minimum", () => {
@@ -507,7 +507,7 @@ describe("Game Logic - validateBet", () => {
       "Error should mention minimum"
     );
 
-    console.log(`✓ $5 bet rejected: ${result.error}`);
+    console.log(`- $5 bet rejected: ${result.error}`);
   });
 
   it("should reject bet above maximum", () => {
@@ -519,7 +519,7 @@ describe("Game Logic - validateBet", () => {
       "Error should mention maximum"
     );
 
-    console.log(`✓ $1000 bet rejected: ${result.error}`);
+    console.log(`- $1000 bet rejected: ${result.error}`);
   });
 
   it("should accept minimum bet", () => {
@@ -531,7 +531,7 @@ describe("Game Logic - validateBet", () => {
       `Should accept minimum bet $${GAME_CONFIG.MIN_BET}`
     );
 
-    console.log(`✓ Minimum bet $${GAME_CONFIG.MIN_BET} accepted`);
+    console.log(`- Minimum bet $${GAME_CONFIG.MIN_BET} accepted`);
   });
 
   it("should accept maximum bet", () => {
@@ -543,7 +543,7 @@ describe("Game Logic - validateBet", () => {
       `Should accept maximum bet $${GAME_CONFIG.MAX_BET}`
     );
 
-    console.log(`✓ Maximum bet $${GAME_CONFIG.MAX_BET} accepted`);
+    console.log(`- Maximum bet $${GAME_CONFIG.MAX_BET} accepted`);
   });
 
   it("should reject zero bet", () => {
@@ -551,7 +551,7 @@ describe("Game Logic - validateBet", () => {
 
     assert.strictEqual(result.valid, false, "Should reject zero bet");
 
-    console.log("✓ Zero bet rejected");
+    console.log("- Zero bet rejected");
   });
 
   it("should reject negative bet", () => {
@@ -559,7 +559,7 @@ describe("Game Logic - validateBet", () => {
 
     assert.strictEqual(result.valid, false, "Should reject negative bet");
 
-    console.log("✓ Negative bet rejected");
+    console.log("- Negative bet rejected");
   });
 });
 
@@ -573,7 +573,7 @@ describe("Game Logic - calculateCumulativeEV", () => {
       "EV after 1 dive should be 0.95 (5% house edge)"
     );
 
-    console.log(`✓ Cumulative EV after 1 dive: ${ev}`);
+    console.log(`- Cumulative EV after 1 dive: ${ev}`);
   });
 
   it("should calculate EV for 2 dives", () => {
@@ -586,7 +586,7 @@ describe("Game Logic - calculateCumulativeEV", () => {
       "EV after 2 dives should be 0.9025 (0.95^2)"
     );
 
-    console.log(`✓ Cumulative EV after 2 dives: ${ev.toFixed(4)}`);
+    console.log(`- Cumulative EV after 2 dives: ${ev.toFixed(4)}`);
   });
 
   it("should calculate EV for 5 dives", () => {
@@ -598,7 +598,7 @@ describe("Game Logic - calculateCumulativeEV", () => {
       "EV after 5 dives should be ~0.7738 (0.95^5)"
     );
 
-    console.log(`✓ Cumulative EV after 5 dives: ${ev.toFixed(4)}`);
+    console.log(`- Cumulative EV after 5 dives: ${ev.toFixed(4)}`);
   });
 
   it("should calculate EV for 10 dives", () => {
@@ -610,7 +610,7 @@ describe("Game Logic - calculateCumulativeEV", () => {
       "EV after 10 dives should be ~0.5987 (0.95^10)"
     );
 
-    console.log(`✓ Cumulative EV after 10 dives: ${ev.toFixed(4)}`);
+    console.log(`- Cumulative EV after 10 dives: ${ev.toFixed(4)}`);
   });
 
   it("should decrease exponentially with more dives", () => {
@@ -622,7 +622,7 @@ describe("Game Logic - calculateCumulativeEV", () => {
     assert.ok(ev5 > ev10, "EV should continue decreasing");
 
     console.log(
-      `✓ EV decreases exponentially: ${ev1.toFixed(4)} → ${ev5.toFixed(4)} → ${ev10.toFixed(4)}`
+      `- EV decreases exponentially: ${ev1.toFixed(4)} → ${ev5.toFixed(4)} → ${ev10.toFixed(4)}`
     );
   });
 
@@ -631,7 +631,7 @@ describe("Game Logic - calculateCumulativeEV", () => {
 
     assert.strictEqual(ev, 1, "EV for 0 dives should be 1 (0.85^0 = 1)");
 
-    console.log("✓ Zero dives: EV = 1");
+    console.log("- Zero dives: EV = 1");
   });
 
   it("should calculate profit expectation", () => {
@@ -648,7 +648,7 @@ describe("Game Logic - calculateCumulativeEV", () => {
     );
 
     console.log(
-      `✓ Bet $${bet}, 5 dives → expected value: $${expected.toFixed(2)} (${((1 - ev5) * 100).toFixed(1)}% house edge)`
+      `- Bet $${bet}, 5 dives → expected value: $${expected.toFixed(2)} (${((1 - ev5) * 100).toFixed(1)}% house edge)`
     );
   });
 });
@@ -660,7 +660,7 @@ describe("Game Logic - getSeaCreatureForDepth", () => {
     assert.ok(creature, "Should return creature");
     assert.strictEqual(typeof creature, "string", "Should be string (emoji)");
 
-    console.log(`✓ 100m creature: ${creature}`);
+    console.log(`- 100m creature: ${creature}`);
   });
 
   it("should return different creatures for different depths", () => {
@@ -671,7 +671,7 @@ describe("Game Logic - getSeaCreatureForDepth", () => {
     assert.ok(shallow, "Should have shallow creature");
     assert.ok(deep, "Should have deep creature");
 
-    console.log(`✓ Shallow (50m): ${shallow}, Deep (5000m): ${deep}`);
+    console.log(`- Shallow (50m): ${shallow}, Deep (5000m): ${deep}`);
   });
 
   it("should handle extreme depths", () => {
@@ -679,7 +679,7 @@ describe("Game Logic - getSeaCreatureForDepth", () => {
 
     assert.ok(veryDeep, "Should handle very deep depths");
 
-    console.log(`✓ 10000m creature: ${veryDeep}`);
+    console.log(`- 10000m creature: ${veryDeep}`);
   });
 
   it("should return default for invalid depth", () => {
@@ -687,7 +687,7 @@ describe("Game Logic - getSeaCreatureForDepth", () => {
 
     assert.ok(creature, "Should return default creature");
 
-    console.log(`✓ Invalid depth returns default: ${creature}`);
+    console.log(`- Invalid depth returns default: ${creature}`);
   });
 });
 
@@ -704,7 +704,7 @@ describe("Game Logic - Edge Cases & Integration", () => {
     );
 
     console.log(
-      `✓ Dive 50: ${(dive50.survivalProbability * 100).toFixed(1)}% survival, ${dive50.multiplier}x multiplier`
+      `- Dive 50: ${(dive50.survivalProbability * 100).toFixed(1)}% survival, ${dive50.multiplier}x multiplier`
     );
   });
 
@@ -724,7 +724,7 @@ describe("Game Logic - Edge Cases & Integration", () => {
       "Zone names should match"
     );
 
-    console.log("✓ Functions maintain consistent depth/zone data");
+    console.log("- Functions maintain consistent depth/zone data");
   });
 
   it("should generate unique shipwrecks for long sessions", () => {
@@ -741,7 +741,7 @@ describe("Game Logic - Edge Cases & Integration", () => {
       `Should have mostly unique wrecks, got ${wrecks.size}/50`
     );
 
-    console.log(`✓ Generated ${wrecks.size} unique shipwrecks out of 50`);
+    console.log(`- Generated ${wrecks.size} unique shipwrecks out of 50`);
   });
 
   it("should validate bet amounts at boundaries", () => {
@@ -763,7 +763,7 @@ describe("Game Logic - Edge Cases & Integration", () => {
       );
     }
 
-    console.log("✓ Boundary bet validation correct");
+    console.log("- Boundary bet validation correct");
   });
 
   it("should calculate payout correctly for multi-dive scenario", () => {
@@ -780,8 +780,8 @@ describe("Game Logic - Edge Cases & Integration", () => {
       "Treasure should increase after successful dives"
     );
 
-    console.log(`✓ $100 → $${treasure} after 5 successful dives`);
+    console.log(`- $100 → $${treasure} after 5 successful dives`);
   });
 });
 
-console.log("\n✅ All game logic tests completed!\n");
+console.log("\nOK: All game logic tests completed!\n");

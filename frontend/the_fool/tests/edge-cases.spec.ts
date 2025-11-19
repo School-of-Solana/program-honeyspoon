@@ -54,7 +54,7 @@ test.describe("Abyss Fortune - Edge Cases", () => {
     const treasureDisplay = page.locator("text=$10").first();
     await expect(treasureDisplay).toBeVisible({ timeout: 5000 });
 
-    console.log("✅ Minimum bet ($10) works correctly");
+    console.log("OK: Minimum bet ($10) works correctly");
 
     await page.screenshot({
       path: "tests/screenshots/edge-case-min-bet.png",
@@ -90,7 +90,7 @@ test.describe("Abyss Fortune - Edge Cases", () => {
     const treasureDisplay = page.locator("text=$500").first();
     await expect(treasureDisplay).toBeVisible({ timeout: 5000 });
 
-    console.log("✅ Maximum bet ($500) works correctly");
+    console.log("OK: Maximum bet ($500) works correctly");
 
     await page.screenshot({
       path: "tests/screenshots/edge-case-max-bet.png",
@@ -116,7 +116,7 @@ test.describe("Abyss Fortune - Edge Cases", () => {
     await expect(startButton).toBeDisabled();
 
     console.log(
-      "✅ Below minimum bet correctly shows error and disables button"
+      "OK: Below minimum bet correctly shows error and disables button"
     );
 
     await page.screenshot({
@@ -143,7 +143,7 @@ test.describe("Abyss Fortune - Edge Cases", () => {
     await expect(startButton).toBeDisabled();
 
     console.log(
-      "✅ Above maximum bet correctly shows error and disables button"
+      "OK: Above maximum bet correctly shows error and disables button"
     );
 
     await page.screenshot({
@@ -183,7 +183,7 @@ test.describe("Abyss Fortune - Edge Cases", () => {
     // Should only have one dive log (rapid clicking prevented)
     expect(diveLogs.length).toBe(1);
 
-    console.log("✅ Rapid clicking correctly prevented");
+    console.log("OK: Rapid clicking correctly prevented");
 
     await page.screenshot({
       path: "tests/screenshots/edge-case-rapid-click.png",
@@ -204,7 +204,7 @@ test.describe("Abyss Fortune - Edge Cases", () => {
     const errorMessage = page.locator("text=Minimum bet is $10");
     await expect(errorMessage).toBeVisible();
     await expect(startButton).toBeDisabled();
-    console.log("✅ Zero bet shows error and disables button");
+    console.log("OK: Zero bet shows error and disables button");
 
     // Try negative (browser may prevent this, but test anyway)
     await betInput.fill("-50");
@@ -215,7 +215,7 @@ test.describe("Abyss Fortune - Edge Cases", () => {
     if (Number(currentValue) < 0 || currentValue === "-50") {
       await expect(errorMessage).toBeVisible();
     }
-    console.log("✅ Negative bet handled correctly");
+    console.log("OK: Negative bet handled correctly");
 
     await page.screenshot({
       path: "tests/screenshots/edge-case-invalid-bet.png",
@@ -243,7 +243,7 @@ test.describe("Abyss Fortune - Edge Cases", () => {
 
     if (isDrowned) {
       console.log(
-        "✅ Drowned scenario: Game correctly resets without surfacing"
+        "OK: Drowned scenario: Game correctly resets without surfacing"
       );
 
       // Wait for auto-reset
@@ -253,7 +253,7 @@ test.describe("Abyss Fortune - Edge Cases", () => {
       const bettingCard = page.locator("text=ABYSS FORTUNE").first();
       await expect(bettingCard).toBeVisible({ timeout: 5000 });
 
-      console.log("✅ Auto-reset after drowning works correctly");
+      console.log("OK: Auto-reset after drowning works correctly");
     } else {
       console.log(
         "Survived first dive - cannot test zero treasure surface in this run"
@@ -283,8 +283,8 @@ test.describe("Abyss Fortune - Edge Cases", () => {
     const cardVisible = await bettingCard.isVisible();
     expect(cardVisible).toBeFalsy();
 
-    console.log("✅ During active game, betting interface is hidden");
-    console.log("✅ Bet cannot be changed mid-game");
+    console.log("OK: During active game, betting interface is hidden");
+    console.log("OK: Bet cannot be changed mid-game");
 
     await page.screenshot({
       path: "tests/screenshots/edge-case-bet-change.png",

@@ -98,7 +98,7 @@ describe("Monte Carlo Statistical Verification", () => {
       `Empirical rate should be within 3% of expected (diff: ${(diff * 100).toFixed(2)}%)`
     );
 
-    console.log("✅ Round 1 survival rate verified with 1k trials\n");
+    console.log("OK: Round 1 survival rate verified with 1k trials\n");
   });
 
   it("should verify Round 5 survival rate with 1,000 trials", async () => {
@@ -172,7 +172,7 @@ describe("Monte Carlo Statistical Verification", () => {
     );
 
     console.log(
-      "✅ Round 5 cumulative survival verified (within tolerance for low-probability event)\n"
+      "OK: Round 5 cumulative survival verified (within tolerance for low-probability event)\n"
     );
   });
 
@@ -258,7 +258,7 @@ describe("Monte Carlo Statistical Verification", () => {
     );
 
     console.log(
-      "✅ House edge verified with 500 games (within 20% tolerance)\n"
+      "OK: House edge verified with 500 games (within 20% tolerance)\n"
     );
   });
 
@@ -325,7 +325,7 @@ describe("Monte Carlo Statistical Verification", () => {
       );
     }
 
-    console.log("✅ Monotonic decrease verified\n");
+    console.log("OK: Monotonic decrease verified\n");
   });
 
   it("should verify probability distribution with chi-squared test", async () => {
@@ -396,7 +396,7 @@ describe("Monte Carlo Statistical Verification", () => {
     console.log(`\n  Chi-squared statistic: ${test.statistic.toFixed(2)}`);
     console.log(`  Degrees of freedom: ${test.degreesOfFreedom}`);
     console.log(`  p-value: ${test.pValue.toFixed(4)}`);
-    console.log(`  Passes test (p > 0.05): ${test.passesTest ? "✓" : "✗"}`);
+    console.log(`  Passes test (p > 0.05): ${test.passesTest ? "-" : "✗"}`);
 
     // Note: With only 500 trials, we use a loose threshold
     assert.ok(
@@ -404,6 +404,6 @@ describe("Monte Carlo Statistical Verification", () => {
       `Distribution should roughly match (p-value: ${test.pValue.toFixed(4)} should be > 0.01)`
     );
 
-    console.log("✅ Distribution roughly matches expected (chi-squared)\n");
+    console.log("OK: Distribution roughly matches expected (chi-squared)\n");
   });
 });

@@ -77,7 +77,7 @@ describe("Bet Validation - Boundary Values", () => {
     assert.strictEqual(result.valid, false, "Should reject Infinity");
   });
 
-  console.log("✓ Bet validation boundary tests passed");
+  console.log("- Bet validation boundary tests passed");
 });
 
 describe("Round Stats - Edge Cases", () => {
@@ -167,7 +167,7 @@ describe("Round Stats - Edge Cases", () => {
       );
     }
 
-    console.log("  Probability decreases monotonically across rounds ✓");
+    console.log("  Probability decreases monotonically across rounds -");
   });
 
   it("should verify monotonic multiplier increase", () => {
@@ -186,7 +186,7 @@ describe("Round Stats - Edge Cases", () => {
       );
     }
 
-    console.log("  Multiplier increases monotonically across rounds ✓");
+    console.log("  Multiplier increases monotonically across rounds -");
   });
 
   it("should maintain constant EV across all rounds", () => {
@@ -202,10 +202,10 @@ describe("Round Stats - Edge Cases", () => {
       );
     }
 
-    console.log(`  Constant EV=${targetEV} maintained across 20 rounds ✓`);
+    console.log(`  Constant EV=${targetEV} maintained across 20 rounds -`);
   });
 
-  console.log("✓ Round stats edge case tests passed");
+  console.log("- Round stats edge case tests passed");
 });
 
 describe("Invalid Config Tests", () => {
@@ -264,7 +264,7 @@ describe("Invalid Config Tests", () => {
     );
   });
 
-  console.log("✓ Invalid config tests passed");
+  console.log("- Invalid config tests passed");
 });
 
 describe("Max Potential Payout", () => {
@@ -334,7 +334,7 @@ describe("Max Potential Payout", () => {
     );
   });
 
-  console.log("✓ Max potential payout tests passed");
+  console.log("- Max potential payout tests passed");
 });
 
 describe("Simulate Round - Boundary Rolls", () => {
@@ -431,7 +431,7 @@ describe("Simulate Round - Boundary Rolls", () => {
     }
   });
 
-  console.log("✓ Simulate round boundary tests passed");
+  console.log("- Simulate round boundary tests passed");
 });
 
-console.log("\n✅ All engine blindspot tests completed!\n");
+console.log("\nOK: All engine blindspot tests completed!\n");

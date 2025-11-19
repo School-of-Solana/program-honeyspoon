@@ -85,7 +85,7 @@ describe("TestSeed Security: Deterministic Behavior (Test Environment)", () => {
     );
 
     console.log(
-      `✓ testSeed=42 produced deterministic rolls: ${rolls.join(", ")} (all same)`
+      `- testSeed=42 produced deterministic rolls: ${rolls.join(", ")} (all same)`
     );
   });
 
@@ -126,7 +126,7 @@ describe("TestSeed Security: Deterministic Behavior (Test Environment)", () => {
     );
 
     console.log(
-      `✓ Different seeds produced different rolls: ${results.join(", ")} (${uniqueRolls.size} unique)`
+      `- Different seeds produced different rolls: ${results.join(", ")} (${uniqueRolls.size} unique)`
     );
   });
 
@@ -170,7 +170,7 @@ describe("TestSeed Security: Deterministic Behavior (Test Environment)", () => {
     );
 
     console.log(
-      `✓ undefined testSeed used random: ${uniqueRolls.size}/${rolls.length} unique values (${attempts} attempts)`
+      `- undefined testSeed used random: ${uniqueRolls.size}/${rolls.length} unique values (${attempts} attempts)`
     );
   });
 
@@ -193,9 +193,9 @@ describe("TestSeed Security: Deterministic Behavior (Test Environment)", () => {
       );
       assert.strictEqual(round2.randomRoll, 85);
 
-      console.log(`✓ Multiple rounds with testSeeds: 90, 85`);
+      console.log(`- Multiple rounds with testSeeds: 90, 85`);
     } else {
-      console.log(`✓ Round 1 ended game, testSeed 90 worked`);
+      console.log(`- Round 1 ended game, testSeed 90 worked`);
     }
   });
 });
@@ -226,7 +226,7 @@ describe("TestSeed Security: Invalid Seed Handling", () => {
           msg.includes("0-99"),
           `Expected range "0-99" in error, got: ${msg}`
         );
-        console.log(`✓ Rejected testSeed=101: ${msg}`);
+        console.log(`- Rejected testSeed=101: ${msg}`);
         return true;
       }
     );
@@ -241,7 +241,7 @@ describe("TestSeed Security: Invalid Seed Handling", () => {
       (error: Error) => {
         const msg = error.message;
         assert.ok(msg.includes("Invalid test seed"), `Got: ${msg}`);
-        console.log(`✓ Rejected testSeed=-5: ${msg}`);
+        console.log(`- Rejected testSeed=-5: ${msg}`);
         return true;
       }
     );
@@ -257,7 +257,7 @@ describe("TestSeed Security: Invalid Seed Handling", () => {
       (error: Error) => {
         const msg = error.message;
         assert.ok(msg.includes("Invalid test seed"), `Got: ${msg}`);
-        console.log(`✓ Rejected testSeed="not-a-number": ${msg}`);
+        console.log(`- Rejected testSeed="not-a-number": ${msg}`);
         return true;
       }
     );
@@ -273,7 +273,7 @@ describe("TestSeed Security: Invalid Seed Handling", () => {
       "Should reject 100"
     );
 
-    console.log("✓ Rejected boundary testSeed=100");
+    console.log("- Rejected boundary testSeed=100");
   });
 
   it("should reject testSeed=-1 (boundary)", async () => {
@@ -286,7 +286,7 @@ describe("TestSeed Security: Invalid Seed Handling", () => {
       "Should reject -1"
     );
 
-    console.log("✓ Rejected boundary testSeed=-1");
+    console.log("- Rejected boundary testSeed=-1");
   });
 
   it("should handle parseInt edge cases correctly", async () => {
@@ -296,7 +296,7 @@ describe("TestSeed Security: Invalid Seed Handling", () => {
     await startGameSession(initialBet, userId, sessionId);
     const result = await executeRound(1, initialBet, sessionId, userId, "42.5");
     assert.strictEqual(result.randomRoll, 42, "parseInt('42.5') should be 42");
-    console.log(`✓ testSeed="42.5" parsed as 42`);
+    console.log(`- testSeed="42.5" parsed as 42`);
   });
 
   it("should NOT mutate session state on invalid testSeed", async () => {
@@ -340,7 +340,7 @@ describe("TestSeed Security: Invalid Seed Handling", () => {
       "Active status should not change"
     );
 
-    console.log("✓ Invalid testSeed did not mutate session state");
+    console.log("- Invalid testSeed did not mutate session state");
   });
 
   it("should NOT mutate wallet on invalid testSeed", async () => {
@@ -378,7 +378,7 @@ describe("TestSeed Security: Invalid Seed Handling", () => {
     );
 
     console.log(
-      `✓ Invalid testSeed did not mutate wallet: $${balanceBefore} → $${balanceAfterBet} (stayed)`
+      `- Invalid testSeed did not mutate wallet: $${balanceBefore} → $${balanceAfterBet} (stayed)`
     );
   });
 });
@@ -415,7 +415,7 @@ describe("TestSeed Security: Edge Cases & Boundaries", () => {
     assert.strictEqual(result0.randomRoll, 0, "Seed 0 should work");
     assert.strictEqual(result99.randomRoll, 99, "Seed 99 should work");
 
-    console.log("✓ Boundary seeds accepted: 0 and 99");
+    console.log("- Boundary seeds accepted: 0 and 99");
   });
 
   it("should handle string testSeed with leading zeros", async () => {
@@ -440,7 +440,7 @@ describe("TestSeed Security: Edge Cases & Boundaries", () => {
     assert.strictEqual(result1.randomRoll, 5, "Should parse '05' as 5");
     assert.strictEqual(result2.randomRoll, 42, "Should parse '042' as 42");
 
-    console.log("✓ Leading zeros handled: '05'→5, '042'→42");
+    console.log("- Leading zeros handled: '05'→5, '042'→42");
   });
 
   it("should handle testSeed with whitespace", async () => {
@@ -453,7 +453,7 @@ describe("TestSeed Security: Edge Cases & Boundaries", () => {
     // parseInt trims whitespace
     assert.strictEqual(result.randomRoll, 42, "Should parse ' 42 ' as 42");
 
-    console.log("✓ Whitespace handled: ' 42 '→42");
+    console.log("- Whitespace handled: ' 42 '→42");
   });
 
   it("should validate testSeed BEFORE executing round logic", async () => {
@@ -479,7 +479,7 @@ describe("TestSeed Security: Edge Cases & Boundaries", () => {
       "Round should not advance on invalid seed"
     );
 
-    console.log("✓ Invalid seed rejected before game logic execution");
+    console.log("- Invalid seed rejected before game logic execution");
   });
 });
 
@@ -514,12 +514,12 @@ describe("TestSeed Security: Production Environment Notes", () => {
     );
 
     console.log("\n📋 Production Security Requirements:");
-    console.log("  ✓ testSeed only works when NODE_ENV === 'test'");
-    console.log("  ✓ Production uses crypto.randomBytes()");
-    console.log("  ✓ testSeed silently ignored in production");
-    console.log("  ✓ No way for attackers to control RNG\n");
+    console.log("  - testSeed only works when NODE_ENV === 'test'");
+    console.log("  - Production uses crypto.randomBytes()");
+    console.log("  - testSeed silently ignored in production");
+    console.log("  - No way for attackers to control RNG\n");
 
-    console.log("⚠️  Manual Testing Required:");
+    console.log("WARNING:  Manual Testing Required:");
     console.log("  1. Run app with NODE_ENV=production");
     console.log("  2. Send API requests with testSeed parameter");
     console.log("  3. Verify testSeed is ignored (random outcomes)");
@@ -527,4 +527,4 @@ describe("TestSeed Security: Production Environment Notes", () => {
   });
 });
 
-console.log("\n✅ All testSeed security tests completed!\n");
+console.log("\nOK: All testSeed security tests completed!\n");

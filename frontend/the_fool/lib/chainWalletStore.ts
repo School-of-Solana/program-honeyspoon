@@ -73,7 +73,7 @@ export const useChainWalletStore = create<ChainWalletState>()(
         const { userId } = get();
 
         if (!userId) {
-          console.log("[WALLET STORE] ⚠️ No userId set, skipping refresh");
+          console.log("[WALLET STORE] WARNING: No userId set, skipping refresh");
           return;
         }
 
@@ -85,7 +85,7 @@ export const useChainWalletStore = create<ChainWalletState>()(
           // Server Action: Fetches from blockchain/localStorage
           const data = await getWalletInfo(userId);
 
-          console.log("[WALLET STORE] ✅ Balance refreshed:", {
+          console.log("[WALLET STORE] OK: Balance refreshed:", {
             userBalance: data.userBalance,
             houseBalance: data.houseBalance,
             houseReserved: data.houseReserved,
@@ -99,10 +99,10 @@ export const useChainWalletStore = create<ChainWalletState>()(
             lastUpdated: Date.now(),
           };
 
-          console.log("[WALLET STORE] 📊 Setting new state:", newState);
+          console.log("[WALLET STORE] Info: Setting new state:", newState);
           set(newState);
         } catch (error) {
-          console.error("[WALLET STORE] ❌ Failed to refresh balance:", error);
+          console.error("[WALLET STORE] ERROR: Failed to refresh balance:", error);
           set({ isLoading: false });
         }
       },

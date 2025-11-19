@@ -41,8 +41,8 @@ test.describe("Comprehensive Animation & Game Tests", () => {
     );
 
     console.log("Canvas Layer:");
-    console.log("  Kaplay initialized:", hasCanvasInit ? "✅" : "❌");
-    console.log("  Scene created:", hasSceneCreated ? "✅" : "❌");
+    console.log("  Kaplay initialized:", hasCanvasInit ? "OK:" : "ERROR:");
+    console.log("  Scene created:", hasSceneCreated ? "OK:" : "ERROR:");
 
     expect(hasCanvasInit).toBeTruthy();
     expect(hasSceneCreated).toBeTruthy();
@@ -56,8 +56,8 @@ test.describe("Comprehensive Animation & Game Tests", () => {
     await expect(bettingCard).toBeVisible();
 
     console.log("UI Layer:");
-    console.log("  Betting card visible: ✅");
-    console.log("  Canvas rendered: ✅");
+    console.log("  Betting card visible: OK:");
+    console.log("  Canvas rendered: OK:");
 
     await page.screenshot({
       path: "tests/screenshots/comp-01-initialization.png",
@@ -75,13 +75,13 @@ test.describe("Comprehensive Animation & Game Tests", () => {
     await betInput.fill("10");
     await page.waitForTimeout(200);
     await expect(startButton).toBeEnabled();
-    console.log("  $10 (min): ✅ Accepted");
+    console.log("  $10 (min): OK: Accepted");
 
     // Test maximum bet
     await betInput.fill("500");
     await page.waitForTimeout(200);
     await expect(startButton).toBeEnabled();
-    console.log("  $500 (max): ✅ Accepted");
+    console.log("  $500 (max): OK: Accepted");
 
     // Test below minimum
     await betInput.fill("5");
@@ -89,7 +89,7 @@ test.describe("Comprehensive Animation & Game Tests", () => {
     const errorMin = page.locator("text=Minimum bet");
     await expect(errorMin).toBeVisible();
     await expect(startButton).toBeDisabled();
-    console.log("  $5 (below min): ✅ Rejected with error");
+    console.log("  $5 (below min): OK: Rejected with error");
 
     // Test above maximum
     await betInput.fill("1000");
@@ -97,13 +97,13 @@ test.describe("Comprehensive Animation & Game Tests", () => {
     const errorMax = page.locator("text=Maximum bet");
     await expect(errorMax).toBeVisible();
     await expect(startButton).toBeDisabled();
-    console.log("  $1000 (above max): ✅ Rejected with error");
+    console.log("  $1000 (above max): OK: Rejected with error");
 
     // Test zero
     await betInput.fill("0");
     await page.waitForTimeout(200);
     await expect(startButton).toBeDisabled();
-    console.log("  $0: ✅ Rejected");
+    console.log("  $0: OK: Rejected");
 
     await page.screenshot({
       path: "tests/screenshots/comp-02-validation.png",
@@ -130,7 +130,7 @@ test.describe("Comprehensive Animation & Game Tests", () => {
       log.includes("Starting new game")
     );
     expect(hasStartLog).toBeTruthy();
-    console.log("  Game start logged: ✅");
+    console.log("  Game start logged: OK:");
 
     // Betting card should fade out
     await page.waitForTimeout(1000);
@@ -138,23 +138,23 @@ test.describe("Comprehensive Animation & Game Tests", () => {
       .locator("text=ABYSS FORTUNE")
       .isVisible());
     expect(bettingCardGone).toBeTruthy();
-    console.log("  Betting card hidden: ✅");
+    console.log("  Betting card hidden: OK:");
 
     // HUD should appear
     const depthDisplay = page.locator("text=0m").first();
     await expect(depthDisplay).toBeVisible({ timeout: 3000 });
-    console.log("  HUD visible: ✅");
+    console.log("  HUD visible: OK:");
 
     // Verify HUD elements
     const treasureDisplay = page.locator("text=$100").first();
     await expect(treasureDisplay).toBeVisible();
-    console.log("  Treasure shown: $100 ✅");
+    console.log("  Treasure shown: $100 OK:");
 
     const diveButton = page.locator('button:has-text("DIVE DEEPER")');
     await expect(diveButton).toBeVisible();
     const surfaceButton = page.locator('button:has-text("SURFACE NOW")');
     await expect(surfaceButton).toBeVisible();
-    console.log("  Action buttons visible: ✅");
+    console.log("  Action buttons visible: OK:");
 
     await page.screenshot({
       path: "tests/screenshots/comp-03-game-start.png",
@@ -184,7 +184,7 @@ test.describe("Comprehensive Animation & Game Tests", () => {
       log.includes("Triggering diving animation")
     );
     expect(hasTrigger).toBeTruthy();
-    console.log("  Animation triggered: ✅");
+    console.log("  Animation triggered: OK:");
 
     // Check for state logging during animation
     await page.waitForTimeout(1000);
@@ -193,7 +193,7 @@ test.describe("Comprehensive Animation & Game Tests", () => {
     );
     console.log(
       "  State logging active:",
-      hasStateLog ? "✅" : "⚠️  (may not trigger in 1s)"
+      hasStateLog ? "OK:" : "WARNING:  (may not trigger in 1s)"
     );
 
     // Wait for animation to complete (2.5s)
@@ -208,7 +208,7 @@ test.describe("Comprehensive Animation & Game Tests", () => {
       log.includes("Diving animation complete")
     );
     expect(hasCompletion).toBeTruthy();
-    console.log(`  Animation completed: ✅ (${duration.toFixed(1)}s total)`);
+    console.log(`  Animation completed: OK: (${duration.toFixed(1)}s total)`);
 
     // Verify state changed
     await page.waitForTimeout(500);
@@ -236,15 +236,15 @@ test.describe("Comprehensive Animation & Game Tests", () => {
       const hasDeathAnim = canvasLogs.some((log) =>
         log.includes("death animation")
       );
-      console.log("  Death animation triggered:", hasDeathAnim ? "✅" : "❌");
+      console.log("  Death animation triggered:", hasDeathAnim ? "OK:" : "ERROR:");
     } else {
-      console.log("  Result: ✅ SURVIVED");
+      console.log("  Result: OK: SURVIVED");
       const hasTreasureAnim = canvasLogs.some((log) =>
         log.includes("treasure animation")
       );
       console.log(
         "  Treasure animation triggered:",
-        hasTreasureAnim ? "✅" : "❌"
+        hasTreasureAnim ? "OK:" : "ERROR:"
       );
     }
   });
@@ -307,10 +307,10 @@ test.describe("Comprehensive Animation & Game Tests", () => {
           .isVisible()
           .catch(() => false);
         expect(resetCard).toBeTruthy();
-        console.log("  Game reset to betting screen: ✅");
+        console.log("  Game reset to betting screen: OK:");
         break;
       } else {
-        console.log("  ✅ SURVIVED");
+        console.log("  OK: SURVIVED");
         const depthAfter = await page
           .locator("div")
           .filter({ hasText: /^\d+m$/ })
@@ -340,7 +340,7 @@ test.describe("Comprehensive Animation & Game Tests", () => {
         const treasureValueBefore = parseInt(treasureBefore.replace("$", ""));
         const treasureValueAfter = parseInt(treasureAfter.replace("$", ""));
         expect(treasureValueAfter).toBeGreaterThan(treasureValueBefore);
-        console.log("  Treasure increased: ✅");
+        console.log("  Treasure increased: OK:");
       }
 
       await page.screenshot({
@@ -376,7 +376,7 @@ test.describe("Comprehensive Animation & Game Tests", () => {
       return;
     }
 
-    console.log("  Survived first dive ✅");
+    console.log("  Survived first dive OK:");
 
     // Get treasure value
     const treasureText = await page
@@ -399,13 +399,13 @@ test.describe("Comprehensive Animation & Game Tests", () => {
       log.includes("Surfacing with")
     );
     expect(hasSurfaceLog).toBeTruthy();
-    console.log("  Surfacing logged: ✅");
+    console.log("  Surfacing logged: OK:");
 
     // Wait for success message
     await page.waitForTimeout(2500);
     const successMessage = page.locator("text=SUCCESS");
     await expect(successMessage).toBeVisible({ timeout: 3000 });
-    console.log("  Success message shown: ✅");
+    console.log("  Success message shown: OK:");
 
     await page.screenshot({
       path: "tests/screenshots/comp-06-surface-success.png",
@@ -415,13 +415,13 @@ test.describe("Comprehensive Animation & Game Tests", () => {
     // Check for profit calculation log
     const hasProfitLog = gameLogs.some((log) => log.includes("Profit"));
     expect(hasProfitLog).toBeTruthy();
-    console.log("  Profit calculated: ✅");
+    console.log("  Profit calculated: OK:");
 
     // Wait for reset
     await page.waitForTimeout(3000);
     const bettingCard = page.locator("text=ABYSS FORTUNE").first();
     await expect(bettingCard).toBeVisible({ timeout: 5000 });
-    console.log("  Reset to betting screen: ✅");
+    console.log("  Reset to betting screen: OK:");
   });
 
   test("7. Rapid Click Protection", async ({ page }) => {
@@ -453,7 +453,7 @@ test.describe("Comprehensive Animation & Game Tests", () => {
 
     // Should only be 1 or 2 (button disables after first click)
     expect(diveInitLogs.length).toBeLessThanOrEqual(2);
-    console.log("  Rapid click protection: ✅");
+    console.log("  Rapid click protection: OK:");
 
     await page.screenshot({
       path: "tests/screenshots/comp-07-rapid-click.png",
@@ -503,7 +503,7 @@ test.describe("Comprehensive Animation & Game Tests", () => {
     }
 
     expect(criticalErrors.length).toBe(0);
-    console.log("  No critical errors: ✅");
+    console.log("  No critical errors: OK:");
   });
 
   test("9. Performance - Animation Frame Rate", async ({ page }) => {
@@ -542,7 +542,7 @@ test.describe("Comprehensive Animation & Game Tests", () => {
 
     console.log("  Animation response time:", responseTime, "ms");
     expect(responseTime).toBeLessThan(1000);
-    console.log("  Responsive UI: ✅");
+    console.log("  Responsive UI: OK:");
 
     await page.screenshot({
       path: "tests/screenshots/comp-09-performance.png",
@@ -563,16 +563,16 @@ test.describe("Comprehensive Animation & Game Tests", () => {
     // Check UI elements are visible
     const bettingCard = page.locator("text=ABYSS FORTUNE");
     await expect(bettingCard).toBeVisible();
-    console.log("  Betting card visible: ✅");
+    console.log("  Betting card visible: OK:");
 
     const betInput = page.locator('input[type="number"]');
     await expect(betInput).toBeVisible();
-    console.log("  Bet input visible: ✅");
+    console.log("  Bet input visible: OK:");
 
     // Check canvas
     const canvas = page.locator("canvas");
     await expect(canvas).toBeVisible();
-    console.log("  Canvas visible: ✅");
+    console.log("  Canvas visible: OK:");
 
     // Start game
     await betInput.fill("100");
@@ -582,14 +582,14 @@ test.describe("Comprehensive Animation & Game Tests", () => {
     // Check HUD on mobile
     const diveButton = page.locator('button:has-text("DIVE DEEPER")');
     await expect(diveButton).toBeVisible();
-    console.log("  Action buttons accessible: ✅");
+    console.log("  Action buttons accessible: OK:");
 
     await page.screenshot({
       path: "tests/screenshots/comp-10-mobile.png",
       fullPage: true,
     });
 
-    console.log("  Mobile layout: ✅");
+    console.log("  Mobile layout: OK:");
   });
 
   test.afterEach(async () => {

@@ -69,7 +69,7 @@ export function triggerDeathAnimation(
         deathTimer += k.dt();
         if (deathTimer > CONST.DEATH.DELAY_BEFORE_FADE) {
           console.log(
-            "[CANVAS] ✅ Death animation complete! Returning to beach..."
+            "[CANVAS] OK: Death animation complete! Returning to beach..."
           );
           deathAnimationComplete = true;
           // Fade to black then go to beach

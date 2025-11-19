@@ -153,7 +153,7 @@ export function treasureForRound(
 
     // VALIDATION: Ensure multiplier is positive (player should win on successful dive)
     if (multiplier < 1.0) {
-      console.error(`[RNG] ❌ CRITICAL: Negative expected value detected!`, {
+      console.error(`[RNG] ERROR: CRITICAL: Negative expected value detected!`, {
         round,
         survivalProb,
         houseEdge: config.houseEdge,

@@ -414,4 +414,4 @@ describe("Error Handling Contract", () => {
   });
 });
 
-console.log("✅ All error handling contract tests defined");
+console.log("OK: All error handling contract tests defined");

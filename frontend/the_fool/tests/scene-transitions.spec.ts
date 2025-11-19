@@ -26,7 +26,7 @@ test.describe("Scene Transitions", () => {
       log.includes("[CANVAS] 🎨 Initializing Kaplay")
     );
     const hasBeachStart = logs.some((log) =>
-      log.includes("[CANVAS] 🚀 Starting at beach")
+      log.includes("[CANVAS] Launch: Starting at beach")
     );
     const hasBeachCreated = logs.some((log) =>
       log.includes("[CANVAS] 🏖️ Beach scene created")
@@ -36,7 +36,7 @@ test.describe("Scene Transitions", () => {
     expect(hasBeachStart).toBeTruthy();
     expect(hasBeachCreated).toBeTruthy();
 
-    console.log("\n✅ Beach Scene Initialization Logs:");
+    console.log("\nOK: Beach Scene Initialization Logs:");
     logs
       .filter((log) => log.includes("[CANVAS]"))
       .forEach((log) => console.log(log));
@@ -56,7 +56,7 @@ test.describe("Scene Transitions", () => {
     );
     expect(hasBeachScene).toBeTruthy();
 
-    console.log("\n✅ Beach scene loaded - diver should be visible on boat");
+    console.log("\nOK: Beach scene loaded - diver should be visible on boat");
   });
 
   test("should transition from beach to diving scene when diving starts", async ({
@@ -85,7 +85,7 @@ test.describe("Scene Transitions", () => {
         log.includes("🤿 Diving scene created")
       );
 
-      console.log("\n✅ Beach → Diving Transition Logs:");
+      console.log("\nOK: Beach → Diving Transition Logs:");
       logs
         .filter(
           (log) =>
@@ -97,7 +97,7 @@ test.describe("Scene Transitions", () => {
       // One of these should be true if transition happened
       expect(hasTransitionLog || hasDivingSceneCreated).toBeTruthy();
     } else {
-      console.log("⚠️  Dive button not found - may need to adjust game state");
+      console.log("WARNING:  Dive button not found - may need to adjust game state");
     }
   });
 
@@ -120,7 +120,7 @@ test.describe("Scene Transitions", () => {
       );
       const hasSplashEffect = logs.length > 0; // Any activity indicates scene loaded
 
-      console.log("\n✅ Diving Scene Logs:");
+      console.log("\nOK: Diving Scene Logs:");
       logs
         .filter((log) => log.includes("[CANVAS]"))
         .forEach((log) => console.log(log));
@@ -161,7 +161,7 @@ test.describe("Scene Transitions", () => {
           log.includes("Surfacing scene created")
         );
 
-        console.log("\n✅ Diving → Surfacing Transition Logs:");
+        console.log("\nOK: Diving → Surfacing Transition Logs:");
         logs
           .filter(
             (log) =>
@@ -199,11 +199,11 @@ test.describe("Scene Transitions", () => {
         // Check for return to beach log
         const hasReturnToBeach = logs.some(
           (log) =>
-            log.includes("✅ Surfacing complete") ||
+            log.includes("OK: Surfacing complete") ||
             log.includes("Returning to beach")
         );
 
-        console.log("\n✅ Surfacing → Beach Transition Logs:");
+        console.log("\nOK: Surfacing → Beach Transition Logs:");
         logs
           .filter(
             (log) =>
@@ -258,7 +258,7 @@ test.describe("Scene Transitions", () => {
           log.includes("Returning to beach")
       );
 
-      console.log("\n✅ Death → Beach Transition Logs:");
+      console.log("\nOK: Death → Beach Transition Logs:");
       logs
         .filter(
           (log) =>
@@ -272,9 +272,9 @@ test.describe("Scene Transitions", () => {
       // May or may not die in this test - just log what happened
       if (hasDeathLog || hasReturnAfterDeath) {
         expect(hasDeathLog || hasReturnAfterDeath).toBeTruthy();
-        console.log("✅ Death occurred and transition logged!");
+        console.log("OK: Death occurred and transition logged!");
       } else {
-        console.log("⚠️  No death occurred in this run");
+        console.log("WARNING:  No death occurred in this run");
       }
     }
   });
@@ -296,7 +296,7 @@ test.describe("Scene Transitions", () => {
     await page.waitForSelector("canvas");
     await page.waitForTimeout(1000);
 
-    console.log("\n✅ Tracking isInOcean flag changes:");
+    console.log("\nOK: Tracking isInOcean flag changes:");
 
     // Initial state (should be false)
     const initialIsInOcean = propChangeLogs.filter((log) =>
@@ -304,7 +304,7 @@ test.describe("Scene Transitions", () => {
     );
     console.log(
       "Initial state:",
-      initialIsInOcean.length > 0 ? "isInOcean = false ✓" : "unknown"
+      initialIsInOcean.length > 0 ? "isInOcean = false -" : "unknown"
     );
 
     // Start diving
@@ -319,7 +319,7 @@ test.describe("Scene Transitions", () => {
       );
       console.log(
         "After dive start:",
-        becomesTrue ? "isInOcean = true ✓" : "transition not logged"
+        becomesTrue ? "isInOcean = true -" : "transition not logged"
       );
 
       // Cash out
@@ -334,7 +334,7 @@ test.describe("Scene Transitions", () => {
         );
         console.log(
           "After surfacing:",
-          becomesFalse ? "isInOcean = false ✓" : "transition not logged"
+          becomesFalse ? "isInOcean = false -" : "transition not logged"
         );
 
         // All prop change logs
@@ -364,10 +364,10 @@ test.describe("Scene Transitions", () => {
       log.includes("🌊 Surfacing scene created")
     );
 
-    console.log("\n✅ Scene Creation Logs:");
-    console.log("Beach scene:", beachSceneCreated ? "✓" : "✗");
-    console.log("Diving scene:", divingSceneCreated ? "✓" : "✗");
-    console.log("Surfacing scene:", surfacingSceneCreated ? "✓" : "✗");
+    console.log("\nOK: Scene Creation Logs:");
+    console.log("Beach scene:", beachSceneCreated ? "-" : "✗");
+    console.log("Diving scene:", divingSceneCreated ? "-" : "✗");
+    console.log("Surfacing scene:", surfacingSceneCreated ? "-" : "✗");
 
     // At least beach scene should be created
     expect(beachSceneCreated).toBeTruthy();
@@ -426,7 +426,7 @@ test.describe("Scene Transitions", () => {
       }
     }
 
-    console.log("\n✅ Complete flow test finished!");
+    console.log("\nOK: Complete flow test finished!");
     console.log(
       `Total canvas logs: ${logs.filter((log) => log.includes("[CANVAS]")).length}`
     );

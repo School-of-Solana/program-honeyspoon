@@ -50,7 +50,7 @@ describe("A. Session Status Transitions", () => {
       "isActive should be true (backward compat)"
     );
 
-    console.log("✓ New game starts with status ACTIVE");
+    console.log("- New game starts with status ACTIVE");
   });
 
   it("should transition to LOST status on death", async () => {
@@ -71,7 +71,7 @@ describe("A. Session Status Transitions", () => {
       }
 
       console.log(
-        `✓ Death transitions to LOST status (roll=${result.randomRoll})`
+        `- Death transitions to LOST status (roll=${result.randomRoll})`
       );
     } else {
       console.log(
@@ -90,7 +90,7 @@ describe("A. Session Status Transitions", () => {
           if (session2) {
             assert.strictEqual(session2.status, "LOST");
           }
-          console.log(`✓ Death transitions to LOST status (seed=${seed})`);
+          console.log(`- Death transitions to LOST status (seed=${seed})`);
           break;
         }
       }
@@ -140,7 +140,7 @@ describe("A. Session Status Transitions", () => {
     }
 
     console.log(
-      `✓ Cashout transitions to CASHED_OUT status (won $${winAmount})`
+      `- Cashout transitions to CASHED_OUT status (won $${winAmount})`
     );
   });
 
@@ -175,7 +175,7 @@ describe("A. Session Status Transitions", () => {
           msg.includes("Invalid or inactive") || msg.includes("status"),
           `Expected status error, got: ${msg}`
         );
-        console.log(`✓ Rejected executeRound on non-ACTIVE session: ${msg}`);
+        console.log(`- Rejected executeRound on non-ACTIVE session: ${msg}`);
         return true;
       }
     );
@@ -211,7 +211,7 @@ describe("A. Session Status Transitions", () => {
           msg.includes("Invalid or inactive") || msg.includes("status"),
           `Expected status error, got: ${msg}`
         );
-        console.log(`✓ Rejected cashOut on non-ACTIVE session: ${msg}`);
+        console.log(`- Rejected cashOut on non-ACTIVE session: ${msg}`);
         return true;
       }
     );
@@ -255,7 +255,7 @@ describe("A. Session Status Transitions", () => {
     }
 
     console.log(
-      "✓ Complete lifecycle: ACTIVE → (win) → ACTIVE → (cashout) → CASHED_OUT"
+      "- Complete lifecycle: ACTIVE → (win) → ACTIVE → (cashout) → CASHED_OUT"
     );
   });
 });
@@ -297,7 +297,7 @@ describe("B. Wallet Invariants", () => {
     // In production, bet validation prevents this scenario
     if (houseWallet.reservedFunds > houseWallet.balance) {
       console.log(
-        `  ⚠️  ${context}: Reserved (${houseWallet.reservedFunds}) > Balance (${houseWallet.balance}) - edge case`
+        `  WARNING:  ${context}: Reserved (${houseWallet.reservedFunds}) > Balance (${houseWallet.balance}) - edge case`
       );
     }
 
@@ -323,7 +323,7 @@ describe("B. Wallet Invariants", () => {
       "Should have reserved funds for active game"
     );
 
-    console.log("✓ Invariants maintained after startGameSession");
+    console.log("- Invariants maintained after startGameSession");
   });
 
   it("should maintain invariants after executeRound (win)", async () => {
@@ -338,7 +338,7 @@ describe("B. Wallet Invariants", () => {
         won = true;
         assertWalletInvariants(`After executeRound (win, seed=${seed})`);
         console.log(
-          `✓ Invariants maintained after executeRound (win, seed=${seed})`
+          `- Invariants maintained after executeRound (win, seed=${seed})`
         );
         break;
       }
@@ -372,7 +372,7 @@ describe("B. Wallet Invariants", () => {
         );
 
         console.log(
-          `✓ Invariants maintained after executeRound (loss, seed=${seed})`
+          `- Invariants maintained after executeRound (loss, seed=${seed})`
         );
         break;
       }
@@ -424,7 +424,7 @@ describe("B. Wallet Invariants", () => {
       "User should have at least initial bet after winning cashout"
     );
 
-    console.log(`✓ Invariants maintained after cashOut (won $${winAmount})`);
+    console.log(`- Invariants maintained after cashOut (won $${winAmount})`);
   });
 
   it("should maintain money conservation across operations", async () => {
@@ -459,7 +459,7 @@ describe("B. Wallet Invariants", () => {
       "Money should be conserved after round"
     );
 
-    console.log("✓ Money conservation maintained across operations");
+    console.log("- Money conservation maintained across operations");
   });
 });
 
@@ -488,7 +488,7 @@ describe("C. Session ID Generation Quality", () => {
       `Expected 32 chars (16 bytes hex), got ${ids[0].length}`
     );
 
-    console.log(`✓ 100 IDs all have consistent length: ${ids[0].length} chars`);
+    console.log(`- 100 IDs all have consistent length: ${ids[0].length} chars`);
   });
 
   it("should generate unique IDs", async () => {
@@ -506,7 +506,7 @@ describe("C. Session ID Generation Quality", () => {
       `Expected ${count} unique IDs, got ${ids.size} (${count - ids.size} duplicates)`
     );
 
-    console.log(`✓ Generated ${count} unique IDs (no duplicates)`);
+    console.log(`- Generated ${count} unique IDs (no duplicates)`);
   });
 
   it("should generate hex-only IDs", async () => {
@@ -526,7 +526,7 @@ describe("C. Session ID Generation Quality", () => {
       `All IDs should be hex-only, found invalid: ${invalidIds.join(", ")}`
     );
 
-    console.log("✓ 100 IDs all hex-only (0-9, a-f)");
+    console.log("- 100 IDs all hex-only (0-9, a-f)");
   });
 
   it("should have high entropy (varied characters)", async () => {
@@ -548,7 +548,7 @@ describe("C. Session ID Generation Quality", () => {
     );
 
     console.log(
-      `✓ High entropy: ${uniqueChars.size}/16 hex chars used across 100 IDs`
+      `- High entropy: ${uniqueChars.size}/16 hex chars used across 100 IDs`
     );
   });
 
@@ -589,7 +589,7 @@ describe("C. Session ID Generation Quality", () => {
       "IDs should not have obvious sequential patterns"
     );
 
-    console.log("✓ No obvious patterns detected in 50 IDs");
+    console.log("- No obvious patterns detected in 50 IDs");
   });
 
   it("should demonstrate cryptographic quality", async () => {
@@ -634,9 +634,9 @@ describe("C. Session ID Generation Quality", () => {
     );
 
     console.log(
-      `✓ Cryptographic quality: balanced distribution across ${totalChars} chars`
+      `- Cryptographic quality: balanced distribution across ${totalChars} chars`
     );
   });
 });
 
-console.log("\n✅ All reliability improvement tests completed!\n");
+console.log("\nOK: All reliability improvement tests completed!\n");

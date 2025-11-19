@@ -67,7 +67,7 @@ describe("Round + Treasure Validation: Round 1 Scenarios", () => {
           `Expected error to mention received value $${wrongValue}, got: ${msg}`
         );
 
-        console.log(`✓ Round 1 wrong value rejected: ${msg}`);
+        console.log(`- Round 1 wrong value rejected: ${msg}`);
         return true;
       },
       "Should throw treasure mismatch error"
@@ -98,7 +98,7 @@ describe("Round + Treasure Validation: Round 1 Scenarios", () => {
           `Expected error to show both values ($${initialBet} vs $${wrongValue}), got: ${msg}`
         );
 
-        console.log(`✓ Round 1 deflated value rejected: ${msg}`);
+        console.log(`- Round 1 deflated value rejected: ${msg}`);
         return true;
       }
     );
@@ -117,7 +117,7 @@ describe("Round + Treasure Validation: Round 1 Scenarios", () => {
     assert.strictEqual(result.roundNumber, 1, "Should be round 1");
 
     console.log(
-      `✓ Round 1 with correct value accepted: survived=${result.survived}`
+      `- Round 1 with correct value accepted: survived=${result.survived}`
     );
   });
 });
@@ -190,7 +190,7 @@ describe("Round + Treasure Validation: Later Round Scenarios", () => {
           `Expected error to mention inflated value $${inflatedTreasure}, got: ${msg}`
         );
 
-        console.log(`✓ Round 2 inflated treasure rejected: ${msg}`);
+        console.log(`- Round 2 inflated treasure rejected: ${msg}`);
         return true;
       }
     );
@@ -241,7 +241,7 @@ describe("Round + Treasure Validation: Later Round Scenarios", () => {
           msg.toLowerCase().includes("treasure"),
           `Expected treasure error, got: ${msg}`
         );
-        console.log(`✓ Round 2 deflated treasure rejected: ${msg}`);
+        console.log(`- Round 2 deflated treasure rejected: ${msg}`);
         return true;
       }
     );
@@ -271,7 +271,7 @@ describe("Round + Treasure Validation: Later Round Scenarios", () => {
     assert.strictEqual(round2.roundNumber, 2, "Should be round 2");
 
     console.log(
-      `✓ Round 2 with correct treasure accepted: survived=${round2.survived}`
+      `- Round 2 with correct treasure accepted: survived=${round2.survived}`
     );
   });
 });
@@ -382,7 +382,7 @@ describe("Round + Treasure Validation: Round Number Priority", () => {
           `Expected error to show round numbers (expected 3, received 2), got: ${msg}`
         );
 
-        console.log(`✓ Round mismatch checked FIRST: ${msg}`);
+        console.log(`- Round mismatch checked FIRST: ${msg}`);
         return true;
       }
     );
@@ -413,7 +413,7 @@ describe("Round + Treasure Validation: Round Number Priority", () => {
           `Expected round numbers in error, got: ${msg}`
         );
 
-        console.log(`✓ Skipping ahead caught by round check: ${msg}`);
+        console.log(`- Skipping ahead caught by round check: ${msg}`);
         return true;
       }
     );
@@ -463,7 +463,7 @@ describe("Round + Treasure Validation: Round Number Priority", () => {
           `Expected round mismatch for replay attack, got: ${msg}`
         );
 
-        console.log(`✓ Replay attack caught by round validation: ${msg}`);
+        console.log(`- Replay attack caught by round validation: ${msg}`);
         return true;
       }
     );
@@ -527,7 +527,7 @@ describe("Round + Treasure Validation: Both Wrong Scenarios", () => {
           `Should fail on round check before treasure check, got: ${msg}`
         );
 
-        console.log(`✓ Both wrong: failed on FIRST check (round): ${msg}`);
+        console.log(`- Both wrong: failed on FIRST check (round): ${msg}`);
         return true;
       }
     );
@@ -583,13 +583,13 @@ describe("Round + Treasure Validation: Both Wrong Scenarios", () => {
             `${attempt.desc}: Expected round error, got: ${msg}`
           );
 
-          console.log(`  ✓ ${attempt.desc}: ${msg}`);
+          console.log(`  - ${attempt.desc}: ${msg}`);
           return true;
         }
       );
     }
 
-    console.log("✓ Validation order is consistent across all scenarios");
+    console.log("- Validation order is consistent across all scenarios");
   });
 });
 
@@ -631,7 +631,7 @@ describe("Round + Treasure Validation: Error Message Quality", () => {
           msg.toLowerCase().includes("reload") ||
           msg.toLowerCase().includes("restart");
 
-        console.log(`✓ Round error message: ${msg}`);
+        console.log(`- Round error message: ${msg}`);
         console.log(`  - Has suggestion: ${hasSuggestion}`);
 
         return true;
@@ -672,7 +672,7 @@ describe("Round + Treasure Validation: Error Message Quality", () => {
           "Should have clear expected/received labels"
         );
 
-        console.log(`✓ Treasure error message: ${msg}`);
+        console.log(`- Treasure error message: ${msg}`);
         console.log(
           `  - Clear labels: ${hasExpectedKeyword && hasReceivedKeyword}`
         );
@@ -683,4 +683,4 @@ describe("Round + Treasure Validation: Error Message Quality", () => {
   });
 });
 
-console.log("\n✅ All round + treasure validation tests completed!\n");
+console.log("\nOK: All round + treasure validation tests completed!\n");

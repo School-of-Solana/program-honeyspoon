@@ -93,7 +93,7 @@ export class LocalGameChain implements GameChainPort {
       this.sessionCounter = serverSideCache.counter;
       this.houseVaults = new Map(serverSideCache.vaults);
       this.sessions = new Map(serverSideCache.sessions);
-      console.log("[CHAIN] ✅ Loaded state from serverSideCache");
+      console.log("[CHAIN] OK: Loaded state from serverSideCache");
       return;
     }
 
@@ -130,9 +130,9 @@ export class LocalGameChain implements GameChainPort {
         });
       }
 
-      console.log("[CHAIN] ✅ Loaded state from localStorage");
+      console.log("[CHAIN] OK: Loaded state from localStorage");
     } catch (error) {
-      console.warn("[CHAIN] ⚠️ Failed to load state from localStorage:", error);
+      console.warn("[CHAIN] WARNING: Failed to load state from localStorage:", error);
     }
   }
 
@@ -172,7 +172,7 @@ export class LocalGameChain implements GameChainPort {
       });
       localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessionsObj));
     } catch (error) {
-      console.warn("[CHAIN] ⚠️ Failed to save state to localStorage:", error);
+      console.warn("[CHAIN] WARNING: Failed to save state to localStorage:", error);
     }
   }
 
@@ -208,7 +208,7 @@ export class LocalGameChain implements GameChainPort {
     try {
       localStorage.setItem(STORAGE_KEYS.WALLETS, JSON.stringify(wallets));
     } catch (error) {
-      console.warn("[CHAIN] ⚠️ Failed to save wallets:", error);
+      console.warn("[CHAIN] WARNING: Failed to save wallets:", error);
     }
   }
 
@@ -225,7 +225,7 @@ export class LocalGameChain implements GameChainPort {
       wallets[user] = initialBalance.toString();
       this.saveWallets(wallets);
       console.log(
-        `[CHAIN] 💰 Created new wallet for ${user.substring(0, 12)}...: 1000 SOL (${isServer ? "server" : "client"})`
+        `[CHAIN] Amount: Created new wallet for ${user.substring(0, 12)}...: 1000 SOL (${isServer ? "server" : "client"})`
       );
       return initialBalance;
     }
@@ -256,7 +256,7 @@ export class LocalGameChain implements GameChainPort {
     // This happens when vault hasn't been initialized yet
     if (balance === BigInt(0) && vaultPda.includes("HOUSE_VAULT")) {
       console.log(
-        "[CHAIN] ⚠️ Using fallback balance for house vault (not initialized yet)"
+        "[CHAIN] WARNING: Using fallback balance for house vault (not initialized yet)"
       );
       return this.initialHouseBalance;
     }
@@ -505,7 +505,7 @@ export class LocalGameChain implements GameChainPort {
       session.diveNumber = outcome.newDiveNumber;
 
       console.log(
-        `[CHAIN] ✅ Survived! New treasure: ${outcome.newTreasure.toString()} lamports`
+        `[CHAIN] OK: Survived! New treasure: ${outcome.newTreasure.toString()} lamports`
       );
     } else {
       // Player loses: mark session as lost
@@ -524,7 +524,7 @@ export class LocalGameChain implements GameChainPort {
         }
       }
 
-      console.log(`[CHAIN] ❌ Lost! Session ended.`);
+      console.log(`[CHAIN] ERROR: Lost! Session ended.`);
     }
 
     // Persist to localStorage
@@ -689,7 +689,7 @@ export class LocalGameChain implements GameChainPort {
   setTestUserBalance(user: string, balance: bigint): void {
     this.setUserBalance(user, balance);
     console.log(
-      `[CHAIN] 💰 Set balance for ${user.substring(0, 12)}...: ${balance.toString()} lamports`
+      `[CHAIN] Amount: Set balance for ${user.substring(0, 12)}...: ${balance.toString()} lamports`
     );
   }
 

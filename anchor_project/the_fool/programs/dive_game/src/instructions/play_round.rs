@@ -7,7 +7,7 @@ use solana_program::hash::hash;
 
 /// Simple On-Chain RNG
 /// Uses slot + timestamp + session data for randomness
-/// ⚠️ Note: This is predictable and suitable only for homework/demo purposes
+/// WARNING: This is predictable and suitable only for homework/demo purposes
 /// For production, use SlotHashes sysvar or Switchboard VRF
 pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
     let config = &ctx.accounts.config;

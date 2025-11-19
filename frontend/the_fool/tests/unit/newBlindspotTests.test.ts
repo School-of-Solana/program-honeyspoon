@@ -370,4 +370,4 @@ describe("NEW BLINDSPOT TESTS - State Consistency", () => {
   });
 });
 
-console.log("✅ NEW BLINDSPOT TESTS DEFINED");
+console.log("OK: NEW BLINDSPOT TESTS DEFINED");

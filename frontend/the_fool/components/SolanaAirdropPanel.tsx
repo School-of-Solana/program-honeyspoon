@@ -78,11 +78,11 @@ export function SolanaAirdropPanel() {
   // Handle airdrop
   const handleAirdrop = async () => {
     if (!publicKey) {
-      console.warn("[AIRDROP PANEL] ❌ No public key available");
+      console.warn("[AIRDROP PANEL] ERROR: No public key available");
       return;
     }
 
-    console.log("[AIRDROP PANEL] 🚀 Starting airdrop request...", {
+    console.log("[AIRDROP PANEL] Launch: Starting airdrop request...", {
       wallet: publicKey.toBase58(),
       amount: airdropAmount,
       network: networkName,
@@ -94,8 +94,8 @@ export function SolanaAirdropPanel() {
     try {
       const amount = parseFloat(airdropAmount);
       if (isNaN(amount) || amount <= 0) {
-        console.warn("[AIRDROP PANEL] ❌ Invalid amount:", airdropAmount);
-        setMessage("❌ Invalid amount");
+        console.warn("[AIRDROP PANEL] ERROR: Invalid amount:", airdropAmount);
+        setMessage("ERROR: Invalid amount");
         setIsAirdropping(false);
         return;
       }
@@ -110,16 +110,16 @@ export function SolanaAirdropPanel() {
       console.log("[AIRDROP PANEL] 📥 Received airdrop result:", result);
 
       if (result.success) {
-        console.log("[AIRDROP PANEL] ✅ Airdrop successful!", {
+        console.log("[AIRDROP PANEL] OK: Airdrop successful!", {
           signature: result.signature,
           newBalance: result.newBalance,
         });
-        setMessage(`✅ Airdropped ${amount} SOL!`);
+        setMessage(`OK: Airdropped ${amount} SOL!`);
         // Update balance
         if (result.newBalance !== undefined) {
           setBalance(result.newBalance);
           console.log(
-            "[AIRDROP PANEL] 💰 Balance updated to:",
+            "[AIRDROP PANEL] Amount: Balance updated to:",
             result.newBalance
           );
         }
@@ -127,12 +127,12 @@ export function SolanaAirdropPanel() {
         console.log("[AIRDROP PANEL] 🔄 Triggering manual balance refresh...");
         await refreshBalance();
       } else {
-        console.error("[AIRDROP PANEL] ❌ Airdrop failed:", result.error);
-        setMessage(`❌ ${result.error}`);
+        console.error("[AIRDROP PANEL] ERROR: Airdrop failed:", result.error);
+        setMessage(`ERROR: ${result.error}`);
       }
     } catch (error) {
-      console.error("[AIRDROP PANEL] ❌ Exception during airdrop:", error);
-      setMessage(`❌ Failed: ${error}`);
+      console.error("[AIRDROP PANEL] ERROR: Exception during airdrop:", error);
+      setMessage(`ERROR: Failed: ${error}`);
     } finally {
       setIsAirdropping(false);
       console.log("[AIRDROP PANEL] 🏁 Airdrop process completed");
@@ -145,11 +145,11 @@ export function SolanaAirdropPanel() {
   const handleHouseAirdrop = async () => {
     const houseAuthority = process.env.NEXT_PUBLIC_HOUSE_AUTHORITY;
     if (!houseAuthority) {
-      console.warn("[AIRDROP PANEL] ❌ No house authority configured");
+      console.warn("[AIRDROP PANEL] ERROR: No house authority configured");
       return;
     }
 
-    console.log("[AIRDROP PANEL] 🚀 Starting house airdrop request...", {
+    console.log("[AIRDROP PANEL] Launch: Starting house airdrop request...", {
       wallet: houseAuthority,
       amount: houseAirdropAmount,
       network: networkName,
@@ -162,10 +162,10 @@ export function SolanaAirdropPanel() {
       const amount = parseFloat(houseAirdropAmount);
       if (isNaN(amount) || amount <= 0) {
         console.warn(
-          "[AIRDROP PANEL] ❌ Invalid house airdrop amount:",
+          "[AIRDROP PANEL] ERROR: Invalid house airdrop amount:",
           houseAirdropAmount
         );
-        setHouseMessage("❌ Invalid amount");
+        setHouseMessage("ERROR: Invalid amount");
         setIsAirdroppingHouse(false);
         return;
       }
@@ -180,16 +180,16 @@ export function SolanaAirdropPanel() {
       console.log("[AIRDROP PANEL] 📥 Received house airdrop result:", result);
 
       if (result.success) {
-        console.log("[AIRDROP PANEL] ✅ House airdrop successful!", {
+        console.log("[AIRDROP PANEL] OK: House airdrop successful!", {
           signature: result.signature,
           newBalance: result.newBalance,
         });
-        setHouseMessage(`✅ Airdropped ${amount} SOL to house!`);
+        setHouseMessage(`OK: Airdropped ${amount} SOL to house!`);
         // Update balance
         if (result.newBalance !== undefined) {
           setHouseBalance(result.newBalance);
           console.log(
-            "[AIRDROP PANEL] 🏦 House balance updated to:",
+            "[AIRDROP PANEL] Vault: House balance updated to:",
             result.newBalance
           );
         }
@@ -197,15 +197,15 @@ export function SolanaAirdropPanel() {
         console.log("[AIRDROP PANEL] 🔄 Triggering manual balance refresh...");
         await refreshBalance();
       } else {
-        console.error("[AIRDROP PANEL] ❌ House airdrop failed:", result.error);
-        setHouseMessage(`❌ ${result.error}`);
+        console.error("[AIRDROP PANEL] ERROR: House airdrop failed:", result.error);
+        setHouseMessage(`ERROR: ${result.error}`);
       }
     } catch (error) {
       console.error(
-        "[AIRDROP PANEL] ❌ Exception during house airdrop:",
+        "[AIRDROP PANEL] ERROR: Exception during house airdrop:",
         error
       );
-      setHouseMessage(`❌ Failed: ${error}`);
+      setHouseMessage(`ERROR: Failed: ${error}`);
     } finally {
       setIsAirdroppingHouse(false);
       console.log("[AIRDROP PANEL] 🏁 House airdrop process completed");
@@ -284,7 +284,7 @@ export function SolanaAirdropPanel() {
               </span>
             </div>
             <div style={{ fontSize: "7px", opacity: 0.7, marginBottom: "4px" }}>
-              {network === SolanaNetwork.MAINNET && "⚠️ Using real SOL!"}
+              {network === SolanaNetwork.MAINNET && "WARNING: Using real SOL!"}
               {network === SolanaNetwork.LOCALHOST && "🔧 Local test network"}
               {network === SolanaNetwork.DEVNET && "🧪 Solana Devnet"}
               {network === SolanaNetwork.TESTNET && "🧪 Solana Testnet"}
@@ -319,7 +319,7 @@ export function SolanaAirdropPanel() {
             style={{ marginBottom: "12px" }}
           >
             <div style={{ marginBottom: "8px" }}>
-              <strong>💰 YOUR WALLET</strong>
+              <strong>Amount: YOUR WALLET</strong>
             </div>
             {publicKey && (
               <>
@@ -357,7 +357,7 @@ export function SolanaAirdropPanel() {
             }}
           >
             <div style={{ marginBottom: "8px" }}>
-              <strong>🏦 HOUSE WALLET</strong>
+              <strong>Vault: HOUSE WALLET</strong>
             </div>
             {process.env.NEXT_PUBLIC_HOUSE_AUTHORITY && (
               <>
@@ -541,7 +541,7 @@ export function SolanaAirdropPanel() {
               }}
             >
               <div style={{ fontSize: "7px", textAlign: "center" }}>
-                ⚠️ Airdrops are only available on Localhost and Devnet networks.
+                WARNING: Airdrops are only available on Localhost and Devnet networks.
               </div>
             </div>
           )}

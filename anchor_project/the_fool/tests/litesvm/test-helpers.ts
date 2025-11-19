@@ -577,7 +577,7 @@ export function startGameSession(params: StartGameSessionParams): void {
 
 export function logTransactionFailure(result: any, context: string): void {
   if (result?.constructor?.name === "FailedTransactionMetadata") {
-    console.log(`\n❌ Transaction failed: ${context}`);
+    console.log(`\nERROR: Transaction failed: ${context}`);
     
     // Try to parse with new error parser
     try {
@@ -611,7 +611,7 @@ export function logAccountStates(
   playerPubkey: PublicKey,
   context: string
 ): void {
-  console.log(`\n📊 Account States - ${context}`);
+  console.log(`\nInfo: Account States - ${context}`);
 
   const configData = getConfigData(svm, configPDA);
   if (configData) {

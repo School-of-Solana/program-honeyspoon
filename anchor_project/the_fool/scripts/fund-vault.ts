@@ -6,7 +6,7 @@ import * as path from 'path';
 async function main() {
   const amountSol = parseFloat(process.argv[2] || '50');
   
-  console.log('🏦 Funding House Vault');
+  console.log('Vault: Funding House Vault');
   console.log('======================\n');
 
   // Config
@@ -59,7 +59,7 @@ async function main() {
   console.log('Sending transaction...');
   const sig = await sendAndConfirmTransaction(connection, tx, [houseAuthKeypair]);
   
-  console.log(`✅ Success: ${sig}\n`);
+  console.log(`OK: Success: ${sig}\n`);
 
   // New balances
   const newVaultBalance = await connection.getBalance(vaultPda);
