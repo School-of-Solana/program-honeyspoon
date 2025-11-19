@@ -197,7 +197,10 @@ export function SolanaAirdropPanel() {
         console.log("[AIRDROP PANEL] 🔄 Triggering manual balance refresh...");
         await refreshBalance();
       } else {
-        console.error("[AIRDROP PANEL] ERROR: House airdrop failed:", result.error);
+        console.error(
+          "[AIRDROP PANEL] ERROR: House airdrop failed:",
+          result.error
+        );
         setHouseMessage(`ERROR: ${result.error}`);
       }
     } catch (error) {
@@ -541,7 +544,8 @@ export function SolanaAirdropPanel() {
               }}
             >
               <div style={{ fontSize: "7px", textAlign: "center" }}>
-                WARNING: Airdrops are only available on Localhost and Devnet networks.
+                WARNING: Airdrops are only available on Localhost and Devnet
+                networks.
               </div>
             </div>
           )}

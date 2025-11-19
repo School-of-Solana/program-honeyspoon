@@ -73,7 +73,9 @@ export const useChainWalletStore = create<ChainWalletState>()(
         const { userId } = get();
 
         if (!userId) {
-          console.log("[WALLET STORE] WARNING: No userId set, skipping refresh");
+          console.log(
+            "[WALLET STORE] WARNING: No userId set, skipping refresh"
+          );
           return;
         }
 
@@ -102,7 +104,10 @@ export const useChainWalletStore = create<ChainWalletState>()(
           console.log("[WALLET STORE] Info: Setting new state:", newState);
           set(newState);
         } catch (error) {
-          console.error("[WALLET STORE] ERROR: Failed to refresh balance:", error);
+          console.error(
+            "[WALLET STORE] ERROR: Failed to refresh balance:",
+            error
+          );
           set({ isLoading: false });
         }
       },

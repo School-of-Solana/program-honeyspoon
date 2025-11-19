@@ -452,7 +452,8 @@ export function WalletManager() {
                   textAlign: "center",
                 }}
               >
-                WARNING: Keep some SOL in your Solana wallet for transaction fees
+                WARNING: Keep some SOL in your Solana wallet for transaction
+                fees
               </div>
             </>
           )}

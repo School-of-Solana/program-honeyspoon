@@ -1,9 +1,9 @@
 /**
  * Game Error Types
- * 
+ *
  * AUTO-GENERATED FROM RUST ERRORS
  * Source: anchor_project/the_fool/programs/dive_game/src/errors.rs
- * 
+ *
  * These error codes match the on-chain program errors exactly.
  * Use these when checking for specific error types in transactions.
  */
@@ -28,14 +28,19 @@ export const GameErrorMessage: Record<GameErrorCode, string> = {
   [GameErrorCode.InvalidSessionStatus]: "Session is not active",
   [GameErrorCode.InvalidBetAmount]: "Bet amount must be greater than zero",
   [GameErrorCode.RoundMismatch]: "Round number mismatch",
-  [GameErrorCode.TreasureInvalid]: "Treasure amount invalid or exceeds max payout",
-  [GameErrorCode.InsufficientVaultBalance]: "Insufficient vault balance for payout",
+  [GameErrorCode.TreasureInvalid]:
+    "Treasure amount invalid or exceeds max payout",
+  [GameErrorCode.InsufficientVaultBalance]:
+    "Insufficient vault balance for payout",
   [GameErrorCode.Overflow]: "Arithmetic overflow",
-  [GameErrorCode.InsufficientTreasure]: "Cannot cash out with treasure less than or equal to bet",
+  [GameErrorCode.InsufficientTreasure]:
+    "Cannot cash out with treasure less than or equal to bet",
   [GameErrorCode.InvalidConfig]: "Invalid game configuration",
   [GameErrorCode.MaxDivesReached]: "Maximum number of dives reached",
-  [GameErrorCode.InvalidSlotHash]: "Could not retrieve valid slot hash from SlotHashes sysvar",
-  [GameErrorCode.SessionNotExpired]: "Session has not expired yet - cannot clean up",
+  [GameErrorCode.InvalidSlotHash]:
+    "Could not retrieve valid slot hash from SlotHashes sysvar",
+  [GameErrorCode.SessionNotExpired]:
+    "Session has not expired yet - cannot clean up",
 };
 
 export type GameErrorName = keyof typeof GameErrorCode;
@@ -43,7 +48,10 @@ export type GameErrorName = keyof typeof GameErrorCode;
 /**
  * Checks if an error code is a specific game error
  */
-export function isGameError(errorCode: number, expected: GameErrorCode): boolean {
+export function isGameError(
+  errorCode: number,
+  expected: GameErrorCode
+): boolean {
   return errorCode === expected;
 }
 
@@ -59,7 +67,7 @@ export function getErrorMessage(errorCode: number): string {
  */
 export function hasGameError(error: any, expected: GameErrorCode): boolean {
   if (!error) return false;
-  
+
   // Check error.err structure
   if (error.err?.InstructionError) {
     const [, customError] = error.err.InstructionError;
@@ -67,6 +75,6 @@ export function hasGameError(error: any, expected: GameErrorCode): boolean {
       return customError.Custom === expected;
     }
   }
-  
+
   return false;
 }

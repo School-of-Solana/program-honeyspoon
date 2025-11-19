@@ -115,7 +115,10 @@ async function ensureHouseVault(): Promise<string> {
 
     if (existingVault) {
       houseVaultPDA = existingVault.vaultPda;
-      console.log("[CHAIN] OK: House vault already initialized:", houseVaultPDA);
+      console.log(
+        "[CHAIN] OK: House vault already initialized:",
+        houseVaultPDA
+      );
       console.log("[CHAIN] Info: Vault state:", {
         locked: existingVault.locked,
         totalReserved: existingVault.totalReserved.toString(),
@@ -390,7 +393,9 @@ export async function executeRound(
   // Get local session for legacy data
   const gameSession = getGameSession(sessionId);
   if (!gameSession || gameSession.status !== "ACTIVE") {
-    console.error(`[CHAIN] ERROR: Local session missing or inactive: ${sessionId}`);
+    console.error(
+      `[CHAIN] ERROR: Local session missing or inactive: ${sessionId}`
+    );
     throw new Error("Local session data missing");
   }
 

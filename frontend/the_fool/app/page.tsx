@@ -36,6 +36,10 @@ import {
   isErrorCategory,
   type GameError,
 } from "@/lib/errorTypes";
+import {
+  parseSolanaError,
+  formatSolanaErrorForUser,
+} from "@/lib/utils/solanaErrorParser";
 
 export default function Home() {
   // Fetch game config from blockchain
@@ -328,7 +332,9 @@ export default function Home() {
       let newSessionId = gameState.sessionId; // Default to current session ID
 
       if (useSolana) {
-        console.log("[GAME] Link: Using client-side Solana chain for transaction");
+        console.log(
+          "[GAME] Link: Using client-side Solana chain for transaction"
+        );
 
         try {
           // Call chain directly on client (wallet will sign)
@@ -387,6 +393,21 @@ export default function Home() {
           console.log("[GAME] Info: Session created with ID:", newSessionId);
         } catch (error) {
           console.error("[GAME] ERROR: Solana transaction failed:", error);
+
+          // Parse Solana error with improved parser
+          const parsed = parseSolanaError(error);
+          console.log("[GAME] Parsed Solana Error:", {
+            errorCode: parsed.errorCode,
+            errorCodeNumber: parsed.errorCodeNumber,
+            errorMessage: parsed.errorMessage,
+            amounts: parsed.amounts,
+            addresses: parsed.addresses,
+            explorerLinks: parsed.explorerLinks,
+          });
+
+          console.log("[GAME] User-Friendly Error Message:");
+          console.log(formatSolanaErrorForUser(parsed));
+
           console.error("[GAME] ERROR: Error details:", {
             message: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
@@ -451,17 +472,31 @@ export default function Home() {
       }, 500);
     } catch (error) {
       console.error("[GAME] ERROR: handleStartGame caught error:", error);
-      const message = error instanceof Error ? error.message : "Unknown error";
+
+      // Try parsing as Solana error
+      let userMessage = "Unknown error";
+      try {
+        const parsed = parseSolanaError(error);
+        userMessage = formatSolanaErrorForUser(parsed);
+
+        console.log("[GAME] Final Parsed Error for User:");
+        console.log(userMessage);
+        console.log("[GAME] Full Parsed Data:", parsed);
+      } catch (parseError) {
+        // Fall back to generic message if parsing fails
+        userMessage = error instanceof Error ? error.message : "Unknown error";
+      }
+
       const stack = error instanceof Error ? error.stack : undefined;
 
       console.error("[GAME] ERROR: Error details:", {
-        message,
+        message: userMessage,
         stack,
         type: error?.constructor?.name,
       });
 
       showError(
-        `Game start failed: ${message}`,
+        `Game start failed:\n${userMessage}`,
         "error",
         () => window.location.reload(),
         "Reload Page"
@@ -1029,11 +1064,14 @@ export default function Home() {
                     <span
                       style={{ fontSize: "16px", fontWeight: "bold" }}
                       onClick={() =>
-                        console.log("[UI] Amount: Balance clicked - gameState:", {
-                          walletBalance: gameState.walletBalance,
-                          userBalance,
-                          fullGameState: gameState,
-                        })
+                        console.log(
+                          "[UI] Amount: Balance clicked - gameState:",
+                          {
+                            walletBalance: gameState.walletBalance,
+                            userBalance,
+                            fullGameState: gameState,
+                          }
+                        )
                       }
                     >
                       {(gameState.walletBalance || 0).toFixed(3)} SOL

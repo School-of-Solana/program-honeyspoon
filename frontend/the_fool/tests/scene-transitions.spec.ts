@@ -97,7 +97,9 @@ test.describe("Scene Transitions", () => {
       // One of these should be true if transition happened
       expect(hasTransitionLog || hasDivingSceneCreated).toBeTruthy();
     } else {
-      console.log("WARNING:  Dive button not found - may need to adjust game state");
+      console.log(
+        "WARNING:  Dive button not found - may need to adjust game state"
+      );
     }
   });
 

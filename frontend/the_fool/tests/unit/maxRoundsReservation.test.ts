@@ -358,7 +358,9 @@ describe("Max Rounds & Reservation Horizon", () => {
       // In practice, probability of surviving 50 rounds is astronomically low (~10^-41).
 
       const actualPayout = currentTreasure;
-      console.log(`  WARNING:  Actual payout: $${actualPayout.toExponential(2)}`);
+      console.log(
+        `  WARNING:  Actual payout: $${actualPayout.toExponential(2)}`
+      );
       console.log(`  WARNING:  Reserved amount: $${reservedAmount}`);
       console.log(
         `  WARNING:  House balance: $${houseFinal.balance.toExponential(2)}`

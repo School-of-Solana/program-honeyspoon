@@ -313,7 +313,11 @@ export const useGameStore = create<GameState>((set) => ({
   completeDive: (result) => {
     const { survived, totalTreasure, depth, shipwreck } = result;
 
-    console.log("[STORE] Info: Dive complete", { survived, totalTreasure, depth });
+    console.log("[STORE] Info: Dive complete", {
+      survived,
+      totalTreasure,
+      depth,
+    });
 
     if (survived) {
       // Update game state for next dive

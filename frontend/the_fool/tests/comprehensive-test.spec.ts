@@ -236,7 +236,10 @@ test.describe("Comprehensive Animation & Game Tests", () => {
       const hasDeathAnim = canvasLogs.some((log) =>
         log.includes("death animation")
       );
-      console.log("  Death animation triggered:", hasDeathAnim ? "OK:" : "ERROR:");
+      console.log(
+        "  Death animation triggered:",
+        hasDeathAnim ? "OK:" : "ERROR:"
+      );
     } else {
       console.log("  Result: OK: SURVIVED");
       const hasTreasureAnim = canvasLogs.some((log) =>

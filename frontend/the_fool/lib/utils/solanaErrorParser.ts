@@ -3,14 +3,18 @@
  *
  * Extracts detailed information from Solana transaction errors
  * including amounts, addresses, and provides explorer links.
- * 
+ *
  * Works with the improved error logging format from start_session.rs and cash_out.rs:
  * - INSUFFICIENT_VAULT need=10 have=2 vault=EF6u3Zw...
  * - INSUFFICIENT_TREASURE treasure=0 bet=1 session=AbC123...
  * - VAULT_UNDERFUNDED need=10 have=5 vault=EF6u3Zw...
  */
 
-import { GameErrorCode, GameErrorMessage, hasGameError } from "../solana/errors";
+import {
+  GameErrorCode,
+  GameErrorMessage,
+  hasGameError,
+} from "../solana/errors";
 
 export interface ParsedSolanaError {
   errorCode: string;
@@ -49,7 +53,9 @@ function extractCompactAmounts(logs: string[]): ParsedSolanaError["amounts"] {
 
   for (const log of logs) {
     // Match: INSUFFICIENT_VAULT need=10 have=2
-    const vaultMatch = log.match(/INSUFFICIENT_VAULT\s+need=(\d+(?:\.\d+)?)\s+have=(\d+(?:\.\d+)?)/);
+    const vaultMatch = log.match(
+      /INSUFFICIENT_VAULT\s+need=(\d+(?:\.\d+)?)\s+have=(\d+(?:\.\d+)?)/
+    );
     if (vaultMatch) {
       amounts.need = `${vaultMatch[1]} SOL`;
       amounts.have = `${vaultMatch[2]} SOL`;
@@ -58,18 +64,23 @@ function extractCompactAmounts(logs: string[]): ParsedSolanaError["amounts"] {
     }
 
     // Match: INSUFFICIENT_TREASURE treasure=0 bet=1
-    const treasureMatch = log.match(/INSUFFICIENT_TREASURE\s+treasure=(\d+(?:\.\d+)?)\s+bet=(\d+(?:\.\d+)?)/);
+    const treasureMatch = log.match(
+      /INSUFFICIENT_TREASURE\s+treasure=(\d+(?:\.\d+)?)\s+bet=(\d+(?:\.\d+)?)/
+    );
     if (treasureMatch) {
       amounts.treasure = `${treasureMatch[1]} SOL`;
       amounts.bet = `${treasureMatch[2]} SOL`;
     }
 
     // Match: VAULT_UNDERFUNDED need=10 have=5
-    const underfundedMatch = log.match(/VAULT_UNDERFUNDED\s+need=(\d+(?:\.\d+)?)\s+have=(\d+(?:\.\d+)?)/);
+    const underfundedMatch = log.match(
+      /VAULT_UNDERFUNDED\s+need=(\d+(?:\.\d+)?)\s+have=(\d+(?:\.\d+)?)/
+    );
     if (underfundedMatch) {
       amounts.need = `${underfundedMatch[1]} SOL`;
       amounts.have = `${underfundedMatch[2]} SOL`;
-      const shortage = parseFloat(underfundedMatch[1]) - parseFloat(underfundedMatch[2]);
+      const shortage =
+        parseFloat(underfundedMatch[1]) - parseFloat(underfundedMatch[2]);
       amounts.shortage = `${shortage.toFixed(2)} SOL`;
     }
   }
@@ -80,7 +91,9 @@ function extractCompactAmounts(logs: string[]): ParsedSolanaError["amounts"] {
 /**
  * Extracts wallet/PDA addresses from new compact log format
  */
-function extractCompactAddresses(logs: string[]): ParsedSolanaError["addresses"] {
+function extractCompactAddresses(
+  logs: string[]
+): ParsedSolanaError["addresses"] {
   const addresses: ParsedSolanaError["addresses"] = {};
 
   for (const log of logs) {
@@ -141,7 +154,9 @@ function getActionableSteps(
   const steps: string[] = [];
 
   if (errorCode === "InsufficientVaultBalance") {
-    steps.push("The house vault doesn't have enough SOL to cover the maximum payout.");
+    steps.push(
+      "The house vault doesn't have enough SOL to cover the maximum payout."
+    );
 
     if (amounts?.need && amounts?.have) {
       steps.push(`Vault has ${amounts.have}, needs ${amounts.need}`);
@@ -156,7 +171,9 @@ function getActionableSteps(
     steps.push("Cannot cash out without profit.");
 
     if (amounts?.treasure && amounts?.bet) {
-      steps.push(`Your treasure: ${amounts.treasure}, Original bet: ${amounts.bet}`);
+      steps.push(
+        `Your treasure: ${amounts.treasure}, Original bet: ${amounts.bet}`
+      );
     }
 
     steps.push("You must dive at least once and survive to have profit.");
@@ -217,7 +234,9 @@ function extractLogs(error: any): string[] {
     const logsString = logsMatch[1];
     return logsString
       .split(",")
-      .map((line: string) => line.trim().replace(/^"|"$/g, "").replace(/\\"/g, '"'));
+      .map((line: string) =>
+        line.trim().replace(/^"|"$/g, "").replace(/\\"/g, '"')
+      );
   }
 
   return [];
@@ -226,13 +245,18 @@ function extractLogs(error: any): string[] {
 /**
  * Parses Solana transaction error and extracts detailed information
  */
-export function parseSolanaError(error: any, cluster: string = "devnet"): ParsedSolanaError {
-  const { code: errorCode, codeNumber: errorCodeNumber } = extractErrorCode(error);
+export function parseSolanaError(
+  error: any,
+  cluster: string = "devnet"
+): ParsedSolanaError {
+  const { code: errorCode, codeNumber: errorCodeNumber } =
+    extractErrorCode(error);
   const logs = extractLogs(error);
 
   // Get error message from GameErrorMessage or extract from logs
-  let errorMessage = GameErrorMessage[errorCodeNumber as GameErrorCode] || "Transaction failed";
-  
+  let errorMessage =
+    GameErrorMessage[errorCodeNumber as GameErrorCode] || "Transaction failed";
+
   // Extract amounts and addresses from logs
   const amounts = extractCompactAmounts(logs);
   const addresses = extractCompactAddresses(logs);
@@ -245,10 +269,12 @@ export function parseSolanaError(error: any, cluster: string = "devnet"): Parsed
   if (amounts) {
     detailedMessage += "Transaction Details:\n";
     if (amounts.bet) detailedMessage += `  Bet: ${amounts.bet}\n`;
-    if (amounts.treasure) detailedMessage += `  Treasure: ${amounts.treasure}\n`;
+    if (amounts.treasure)
+      detailedMessage += `  Treasure: ${amounts.treasure}\n`;
     if (amounts.need) detailedMessage += `  Needed: ${amounts.need}\n`;
     if (amounts.have) detailedMessage += `  Available: ${amounts.have}\n`;
-    if (amounts.shortage) detailedMessage += `  Shortage: ${amounts.shortage}\n`;
+    if (amounts.shortage)
+      detailedMessage += `  Shortage: ${amounts.shortage}\n`;
     detailedMessage += "\n";
   }
 
@@ -256,14 +282,17 @@ export function parseSolanaError(error: any, cluster: string = "devnet"): Parsed
     detailedMessage += "Addresses:\n";
     if (addresses.user) detailedMessage += `  User: ${addresses.user}\n`;
     if (addresses.vault) detailedMessage += `  Vault: ${addresses.vault}\n`;
-    if (addresses.session) detailedMessage += `  Session: ${addresses.session}\n`;
+    if (addresses.session)
+      detailedMessage += `  Session: ${addresses.session}\n`;
     detailedMessage += "\n";
   }
 
   if (explorerLinks) {
     detailedMessage += "Explorer Links:\n";
-    if (explorerLinks.vault) detailedMessage += `  Vault: ${explorerLinks.vault}\n`;
-    if (explorerLinks.session) detailedMessage += `  Session: ${explorerLinks.session}\n`;
+    if (explorerLinks.vault)
+      detailedMessage += `  Vault: ${explorerLinks.vault}\n`;
+    if (explorerLinks.session)
+      detailedMessage += `  Session: ${explorerLinks.session}\n`;
     detailedMessage += "\n";
   }
 
@@ -289,22 +318,29 @@ export function parseSolanaError(error: any, cluster: string = "devnet"): Parsed
 /**
  * Formats parsed error for display to user
  */
-export function formatSolanaErrorForUser(parsedError: ParsedSolanaError): string {
+export function formatSolanaErrorForUser(
+  parsedError: ParsedSolanaError
+): string {
   let message = `${parsedError.errorMessage}\n\n`;
 
   if (parsedError.amounts) {
     if (parsedError.amounts.bet || parsedError.amounts.treasure) {
       message += "Your Transaction:\n";
-      if (parsedError.amounts.bet) message += `Bet: ${parsedError.amounts.bet}\n`;
-      if (parsedError.amounts.treasure) message += `Treasure: ${parsedError.amounts.treasure}\n`;
+      if (parsedError.amounts.bet)
+        message += `Bet: ${parsedError.amounts.bet}\n`;
+      if (parsedError.amounts.treasure)
+        message += `Treasure: ${parsedError.amounts.treasure}\n`;
       message += "\n";
     }
 
     if (parsedError.amounts.need || parsedError.amounts.have) {
       message += "Vault Status:\n";
-      if (parsedError.amounts.have) message += `Available: ${parsedError.amounts.have}\n`;
-      if (parsedError.amounts.need) message += `Needed: ${parsedError.amounts.need}\n`;
-      if (parsedError.amounts.shortage) message += `Short by: ${parsedError.amounts.shortage}\n`;
+      if (parsedError.amounts.have)
+        message += `Available: ${parsedError.amounts.have}\n`;
+      if (parsedError.amounts.need)
+        message += `Needed: ${parsedError.amounts.need}\n`;
+      if (parsedError.amounts.shortage)
+        message += `Short by: ${parsedError.amounts.shortage}\n`;
       message += "\n";
     }
   }
@@ -319,6 +355,9 @@ export function formatSolanaErrorForUser(parsedError: ParsedSolanaError): string
 /**
  * Helper to check if error matches a specific game error code
  */
-export function isGameErrorCode(error: any, expectedCode: GameErrorCode): boolean {
+export function isGameErrorCode(
+  error: any,
+  expectedCode: GameErrorCode
+): boolean {
   return hasGameError(error, expectedCode);
 }

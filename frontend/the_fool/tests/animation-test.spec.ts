@@ -106,7 +106,10 @@ test.describe("Animation System Tests", () => {
     const hasConditionsMet = canvasLogs.some((log) =>
       log.includes("OK: Conditions met for diving animation")
     );
-    console.log("  Conditions met detected:", hasConditionsMet ? "OK:" : "ERROR:");
+    console.log(
+      "  Conditions met detected:",
+      hasConditionsMet ? "OK:" : "ERROR:"
+    );
 
     // Check for animation trigger
     const hasAnimTrigger = canvasLogs.some((log) =>
@@ -174,7 +177,10 @@ test.describe("Animation System Tests", () => {
     console.log("  Death animation:", hasDeathAnim ? "OK:" : "ERROR:");
 
     const hasResultAnim = hasTreasureAnim || hasDeathAnim;
-    console.log("  Result animation triggered:", hasResultAnim ? "OK:" : "ERROR:");
+    console.log(
+      "  Result animation triggered:",
+      hasResultAnim ? "OK:" : "ERROR:"
+    );
 
     await page.screenshot({
       path: "tests/screenshots/anim-04-result.png",
@@ -240,7 +246,10 @@ test.describe("Animation System Tests", () => {
         const hasTreasureAnim = canvasLogs.some((log) =>
           log.includes("Triggering treasure animation")
         );
-        console.log("  Treasure animation:", hasTreasureAnim ? "OK:" : "ERROR:");
+        console.log(
+          "  Treasure animation:",
+          hasTreasureAnim ? "OK:" : "ERROR:"
+        );
       }
 
       await page.screenshot({

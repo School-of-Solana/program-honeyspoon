@@ -153,13 +153,16 @@ export function treasureForRound(
 
     // VALIDATION: Ensure multiplier is positive (player should win on successful dive)
     if (multiplier < 1.0) {
-      console.error(`[RNG] ERROR: CRITICAL: Negative expected value detected!`, {
-        round,
-        survivalProb,
-        houseEdge: config.houseEdge,
-        multiplier,
-        message: "Players lose money on wins! Check game config.",
-      });
+      console.error(
+        `[RNG] ERROR: CRITICAL: Negative expected value detected!`,
+        {
+          round,
+          survivalProb,
+          houseEdge: config.houseEdge,
+          multiplier,
+          message: "Players lose money on wins! Check game config.",
+        }
+      );
       throw new Error(
         `Invalid game config: multiplier ${multiplier.toFixed(3)} < 1.0 at round ${round}`
       );

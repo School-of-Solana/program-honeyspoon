@@ -132,7 +132,10 @@ export class LocalGameChain implements GameChainPort {
 
       console.log("[CHAIN] OK: Loaded state from localStorage");
     } catch (error) {
-      console.warn("[CHAIN] WARNING: Failed to load state from localStorage:", error);
+      console.warn(
+        "[CHAIN] WARNING: Failed to load state from localStorage:",
+        error
+      );
     }
   }
 
@@ -172,7 +175,10 @@ export class LocalGameChain implements GameChainPort {
       });
       localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessionsObj));
     } catch (error) {
-      console.warn("[CHAIN] WARNING: Failed to save state to localStorage:", error);
+      console.warn(
+        "[CHAIN] WARNING: Failed to save state to localStorage:",
+        error
+      );
     }
   }
 
