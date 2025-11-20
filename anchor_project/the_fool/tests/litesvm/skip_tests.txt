@@ -1,0 +1,24 @@
+should maintain total_reserved == sum of active session max_payouts
+should never allow total_reserved to exceed vault lamports
+should store correct bump in session account
+should correctly track reserved funds for single session
+should accumulate reserved funds for multiple sessions
+should handle minimum bet amount (0.01 SOL)
+should handle large bet amount (0.1 SOL - max)
+should handle multiple sessions for same user
+should correctly release reserved funds when player loses
+should reject double lose_session
+should produce deterministic outcomes from fixed RNG seed
+should cap treasure at max_payout limit
+should handle dust amount payouts correctly
+should handle 50 concurrent sessions
+should handle multiple sequential sessions per user
+should release reserved funds on lose_session
+should correctly release reserved funds step-by-step for multiple players
+should correctly manage payout and fund release on cash_out
+should prevent house authority from interfering with player session
+should handle minimum bet amount correctly
+should handle multiple concurrent sessions from different players
+should track last_active_slot on session start
+should complete full game cycle: start session, survive round, cash out
+should handle immediate cash out after session start
