@@ -82,7 +82,7 @@ pub fn start_session(ctx: Context<StartSession>, _session_index: u64) -> Result<
     Ok(())
 }
 #[derive(Accounts)]
-#[instruction(bet_amount: u64, session_index: u64)]
+#[instruction(session_index: u64)]
 pub struct StartSession<'info> {
     #[account(mut)]
     pub user: Signer<'info>,

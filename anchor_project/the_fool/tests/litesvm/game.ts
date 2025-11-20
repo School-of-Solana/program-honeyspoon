@@ -726,7 +726,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should start a session with correct initial state", () => {
-      const betAmount = lamports(TEST_AMOUNTS.SMALL);
+      // Fixed bet system: bet comes from config, not from parameter
+      const expectedFixedBet = lamports(0.01); // Default fixed_bet in config
       const sessionIndex = new BN(0);
       const data = buildStartSessionData(sessionIndex);
 
@@ -765,13 +766,13 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
           player.publicKey.toBase58()
         );
         expect(sessionData.status).to.equal("Active");
-        expect(sessionData.betAmount.toString()).to.equal(betAmount.toString());
+        expect(sessionData.betAmount.toString()).to.equal(expectedFixedBet.toString());
         expect(sessionData.currentTreasure.toString()).to.equal(
-          betAmount.toString()
+          expectedFixedBet.toString()
         );
         expect(sessionData.diveNumber).to.equal(1);
 
-        const expectedMaxPayout = betAmount.muln(100);
+        const expectedMaxPayout = expectedFixedBet.muln(100);
         expect(sessionData.maxPayout.toString()).to.equal(
           expectedMaxPayout.toString()
         );
@@ -1661,7 +1662,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
     });
 
-    it("should reject zero bet amount", () => {
+    it.skip("should reject zero bet amount - OBSOLETE: Fixed bet system doesn't accept bet parameter", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const data = buildStartSessionData(new BN(0));
 
@@ -3826,7 +3827,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       expectTxFailedWith(result, "InvalidConfig");
     });
 
-    it("should enforce min_bet from config", () => {
+    it.skip("should enforce min_bet from config - OBSOLETE: Fixed bet system replaced min/max bet", () => {
       const configData = buildInitConfigData({
         fixedBet: lamports(0.1),
       });
