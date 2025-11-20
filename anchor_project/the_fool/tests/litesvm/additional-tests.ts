@@ -1876,5 +1876,130 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
         console.log(`      ✓ ${name}: ${data.length} bytes (${reason}) - correct`);
       });
     });
+
+    it("should successfully start session with 16-byte instruction (discriminator + session_index)", () => {
+      // This test verifies the #[instruction] attribute fix
+      // The bug was: #[instruction(bet_amount: u64, session_index: u64)] - expected 24 bytes
+      // The fix is: #[instruction(session_index: u64)] - expects 16 bytes
+      
+      const testSvm = new LiteSVM();
+      
+      // Load program
+      const programPath = path.join(__dirname, "../../target/deploy/dive_game.so");
+      const programBytes = fs.readFileSync(programPath);
+      testSvm.addProgram(PROGRAM_ID, programBytes);
+
+      // Create test accounts
+      const testAuthority = new Keypair();
+      const testPlayer = new Keypair();
+      testSvm.airdrop(testAuthority.publicKey, 100n * BigInt(LAMPORTS_PER_SOL));
+      testSvm.airdrop(testPlayer.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+
+      // Get PDAs
+      const [testConfigPDA] = getConfigPDA();
+      const [testHouseVaultPDA] = getHouseVaultPDA(testAuthority.publicKey);
+      const [testSessionPDA] = getSessionPDA(testPlayer.publicKey, new BN(0));
+
+      // Initialize config with fixed bet
+      const configData = buildInitConfigData({
+        fixedBet: new BN(10_000_000), // 0.01 SOL
+      });
+      const configIx = new TransactionInstruction({
+        keys: [
+          { pubkey: testAuthority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: testConfigPDA, isSigner: false, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: configData,
+      });
+
+      const configTx = new Transaction();
+      configTx.recentBlockhash = testSvm.latestBlockhash();
+      configTx.add(configIx);
+      configTx.sign(testAuthority);
+      const configResult = testSvm.sendTransaction(configTx);
+      
+      if (configResult?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(configResult, "Config initialization");
+      }
+      expect(configResult?.constructor?.name).to.equal("TransactionMetadata");
+
+      // Initialize house vault
+      const vaultData = buildInitHouseVaultData(false);
+      const vaultIx = new TransactionInstruction({
+        keys: [
+          { pubkey: testAuthority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: testHouseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: vaultData,
+      });
+
+      const vaultTx = new Transaction();
+      vaultTx.recentBlockhash = testSvm.latestBlockhash();
+      vaultTx.add(vaultIx);
+      vaultTx.sign(testAuthority);
+      const vaultResult = testSvm.sendTransaction(vaultTx);
+      
+      if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(vaultResult, "Vault initialization");
+      }
+      expect(vaultResult?.constructor?.name).to.equal("TransactionMetadata");
+
+      // Fund vault
+      testSvm.airdrop(testHouseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
+
+      // Build start_session instruction with 16 bytes (discriminator + session_index)
+      const startData = buildStartSessionData(new BN(0));
+      
+      // Verify instruction is exactly 16 bytes BEFORE sending
+      expect(startData.length).to.equal(16, "start_session must be 16 bytes (8 discriminator + 8 session_index)");
+
+      const startIx = new TransactionInstruction({
+        keys: [
+          { pubkey: testPlayer.publicKey, isSigner: true, isWritable: true },
+          { pubkey: testConfigPDA, isSigner: false, isWritable: false },
+          { pubkey: testHouseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: testAuthority.publicKey, isSigner: false, isWritable: false },
+          { pubkey: testSessionPDA, isSigner: false, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: startData,
+      });
+
+      const startTx = new Transaction();
+      startTx.recentBlockhash = testSvm.latestBlockhash();
+      startTx.add(startIx);
+      startTx.sign(testPlayer);
+
+      // This should succeed with the fixed #[instruction] attribute
+      const result = testSvm.sendTransaction(startTx);
+      
+      if (result?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(result, "Start session with 16-byte instruction");
+        throw new Error("start_session failed - check #[instruction] attribute matches function signature");
+      }
+
+      expect(result?.constructor?.name).to.equal("TransactionMetadata", 
+        "start_session should succeed with 16-byte instruction (discriminator + session_index)");
+
+      // Verify session was created with correct bet amount from config
+      const sessionAccount = testSvm.getAccount(testSessionPDA);
+      expect(sessionAccount).to.not.be.null;
+      
+      if (sessionAccount) {
+        const sessionData = parseSessionData(sessionAccount.data);
+        expect(sessionData.status).to.equal("Active");
+        expect(sessionData.betAmount.toString()).to.equal("10000000", "Session should use fixed_bet from config (0.01 SOL)");
+        expect(sessionData.diveNumber).to.equal(1);
+        
+        console.log("      ✓ Session created successfully with 16-byte instruction");
+        console.log("      ✓ Verified: #[instruction(session_index: u64)] matches function signature");
+        console.log(`      ✓ Fixed bet from config: ${sessionData.betAmount.toString()} lamports (0.01 SOL)`);
+      }
+    });
   });
 });
