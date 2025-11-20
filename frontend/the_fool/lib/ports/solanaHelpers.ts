@@ -86,17 +86,24 @@ export function buildInitHouseVaultData(locked: boolean): Buffer {
 
 /**
  * Build start_session instruction data
- * NOTE: session_index is derived from PDA seeds, not passed as instruction data
- * The Rust function signature has _session_index (unused parameter) for PDA derivation only
- * Instruction data is just the discriminator (8 bytes)
+ * Takes session_index (u64) - even though it's unused in the function body (_session_index),
+ * Anchor still requires it in the instruction data for deserialization.
  */
 export function buildStartSessionData(
   sessionIndex: BN | bigint | number
 ): Buffer {
-  // Session index is NOT included in instruction data
-  // It's only used for PDA derivation on the client side
-  // The Rust instruction receives it as a function parameter but doesn't use it
-  return DISCRIMINATORS.START_SESSION;
+  const indexBN =
+    typeof sessionIndex === "number"
+      ? new BN(sessionIndex)
+      : BN.isBN(sessionIndex)
+        ? sessionIndex
+        : new BN(sessionIndex.toString());
+
+  const indexBytes = indexBN.toArrayLike(Buffer, "le", 8);
+
+  // Must include session_index even though Rust function doesn't use it
+  // Anchor requires all function parameters in instruction data
+  return Buffer.concat([DISCRIMINATORS.START_SESSION, indexBytes]);
 }
 
 /**

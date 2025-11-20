@@ -114,15 +114,11 @@ function buildInitHouseVaultData(locked: boolean): Buffer {
 
 function buildStartSessionData(sessionIndex: BN): Buffer {
   const discriminator = Buffer.from([23, 227, 111, 142, 212, 230, 3, 175]);
-  // CRITICAL FIX (Bug from Nov 20, 2025): session_index is NOT included in instruction data!
-  // It's only used for PDA derivation on the client side.
-  // The Rust function has _session_index (unused parameter).
-  // Instruction data is ONLY the discriminator (8 bytes).
-  // 
-  // NOTE: Even with this fix, many tests still fail with error 102 in LiteSVM.
-  // This is a known LiteSVM limitation with Anchor instruction deserialization.
-  // The fix IS correct - verified by Rust tests and working on actual Solana.
-  return discriminator;
+  const indexBytes = sessionIndex.toArrayLike(Buffer, "le", 8);
+  // IMPORTANT: Must include session_index even though Rust function doesn't use it (_session_index)
+  // Anchor requires ALL function parameters in instruction data for deserialization
+  // The _ prefix only suppresses unused variable warnings, doesn't affect serialization
+  return Buffer.concat([discriminator, indexBytes]);
 }
 
 function buildPlayRoundData(): Buffer {
@@ -1722,28 +1718,34 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
   // REGRESSION TESTS - Instruction Serialization
   // ============================================================================
   describe("Regression: Instruction Serialization (Bug Fix Verification)", () => {
-    it("should serialize start_session with ONLY discriminator (8 bytes, not 16)", () => {
-      // This test catches the bug where we were sending 16 bytes (discriminator + session_index)
-      // instead of just 8 bytes (discriminator only).
+    it("should serialize start_session with 16 bytes (discriminator + session_index)", () => {
+      // IMPORTANT: Anchor requires ALL function parameters in instruction data,
+      // even if they're prefixed with _ (unused).
       //
       // The Rust function signature is:
       //   pub fn start_session(ctx: Context<StartSession>, _session_index: u64) -> Result<()>
       //
-      // The underscore prefix means session_index is UNUSED in the function body.
-      // It only exists for PDA derivation, NOT for instruction data.
+      // The _ prefix ONLY suppresses Rust's unused variable warning.
+      // It does NOT tell Anchor to skip the parameter in serialization!
 
       const sessionIndex = new BN(1234567890);
       const data = buildStartSessionData(sessionIndex);
 
-      // CRITICAL: Must be exactly 8 bytes (discriminator only)
-      expect(data.length).to.equal(8, "start_session instruction must be 8 bytes (was sending 16 bytes - the bug!)");
+      // CRITICAL: Must be exactly 16 bytes (discriminator + session_index)
+      expect(data.length).to.equal(16, "start_session instruction must be 16 bytes (discriminator + session_index)");
 
-      // Should match discriminator exactly
+      // First 8 bytes: discriminator
+      const discriminator = data.slice(0, 8);
       const expectedDiscriminator = Buffer.from([23, 227, 111, 142, 212, 230, 3, 175]);
-      expect(data.equals(expectedDiscriminator)).to.be.true;
+      expect(discriminator.equals(expectedDiscriminator)).to.be.true;
 
-      console.log("      ✓ Instruction data is 8 bytes (discriminator only)");
-      console.log("      ✓ Bug fix verified: NOT sending session_index in instruction data");
+      // Next 8 bytes: session_index (little-endian u64)
+      const indexBytes = data.slice(8, 16);
+      const parsedIndex = new BN(indexBytes, 'le');
+      expect(parsedIndex.toNumber()).to.equal(1234567890);
+
+      console.log("      ✓ Instruction data is 16 bytes (discriminator + session_index)");
+      console.log("      ✓ Verified: Anchor requires ALL function parameters in instruction data");
     });
 
     it.skip("should successfully start session with correct instruction serialization - SKIPPED: LiteSVM deserialization limitation", () => {
@@ -1856,22 +1858,22 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       }
     });
 
-    it("should verify all parameterless instructions are 8 bytes", () => {
+    it("should verify instruction serialization sizes are correct", () => {
       // Catch any similar bugs in other instructions
       const instructions = [
-        { name: "start_session", data: buildStartSessionData(new BN(0)) },
-        { name: "play_round", data: buildPlayRoundData() },
-        { name: "cash_out", data: buildCashOutData() },
-        { name: "lose_session", data: buildLoseSessionData() },
-        { name: "clean_expired_session", data: buildCleanExpiredSessionData() },
+        { name: "start_session", data: buildStartSessionData(new BN(0)), expectedSize: 16, reason: "discriminator + session_index" },
+        { name: "play_round", data: buildPlayRoundData(), expectedSize: 8, reason: "discriminator only" },
+        { name: "cash_out", data: buildCashOutData(), expectedSize: 8, reason: "discriminator only" },
+        { name: "lose_session", data: buildLoseSessionData(), expectedSize: 8, reason: "discriminator only" },
+        { name: "clean_expired_session", data: buildCleanExpiredSessionData(), expectedSize: 8, reason: "discriminator only" },
       ];
 
-      instructions.forEach(({ name, data }) => {
+      instructions.forEach(({ name, data, expectedSize, reason }) => {
         expect(data.length).to.equal(
-          8,
-          `${name} instruction must be 8 bytes (discriminator only)`
+          expectedSize,
+          `${name} instruction must be ${expectedSize} bytes (${reason})`
         );
-        console.log(`      ✓ ${name}: ${data.length} bytes (correct)`);
+        console.log(`      ✓ ${name}: ${data.length} bytes (${reason}) - correct`);
       });
     });
   });

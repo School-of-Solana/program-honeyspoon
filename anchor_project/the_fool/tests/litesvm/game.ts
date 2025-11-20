@@ -207,15 +207,11 @@ function buildInitHouseVaultData(locked: boolean): Buffer {
 
 function buildStartSessionData(sessionIndex: BN): Buffer {
   const discriminator = Buffer.from([23, 227, 111, 142, 212, 230, 3, 175]);
-  // CRITICAL FIX (Bug from Nov 20, 2025): session_index is NOT included in instruction data!
-  // It's only used for PDA derivation on the client side.
-  // The Rust function has _session_index (unused parameter).
-  // Instruction data is ONLY the discriminator (8 bytes).
-  //
-  // NOTE: Even with this fix, many tests still fail with error 102 in LiteSVM.
-  // This is a known LiteSVM limitation with Anchor instruction deserialization.
-  // The fix IS correct - verified by Rust tests and working on actual Solana.
-  return discriminator;
+  const indexBytes = sessionIndex.toArrayLike(Buffer, "le", 8);
+  // IMPORTANT: Must include session_index even though Rust function doesn't use it (_session_index)
+  // Anchor requires ALL function parameters in instruction data for deserialization
+  // The _ prefix only suppresses unused variable warnings, doesn't affect serialization
+  return Buffer.concat([discriminator, indexBytes]);
 }
 
 function buildPlayRoundData(): Buffer {
