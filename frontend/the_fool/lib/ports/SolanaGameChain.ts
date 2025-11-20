@@ -431,6 +431,11 @@ export class SolanaGameChain implements GameChainPort {
     const indexBN = new BN(sessionIndex.toString());
     const data = buildStartSessionData(indexBN);
 
+    // DEBUG: Log instruction data
+    console.log("[SolanaGameChain] Instruction data bytes:", Array.from(data));
+    console.log("[SolanaGameChain] Instruction data length:", data.length);
+    console.log("[SolanaGameChain] Session index:", sessionIndex.toString());
+
     // Build instruction
     const instruction = new TransactionInstruction({
       keys: [

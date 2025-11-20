@@ -14,8 +14,8 @@ const idlPath = join(__dirname, '../frontend/the_fool/lib/solana/idl/dive_game.j
 const idl = JSON.parse(readFileSync(idlPath, 'utf-8'));
 
 // Configuration
-const RPC_URL = process.env.RPC_URL || 'http://localhost:8899';
-const PROGRAM_ID = new PublicKey(process.env.PROGRAM_ID || '9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7');
+const RPC_URL = process.env.RPC_URL || 'https://api.devnet.solana.com';
+const PROGRAM_ID = new PublicKey(process.env.PROGRAM_ID || '2hMffkY1dCRo548Kj152LNyPomQAiFhw7dVAsgNbZ7F2');
 
 async function main() {
   console.log('Launch: Initializing game config...\n');
@@ -56,17 +56,16 @@ async function main() {
   // Initialize with default parameters (all None = use contract defaults)
   console.log('Note: Calling init_config...');
   const tx = await program.methods
-    .initConfig(
-      null, // baseSurvivalPpm: use default (700000 = 70%)
-      null, // decayPerDivePpm: use default
-      null, // minSurvivalPpm: use default
-      null, // treasureMultiplierNum: use default
-      null, // treasureMultiplierDen: use default
-      null, // maxPayoutMultiplier: use default (100)
-      null, // maxDives: use default (50)
-      null, // minBet: use default
-      null, // maxBet: use default
-    )
+    .initConfig({
+      baseSurvivalPpm: null, // use default (700000 = 70%)
+      decayPerDivePpm: null, // use default
+      minSurvivalPpm: null, // use default
+      treasureMultiplierNum: null, // use default
+      treasureMultiplierDen: null, // use default
+      maxPayoutMultiplier: null, // use default (100)
+      maxDives: null, // use default (5)
+      fixedBet: null, // use default (0.01 SOL)
+    })
     .accounts({
       admin: admin.publicKey,
       config: configPda,
@@ -85,8 +84,7 @@ async function main() {
   console.log(`  Treasure Multiplier: ${config.treasureMultiplierNum}/${config.treasureMultiplierDen}`);
   console.log(`  Max Payout Multiplier: ${config.maxPayoutMultiplier}x`);
   console.log(`  Max Dives: ${config.maxDives}`);
-  console.log(`  Min Bet: ${config.minBet.toString()} lamports`);
-  console.log(`  Max Bet: ${config.maxBet.toString()} lamports`);
+  console.log(`  Fixed Bet: ${config.fixedBet.toString()} lamports (${Number(config.fixedBet) / 1e9} SOL)`);
 }
 
 main()

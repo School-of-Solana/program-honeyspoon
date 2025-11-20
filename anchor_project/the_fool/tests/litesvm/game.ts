@@ -2036,7 +2036,6 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = lamports(TEST_AMOUNTS.SMALL);
       const data = buildStartSessionData(new BN(0));
 
       const instruction = new TransactionInstruction({
@@ -2060,14 +2059,27 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       tx.recentBlockhash = svm.latestBlockhash();
       tx.add(instruction);
       tx.sign(player);
-      svm.sendTransaction(tx);
+      const result = svm.sendTransaction(tx);
+      
+      // Check if transaction failed
+      if (result?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(result, "Start session for reserved funds test");
+        throw new Error("Transaction failed - see logs above");
+      }
+
+      // Read config to get the actual fixed_bet value
+      const configAccount = svm.getAccount(configPDA);
+      expect(configAccount).to.not.be.null;
+      if (!configAccount) return;
+      const configData = parseConfigData(configAccount.data);
+      const fixedBet = configData.fixedBet;
 
       const vaultAccount = svm.getAccount(houseVaultPDA);
       expect(vaultAccount).to.not.be.null;
       if (!vaultAccount) return;
       const vaultData = parseHouseVaultData(vaultAccount.data);
 
-      const expectedReserved = betAmount.muln(100);
+      const expectedReserved = fixedBet.muln(configData.maxPayoutMultiplier);
       expect(vaultData.totalReserved.toString()).to.equal(
         expectedReserved.toString()
       );
@@ -2076,7 +2088,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     it("should accumulate reserved funds for multiple sessions", () => {
       const players = [new Keypair(), new Keypair(), new Keypair()];
 
-      const betAmount = lamports(TEST_AMOUNTS.SMALL);
+      // Read config to get the actual fixed_bet value
+      const configAccount = svm.getAccount(configPDA);
+      expect(configAccount).to.not.be.null;
+      if (!configAccount) return;
+      const configData = parseConfigData(configAccount.data);
+      const fixedBet = configData.fixedBet;
+      const expectedReservedPerSession = fixedBet.muln(configData.maxPayoutMultiplier);
+
       let totalExpectedReserved = new BN(0);
 
       for (let i = 0; i < players.length; i++) {
@@ -2109,7 +2128,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         tx.sign(player);
         svm.sendTransaction(tx);
 
-        totalExpectedReserved = totalExpectedReserved.add(betAmount.muln(100));
+        totalExpectedReserved = totalExpectedReserved.add(expectedReservedPerSession);
       }
 
       const vaultAccount = svm.getAccount(houseVaultPDA);
@@ -2278,7 +2297,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 50n * BigInt(LAMPORTS_PER_SOL));
 
       const sessionIndices = [0, 1, 2];
-      const betAmount = lamports(TEST_AMOUNTS.TINY);
+
+      // Read config to get the actual fixed_bet value
+      const configAccount = svm.getAccount(configPDA);
+      expect(configAccount).to.not.be.null;
+      if (!configAccount) return;
+      const configData = parseConfigData(configAccount.data);
+      const fixedBet = configData.fixedBet;
+      const expectedReservedPerSession = fixedBet.muln(configData.maxPayoutMultiplier);
 
       for (const index of sessionIndices) {
         const [sessionPDA] = getSessionPDA(player.publicKey, new BN(index));
@@ -2327,7 +2353,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       const vaultAccount = svm.getAccount(houseVaultPDA);
       if (vaultAccount) {
         const vaultData = parseHouseVaultData(vaultAccount.data);
-        const expectedReserved = betAmount.muln(100).muln(3);
+        const expectedReserved = expectedReservedPerSession.muln(3);
         expect(vaultData.totalReserved.toString()).to.equal(
           expectedReserved.toString()
         );
@@ -2431,7 +2457,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(playerA.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
       svm.airdrop(playerB.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      const betA = lamports(0.3);
+      // Read config to get the actual fixed_bet value
+      const configAccount = svm.getAccount(configPDA);
+      expect(configAccount).to.not.be.null;
+      if (!configAccount) return;
+      const configData = parseConfigData(configAccount.data);
+      const fixedBet = configData.fixedBet;
+      const expectedReservedPerSession = fixedBet.muln(configData.maxPayoutMultiplier);
+
       const [sessionA] = getSessionPDA(playerA.publicKey, new BN(0));
       const startAData = buildStartSessionData(new BN(0));
       const startAIx = new TransactionInstruction({
@@ -2457,7 +2490,6 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       txA.sign(playerA);
       svm.sendTransaction(txA);
 
-      const betB = lamports(0.2);
       const [sessionB] = getSessionPDA(playerB.publicKey, new BN(0));
       const startBData = buildStartSessionData(new BN(0));
       const startBIx = new TransactionInstruction({
@@ -2485,7 +2517,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       let vaultAccount = svm.getAccount(houseVaultPDA);
       let vaultData = parseHouseVaultData(vaultAccount!.data);
-      const expectedInitialReserved = betA.muln(100).add(betB.muln(100));
+      const expectedInitialReserved = expectedReservedPerSession.muln(2);
       expect(vaultData.totalReserved.toString()).to.equal(
         expectedInitialReserved.toString()
       );
@@ -2509,9 +2541,8 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       vaultAccount = svm.getAccount(houseVaultPDA);
       vaultData = parseHouseVaultData(vaultAccount!.data);
-      const expectedAfterA = betB.muln(100);
       expect(vaultData.totalReserved.toString()).to.equal(
-        expectedAfterA.toString()
+        expectedReservedPerSession.toString()
       );
 
       const loseBData = buildLoseSessionData();
@@ -3694,7 +3725,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       expectTxFailedWith(result, "InvalidConfig");
     });
 
-    it("should reject config where min_bet > max_bet (when max_bet > 0)", () => {
+    it.skip("should reject config where min_bet > max_bet (when max_bet > 0) - OBSOLETE: min/max bet validation removed", () => {
       const data = buildInitConfigData({
         fixedBet: new BN(500_000_000),
       });
@@ -4025,7 +4056,6 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     });
 
     it("should release reserved funds on lose_session", () => {
-      const betAmount = lamports(0.3);
       const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
@@ -4673,8 +4703,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(playerA.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
       svm.airdrop(playerB.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      const betA = lamports(0.3);
-      const maxPayoutA = betA.muln(100);
+      // Read config to get the actual fixed_bet value
+      const configAccount = svm.getAccount(configPDA);
+      expect(configAccount).to.not.be.null;
+      if (!configAccount) return;
+      const configData = parseConfigData(configAccount.data);
+      const fixedBet = configData.fixedBet;
+      const maxPayoutPerSession = fixedBet.muln(configData.maxPayoutMultiplier);
+
       const [sessionA] = getSessionPDA(playerA.publicKey, new BN(0));
 
       const startAData = buildStartSessionData(new BN(0));
@@ -4701,8 +4737,6 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       txA.sign(playerA);
       svm.sendTransaction(txA);
 
-      const betB = lamports(0.2);
-      const maxPayoutB = betB.muln(100);
       const [sessionB] = getSessionPDA(playerB.publicKey, new BN(0));
 
       const startBData = buildStartSessionData(new BN(0));
@@ -4734,7 +4768,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       let vaultData;
       if (vaultAccount1 && vaultAccount1.data.length > 0) {
         vaultData = parseHouseVaultData(vaultAccount1.data);
-        const expectedTotal = maxPayoutA.add(maxPayoutB);
+        const expectedTotal = maxPayoutPerSession.muln(2);
         expect(vaultData.totalReserved.toString()).to.equal(
           expectedTotal.toString(),
           "Initial total_reserved should be sum of both max_payouts"
@@ -4763,7 +4797,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       if (vaultAccount2) {
         vaultData = parseHouseVaultData(vaultAccount2.data);
         expect(vaultData.totalReserved.toString()).to.equal(
-          maxPayoutB.toString(),
+          maxPayoutPerSession.toString(),
           "After Player A loses, total_reserved should be only Player B's max_payout"
         );
       }
@@ -4805,8 +4839,14 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = lamports(0.3);
-      const maxPayout = betAmount.muln(100);
+
+      // Read config to get the actual fixed_bet value
+      const configAccount = svm.getAccount(configPDA);
+      expect(configAccount).to.not.be.null;
+      if (!configAccount) return;
+      const configData = parseConfigData(configAccount.data);
+      const fixedBet = configData.fixedBet;
+      const maxPayout = fixedBet.muln(configData.maxPayoutMultiplier);
 
       const initialPlayerBalance = svm.getBalance(player.publicKey);
       const initialVaultBalance = svm.getBalance(houseVaultPDA);
@@ -4879,7 +4919,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         }
       }
 
-      if (!treasureAmount || !treasureAmount.gt(betAmount)) {
+      if (!treasureAmount || !treasureAmount.gt(fixedBet)) {
         return;
       }
 
@@ -4918,7 +4958,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
 
       const vaultDiff = Number(initialVaultBalance - finalVaultBalance);
       const treasureNum = Number(treasureAmount);
-      const betNum = Number(betAmount);
+      const betNum = Number(fixedBet);
       const expectedVaultDecrease = treasureNum - betNum;
       expect(vaultDiff).to.be.closeTo(
         expectedVaultDecrease,

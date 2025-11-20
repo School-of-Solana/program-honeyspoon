@@ -331,11 +331,11 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
     [houseVaultPDA] = getHouseVaultPDA(authority.publicKey);
   });
 
-  describe("Bet Amount Validation Tests", () => {
+  describe("Fixed Bet System Tests", () => {
     beforeEach(() => {
-      // Initialize config with fixed bet (0.01 SOL)
+      // Initialize config with fixed bet (0.1 SOL)
       const configData = buildInitConfigData({
-        fixedBet: new BN(10_000_000), // 0.01 SOL
+        fixedBet: new BN(100_000_000), // 0.1 SOL
       });
       const configIx = new TransactionInstruction({
         keys: [
@@ -355,7 +355,13 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       configTx.recentBlockhash = svm.latestBlockhash();
       configTx.add(configIx);
       configTx.sign(authority);
-      svm.sendTransaction(configTx);
+      const configResult = svm.sendTransaction(configTx);
+
+      // Check if config initialization failed
+      if (configResult?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(configResult, "Config initialization");
+        throw new Error("Config initialization failed - see logs above");
+      }
 
       // Initialize house vault
       const vaultData = buildInitHouseVaultData(false);
@@ -408,46 +414,11 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       }
     });
 
-    it("should reject bet below minimum (0.09 SOL)", () => {
+    it("should create session with configured fixed bet (0.1 SOL)", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = new BN(90_000_000); // 0.09 SOL (below min)
-      const data = buildStartSessionData(new BN(0));
-
-      const instruction = new TransactionInstruction({
-        keys: [
-          { pubkey: player.publicKey, isSigner: true, isWritable: true },
-          { pubkey: configPDA, isSigner: false, isWritable: false },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
-          { pubkey: sessionPDA, isSigner: false, isWritable: true },
-          {
-            pubkey: SystemProgram.programId,
-            isSigner: false,
-            isWritable: false,
-          },
-        ],
-        programId: PROGRAM_ID,
-        data,
-      });
-
-      const tx = new Transaction();
-      tx.recentBlockhash = svm.latestBlockhash();
-      tx.add(instruction);
-      tx.sign(player);
-
-      const result = svm.sendTransaction(tx);
-      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
-    });
-
-    it("should accept bet at exact minimum (0.1 SOL)", () => {
-      const player = new Keypair();
-      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
-
-      const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = new BN(100_000_000); // Exactly 0.1 SOL
       const data = buildStartSessionData(new BN(0));
 
       const instruction = new TransactionInstruction({
@@ -474,20 +445,49 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       const result = svm.sendTransaction(tx);
       if (result?.constructor?.name === "FailedTransactionMetadata") {
-        logTransactionFailure(
-          result,
-          "Start session with minimum bet (0.1 SOL)"
-        );
+        logTransactionFailure(result, "Start session with fixed bet");
       }
       expect(result?.constructor?.name).to.equal("TransactionMetadata");
+
+      // Verify session.bet_amount matches config.fixed_bet
+      const sessionAccount = svm.getAccount(sessionPDA);
+      expect(sessionAccount).to.not.be.null;
+      if (!sessionAccount) return;
+
+      const sessionData = parseSessionData(sessionAccount.data);
+      const expectedBet = new BN(100_000_000); // 0.1 SOL
+      expect(sessionData.betAmount.toString()).to.equal(
+        expectedBet.toString(),
+        "Session bet_amount should match config fixed_bet"
+      );
     });
 
-    it("should accept bet at exact maximum (0.5 SOL)", () => {
+    it("should allow different fixed bet amounts in different configs", () => {
+      // Create a different config with different fixed bet
+      const differentAuthority = new Keypair();
+      svm.airdrop(differentAuthority.publicKey, 100n * BigInt(LAMPORTS_PER_SOL));
+
+      // This test demonstrates that if we had multiple game configs,
+      // each could have its own fixed_bet value. Since we only have one
+      // config PDA per program, we'll verify by reading the existing config
+      // and confirming it has the fixed_bet we set in beforeEach.
+
+      const configAccount = svm.getAccount(configPDA);
+      expect(configAccount).to.not.be.null;
+      if (!configAccount) return;
+
+      const configData = parseConfigData(configAccount.data);
+      const expectedFixedBet = new BN(100_000_000); // 0.1 SOL from beforeEach
+      expect(configData.fixedBet.toString()).to.equal(
+        expectedFixedBet.toString(),
+        "Config should store the fixed_bet value"
+      );
+
+      // Now create a session and verify it uses this fixed bet
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = new BN(500_000_000); // Exactly 0.5 SOL
       const data = buildStartSessionData(new BN(0));
 
       const instruction = new TransactionInstruction({
@@ -514,108 +514,66 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       const result = svm.sendTransaction(tx);
       expect(result?.constructor?.name).to.equal("TransactionMetadata");
+
+      // Verify session uses the config's fixed bet
+      const sessionAccount = svm.getAccount(sessionPDA);
+      expect(sessionAccount).to.not.be.null;
+      if (!sessionAccount) return;
+
+      const sessionData = parseSessionData(sessionAccount.data);
+      expect(sessionData.betAmount.toString()).to.equal(
+        configData.fixedBet.toString(),
+        "Session bet_amount should match config fixed_bet"
+      );
     });
 
-    it("should reject bet above maximum (0.51 SOL)", () => {
+    it("should use fixed bet consistently across multiple sessions", () => {
       const player = new Keypair();
-      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+      svm.airdrop(player.publicKey, 50n * BigInt(LAMPORTS_PER_SOL));
 
-      const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = new BN(510_000_000); // 0.51 SOL (above max)
-      const data = buildStartSessionData(new BN(0));
+      const expectedFixedBet = new BN(100_000_000); // 0.1 SOL
 
-      const instruction = new TransactionInstruction({
-        keys: [
-          { pubkey: player.publicKey, isSigner: true, isWritable: true },
-          { pubkey: configPDA, isSigner: false, isWritable: false },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
-          { pubkey: sessionPDA, isSigner: false, isWritable: true },
-          {
-            pubkey: SystemProgram.programId,
-            isSigner: false,
-            isWritable: false,
-          },
-        ],
-        programId: PROGRAM_ID,
-        data,
-      });
+      // Create three sessions for the same player
+      for (let i = 0; i < 3; i++) {
+        const [sessionPDA] = getSessionPDA(player.publicKey, new BN(i));
+        const data = buildStartSessionData(new BN(i));
 
-      const tx = new Transaction();
-      tx.recentBlockhash = svm.latestBlockhash();
-      tx.add(instruction);
-      tx.sign(player);
+        const instruction = new TransactionInstruction({
+          keys: [
+            { pubkey: player.publicKey, isSigner: true, isWritable: true },
+            { pubkey: configPDA, isSigner: false, isWritable: false },
+            { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+            { pubkey: authority.publicKey, isSigner: false, isWritable: false },
+            { pubkey: sessionPDA, isSigner: false, isWritable: true },
+            {
+              pubkey: SystemProgram.programId,
+              isSigner: false,
+              isWritable: false,
+            },
+          ],
+          programId: PROGRAM_ID,
+          data,
+        });
 
-      const result = svm.sendTransaction(tx);
-      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
-    });
+        const tx = new Transaction();
+        tx.recentBlockhash = svm.latestBlockhash();
+        tx.add(instruction);
+        tx.sign(player);
 
-    it("should reject bet just below minimum (min - 1 lamport)", () => {
-      const player = new Keypair();
-      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+        const result = svm.sendTransaction(tx);
+        expect(result?.constructor?.name).to.equal("TransactionMetadata");
 
-      const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = new BN(99_999_999); // min_bet - 1
-      const data = buildStartSessionData(new BN(0));
+        // Verify each session uses the same fixed bet
+        const sessionAccount = svm.getAccount(sessionPDA);
+        expect(sessionAccount).to.not.be.null;
+        if (!sessionAccount) return;
 
-      const instruction = new TransactionInstruction({
-        keys: [
-          { pubkey: player.publicKey, isSigner: true, isWritable: true },
-          { pubkey: configPDA, isSigner: false, isWritable: false },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
-          { pubkey: sessionPDA, isSigner: false, isWritable: true },
-          {
-            pubkey: SystemProgram.programId,
-            isSigner: false,
-            isWritable: false,
-          },
-        ],
-        programId: PROGRAM_ID,
-        data,
-      });
-
-      const tx = new Transaction();
-      tx.recentBlockhash = svm.latestBlockhash();
-      tx.add(instruction);
-      tx.sign(player);
-
-      const result = svm.sendTransaction(tx);
-      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
-    });
-
-    it("should reject bet just above maximum (max + 1 lamport)", () => {
-      const player = new Keypair();
-      svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
-
-      const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
-      const betAmount = new BN(500_000_001); // max_bet + 1
-      const data = buildStartSessionData(new BN(0));
-
-      const instruction = new TransactionInstruction({
-        keys: [
-          { pubkey: player.publicKey, isSigner: true, isWritable: true },
-          { pubkey: configPDA, isSigner: false, isWritable: false },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
-          { pubkey: sessionPDA, isSigner: false, isWritable: true },
-          {
-            pubkey: SystemProgram.programId,
-            isSigner: false,
-            isWritable: false,
-          },
-        ],
-        programId: PROGRAM_ID,
-        data,
-      });
-
-      const tx = new Transaction();
-      tx.recentBlockhash = svm.latestBlockhash();
-      tx.add(instruction);
-      tx.sign(player);
-
-      const result = svm.sendTransaction(tx);
-      expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
+        const sessionData = parseSessionData(sessionAccount.data);
+        expect(sessionData.betAmount.toString()).to.equal(
+          expectedFixedBet.toString(),
+          `Session ${i} should use fixed_bet of 0.1 SOL`
+        );
+      }
     });
   });
 
@@ -641,7 +599,13 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       configTx.recentBlockhash = svm.latestBlockhash();
       configTx.add(configIx);
       configTx.sign(authority);
-      svm.sendTransaction(configTx);
+      const configResult = svm.sendTransaction(configTx);
+
+      // Check if config initialization failed
+      if (configResult?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(configResult, "Config initialization");
+        throw new Error("Config initialization failed - see logs above");
+      }
 
       // Initialize house vault
       const vaultData = buildInitHouseVaultData(false);
@@ -934,7 +898,13 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       configTx.recentBlockhash = svm.latestBlockhash();
       configTx.add(configIx);
       configTx.sign(authority);
-      svm.sendTransaction(configTx);
+      const configResult = svm.sendTransaction(configTx);
+
+      // Check if config initialization failed
+      if (configResult?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(configResult, "Config initialization");
+        throw new Error("Config initialization failed - see logs above");
+      }
 
       // Initialize house vault
       const vaultData = buildInitHouseVaultData(false);
@@ -1321,7 +1291,13 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       configTx.recentBlockhash = svm.latestBlockhash();
       configTx.add(configIx);
       configTx.sign(authority);
-      svm.sendTransaction(configTx);
+      const configResult = svm.sendTransaction(configTx);
+
+      // Check if config initialization failed
+      if (configResult?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(configResult, "Config initialization");
+        throw new Error("Config initialization failed - see logs above");
+      }
 
       // Initialize house vault
       const vaultData = buildInitHouseVaultData(false);
@@ -1572,7 +1548,13 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       configTx.recentBlockhash = svm.latestBlockhash();
       configTx.add(configIx);
       configTx.sign(authority);
-      svm.sendTransaction(configTx);
+      const configResult = svm.sendTransaction(configTx);
+
+      // Check if config initialization failed
+      if (configResult?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(configResult, "Config initialization");
+        throw new Error("Config initialization failed - see logs above");
+      }
 
       // Initialize house vault
       const vaultData = buildInitHouseVaultData(false);
