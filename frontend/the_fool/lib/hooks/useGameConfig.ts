@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getGameChain } from "@/lib/ports";
 import type { GameConfigState } from "@/lib/ports/GameChainPort";
 
@@ -7,57 +7,35 @@ import type { GameConfigState } from "@/lib/ports/GameChainPort";
  *
  * This replaces hardcoded constants with values from the on-chain GameConfig account.
  * Updates automatically when config changes.
+ * 
+ * Uses TanStack Query for automatic caching, refetching, and loading states.
  */
 export function useGameConfig() {
-  const [config, setConfig] = useState<GameConfigState | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: config, isLoading: loading, error } = useQuery({
+    queryKey: ["gameConfig"],
+    queryFn: async () => {
+      const chain = getGameChain();
+      const gameConfig = await chain.getGameConfig();
 
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchConfig = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const chain = getGameChain();
-        const gameConfig = await chain.getGameConfig();
-
-        if (!mounted) return;
-
-        if (gameConfig) {
-          console.log("[useGameConfig] Loaded config from blockchain:", {
-            minBet: `${Number(gameConfig.minBet) / 1_000_000_000} SOL`,
-            maxBet: `${Number(gameConfig.maxBet) / 1_000_000_000} SOL`,
-            baseSurvivalPpm: gameConfig.baseSurvivalPpm,
-            maxDives: gameConfig.maxDives,
-          });
-          setConfig(gameConfig);
-        } else {
-          setError("Game config not found on chain");
-        }
-      } catch (err) {
-        if (!mounted) return;
-        console.error("[useGameConfig] Failed to fetch config:", err);
-        setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+      if (gameConfig) {
+        console.log("[useGameConfig] Loaded config from blockchain:", {
+          minBet: `${Number(gameConfig.minBet) / 1_000_000_000} SOL`,
+          maxBet: `${Number(gameConfig.maxBet) / 1_000_000_000} SOL`,
+          baseSurvivalPpm: gameConfig.baseSurvivalPpm,
+          maxDives: gameConfig.maxDives,
+        });
+        return gameConfig;
       }
-    };
 
-    fetchConfig();
-
+      throw new Error("Game config not found on chain");
+    },
     // Refresh config every 30 seconds (in case admin updates it)
-    const interval = setInterval(fetchConfig, 30_000);
-
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
-  }, []);
+    refetchInterval: 30_000,
+    // Keep data in cache for 5 minutes
+    gcTime: 5 * 60 * 1000,
+    // Config rarely changes, can be stale for a minute
+    staleTime: 60_000,
+  });
 
   // Convert to friendly format matching GAME_CONFIG interface
   const friendlyConfig = config
@@ -93,7 +71,7 @@ export function useGameConfig() {
     config: friendlyConfig,
     rawConfig: config,
     loading,
-    error,
+    error: error ? (error instanceof Error ? error.message : "Unknown error") : null,
   };
 }
 

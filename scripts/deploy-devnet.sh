@@ -152,10 +152,10 @@ vercel env rm NEXT_PUBLIC_PROGRAM_ID production --yes 2>/dev/null || true
 vercel env rm NEXT_PUBLIC_HOUSE_AUTHORITY production --yes 2>/dev/null || true
 vercel env rm NEXT_PUBLIC_RPC_URL production --yes 2>/dev/null || true
 
-# Add new variables (use echo -n to prevent trailing newlines)
-echo -n "$PROGRAM_ID" | vercel env add NEXT_PUBLIC_PROGRAM_ID production
-echo -n "$WALLET_ADDRESS" | vercel env add NEXT_PUBLIC_HOUSE_AUTHORITY production
-echo -n "$RPC_URL" | vercel env add NEXT_PUBLIC_RPC_URL production
+# Add new variables (use printf to prevent any extra characters)
+printf '%s' "$PROGRAM_ID" | vercel env add NEXT_PUBLIC_PROGRAM_ID production
+printf '%s' "$WALLET_ADDRESS" | vercel env add NEXT_PUBLIC_HOUSE_AUTHORITY production
+printf '%s' "$RPC_URL" | vercel env add NEXT_PUBLIC_RPC_URL production
 
 echo -e "${GREEN}✓ Vercel environment updated${NC}"
 

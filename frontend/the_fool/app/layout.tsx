@@ -3,6 +3,7 @@ import { Press_Start_2P } from "next/font/google";
 import "./globals.css";
 import "nes.css/css/nes.min.css";
 import { WalletProvider } from "@/components/WalletProvider";
+import { QueryProvider } from "@/components/QueryProvider";
 import { SolanaStatusBanner } from "@/components/SolanaStatusBanner";
 
 const pressStart2P = Press_Start_2P({
@@ -35,10 +36,12 @@ export default function RootLayout({
         className={`${pressStart2P.variable} antialiased`}
         style={{ fontFamily: "var(--font-nes), monospace" }}
       >
-        <WalletProvider>
-          <SolanaStatusBanner />
-          {children}
-        </WalletProvider>
+        <QueryProvider>
+          <WalletProvider>
+            <SolanaStatusBanner />
+            {children}
+          </WalletProvider>
+        </QueryProvider>
       </body>
     </html>
   );
