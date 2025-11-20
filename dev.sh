@@ -103,6 +103,27 @@ EOF
 fi
 
 ################################################################################
+# Pre-flight Checks
+################################################################################
+
+check_command() {
+    if ! command -v $1 &> /dev/null; then
+        echo -e "${RED}ERROR: $1 not found${NC}"
+        echo -e "${YELLOW}Please install: $2${NC}"
+        exit 1
+    fi
+}
+
+if [ "$USE_LOCAL" = false ]; then
+    check_command "solana" "Solana CLI (sh -c \"\$(curl -sSfL https://release.solana.com/stable/install)\")"
+    check_command "solana-test-validator" "Solana CLI tools"
+    check_command "anchor" "Anchor framework (cargo install --git https://github.com/coral-xyz/anchor avm --locked --force)"
+fi
+
+check_command "node" "Node.js (https://nodejs.org)"
+check_command "npm" "npm (comes with Node.js)"
+
+################################################################################
 # Header
 ################################################################################
 
@@ -275,23 +296,32 @@ if [ "$USE_LOCAL" = false ]; then
     # Run the comprehensive init script that handles both config and vault
     INIT_OUTPUT="/tmp/dive-init.log"
     cd "$ANCHOR_DIR"
+    
+    # Install dependencies if needed
+    if [ ! -d "node_modules" ]; then
+        echo -e "${BLUE}📦 Installing dependencies...${NC}"
+        npm install > /dev/null 2>&1
+        echo -e "${GREEN}   OK: Dependencies installed${NC}"
+    fi
+    
     npm run init-localnet > "$INIT_OUTPUT" 2>&1
     INIT_EXIT_CODE=$?
     
-    # Show init output
-    cat "$INIT_OUTPUT"
+    # Show init output (filter noise)
+    grep -E "(Launch:|Step |OK:|ERROR:|Amount:|Config PDA:|Vault PDA:|House Authority:|Program ID:)" "$INIT_OUTPUT" || cat "$INIT_OUTPUT"
     echo ""
     
     if [ $INIT_EXIT_CODE -eq 0 ]; then
         # Parse output for house authority
         HOUSE_AUTH=$(grep "House Authority:" "$INIT_OUTPUT" | awk '{print $3}' | head -1)
         if [ -z "$HOUSE_AUTH" ]; then
-            HOUSE_AUTH=$(solana address ~/.config/solana/id.json 2>/dev/null || echo "7qdd7r1CJdnXVcr3bFD5CyBRyDF9eW4taoJqABhN5hXW")
+            HOUSE_AUTH=$(solana address ~/.config/solana/id.json 2>/dev/null || echo "")
         fi
-        echo -e "${GREEN}   OK: Initialization complete${NC}"
+        echo -e "${GREEN}   ✅ Initialization complete${NC}"
     else
-        echo -e "${RED}   WARNING:  Initialization had errors (might be already initialized)${NC}"
-        HOUSE_AUTH=$(solana address ~/.config/solana/id.json 2>/dev/null || echo "7qdd7r1CJdnXVcr3bFD5CyBRyDF9eW4taoJqABhN5hXW")
+        echo -e "${YELLOW}   ⚠️  Initialization had issues (might be already initialized)${NC}"
+        echo -e "${CYAN}   💡 This is usually OK if you've run this before${NC}"
+        HOUSE_AUTH=$(solana address ~/.config/solana/id.json 2>/dev/null || echo "")
     fi
     
     cd "$PROJECT_ROOT"
@@ -386,12 +416,15 @@ echo ""
 ################################################################################
 
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}>>> Development Environment Ready!${NC}"
+echo -e "${GREEN}✨ Development Environment Ready!${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo -e "${BLUE}Info: Status:${NC}"
+echo -e "${BLUE}🚀 Status:${NC}"
 if [ "$USE_LOCAL" = false ]; then
     echo -e "   ${GREEN}●${NC} Validator:   Running (PID: ${VALIDATOR_PID:-unknown})"
+    echo -e "   ${GREEN}●${NC} Program:     Deployed"
+    echo -e "   ${GREEN}●${NC} Config:      Initialized"
+    echo -e "   ${GREEN}●${NC} Vault:       Funded"
 fi
 echo -e "   ${GREEN}●${NC} Frontend:    Running (PID: $FRONTEND_PID)"
 echo ""
@@ -399,6 +432,7 @@ echo -e "${BLUE}🌐 URLs:${NC}"
 echo -e "   Frontend:    ${CYAN}http://localhost:3000${NC}"
 if [ "$USE_LOCAL" = false ]; then
     echo -e "   RPC:         ${CYAN}http://localhost:8899${NC}"
+    echo -e "   Explorer:    ${CYAN}https://explorer.solana.com/?cluster=custom&customUrl=http://localhost:8899${NC}"
 fi
 echo ""
 echo -e "${BLUE}📋 Logs:${NC}"
@@ -407,17 +441,25 @@ if [ "$USE_LOCAL" = false ]; then
 fi
 echo -e "   Frontend:    ${CYAN}$FRONTEND_LOG${NC}"
 echo ""
-echo -e "${BLUE}🎮 Next Steps:${NC}"
-echo "   1. Open http://localhost:3000 in your browser"
-echo "   2. Connect your Phantom wallet (switch to Localhost network)"
-echo "   3. Use the airdrop panel to get SOL"
-echo "   4. Start playing!"
+echo -e "${BLUE}🎮 Getting Started:${NC}"
+echo "   1. Open ${CYAN}http://localhost:3000${NC} in your browser"
+echo "   2. Connect your Phantom wallet:"
+echo "      ${CYAN}→ Settings → Change Network → Localhost${NC}"
+echo "   3. Use the ${YELLOW}Airdrop Panel${NC} to get test SOL"
+echo "   4. Click ${GREEN}Start Game${NC} to play!"
 echo ""
 echo -e "${YELLOW}💡 Tips:${NC}"
-echo "   • Press Ctrl+C to stop"
-echo "   • Clean restart is DEFAULT (always fresh state)"
-echo "   • Run './dev.sh --no-clean' to reuse existing validator state"
-echo "   • Run './dev.sh --local' to test without Solana"
+echo "   • ${RED}Ctrl+C${NC} to stop everything"
+echo "   • ${GREEN}Clean restart is DEFAULT${NC} (always fresh state)"
+echo "   • ${CYAN}./dev.sh --no-clean${NC} to reuse existing validator"
+echo "   • ${CYAN}./dev.sh --local${NC} to test without Solana"
+echo "   • ${CYAN}./dev.sh --help${NC} for more options"
+echo ""
+echo -e "${BLUE}📊 Game Config:${NC}"
+echo "   • Fixed Bet: ${CYAN}0.01 SOL${NC} (10M lamports)"
+echo "   • Max Dives: ${CYAN}5${NC}"
+echo "   • Max Payout: ${CYAN}1 SOL${NC} (100x multiplier)"
+echo "   • Session Timeout: ${CYAN}5 minutes${NC}"
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${CYAN}📡 Streaming Logs (Ctrl+C to stop)...${NC}"

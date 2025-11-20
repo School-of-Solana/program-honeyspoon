@@ -4,12 +4,6 @@
   "description": "Deep Sea Diver game on Solana blockchain",
   "private": true,
   "scripts": {
-    "dev": "./start-dev.sh",
-    "dev:local": "./start-dev.sh --local",
-    "dev:clean": "./start-dev.sh --clean",
-    "dev:full": "./dev-full.sh",
-    "dev:frontend": "cd frontend/the_fool && npm run dev",
-    "dev:validator": "cd anchor_project/the_fool && npm run localnet",
     "build:contract": "cd anchor_project/the_fool && anchor build",
     "deploy:localnet": "cd anchor_project/the_fool && anchor deploy",
     "init:localnet": "cd anchor_project/the_fool && npm run init-localnet",
