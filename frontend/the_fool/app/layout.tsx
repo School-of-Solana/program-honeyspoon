@@ -4,6 +4,7 @@ import "./globals.css";
 import "nes.css/css/nes.min.css";
 import { WalletProvider } from "@/components/WalletProvider";
 import { QueryProvider } from "@/components/QueryProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 import { SolanaStatusBanner } from "@/components/SolanaStatusBanner";
 
 const pressStart2P = Press_Start_2P({
@@ -38,6 +39,7 @@ export default function RootLayout({
       >
         <QueryProvider>
           <WalletProvider>
+            <ToastProvider />
             <SolanaStatusBanner />
             {children}
           </WalletProvider>

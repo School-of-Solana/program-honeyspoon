@@ -20,6 +20,7 @@ import type { GameState, DiveStats } from "@/lib/types";
 import { GAME_CONFIG } from "@/lib/constants";
 import { GAME_COLORS } from "@/lib/gameColors";
 import { useGameConfig } from "@/lib/hooks/useGameConfig";
+import { useWalletBalance } from "@/lib/hooks/useGameQueries";
 import { useWalletOrUserId } from "@/lib/hooks/useWalletOrUserId";
 import { useWalletSSE } from "@/lib/hooks/useWalletSSE";
 import { useGameChain } from "@/lib/hooks/useGameChain";
@@ -63,7 +64,14 @@ export default function Home() {
   // Use Zustand store for userId and wallet balance
   const userIdFromStore = useChainWalletStore((state) => state.userId);
   const setUserId = useChainWalletStore((state) => state.setUserId);
-  const userBalance = useChainWalletStore((state) => state.userBalance);
+  const userBalanceFromStore = useChainWalletStore((state) => state.userBalance);
+  
+  // Use TanStack Query for wallet balance (with auto-refetch every 5s)
+  const { data: walletData, isLoading: isLoadingWallet } = useWalletBalance(userIdFromStore);
+  
+  // Prefer TanStack Query balance over Zustand (more reliable and auto-refetches)
+  // walletData comes from walletActions.getWalletInfo which returns userBalance
+  const userBalance = walletData?.userBalance ?? userBalanceFromStore;
   const refreshBalance = useChainWalletStore((state) => state.refreshBalance);
   const isLoading = useChainWalletStore((state) => state.isLoading);
   const updateFromSSE = useChainWalletStore((state) => state.updateFromSSE);
@@ -302,16 +310,15 @@ export default function Home() {
   const handleStartGame = async () => {
     console.log("[GAME] 🎮 handleStartGame called", {
       betAmount,
-      gameStateBalance: gameState.walletBalance,
-      zustandBalance: userBalance,
-      canStart: betAmount <= (gameState.walletBalance || 0),
+      userBalance,
+      canStart: betAmount <= userBalance,
     });
 
     // Check if user has enough balance for fixed bet
-    if (betAmount > (gameState.walletBalance || 0)) {
+    if (betAmount > userBalance) {
       console.log("[GAME] ERROR: Insufficient balance check failed!");
       showError(
-        `Insufficient balance. Need ${betAmount} SOL, have ${gameState.walletBalance || 0} SOL`,
+        `Insufficient balance. Need ${betAmount} SOL, have ${userBalance.toFixed(4)} SOL`,
         "warning"
       );
       return;
@@ -935,6 +942,28 @@ export default function Home() {
     ? calculateDiveStats(gameState.diveNumber)
     : null;
 
+  // Show loading screen while initial data is being fetched
+  const isInitialLoading = isLoadingWallet && userBalance === 0 && !userId;
+  
+  if (isInitialLoading) {
+    return (
+      <div className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-gradient-to-b from-blue-900 to-blue-600">
+        <div className="nes-container is-rounded with-title bg-gray-900 p-8">
+          <p className="title text-yellow-400">Loading Game</p>
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-6xl animate-bounce">🤿</div>
+            <p className="text-white text-center">Connecting to blockchain...</p>
+            <div className="flex gap-1">
+              <span className="animate-pulse text-white">.</span>
+              <span className="animate-pulse delay-100 text-white">.</span>
+              <span className="animate-pulse delay-200 text-white">.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <GameErrorBoundary>
       <div className="fixed inset-0 w-screen h-screen overflow-hidden">
@@ -1082,7 +1111,7 @@ export default function Home() {
                         )
                       }
                     >
-                      {(gameState.walletBalance || 0).toFixed(3)} SOL
+                      {isLoadingWallet ? "..." : `${userBalance.toFixed(3)} SOL`}
                     </span>
                     <button
                       className="nes-btn is-primary"
@@ -1129,19 +1158,18 @@ export default function Home() {
                   playSound("BUTTON_CLICK");
                   handleStartGame();
                 }}
-                disabled={betAmount > (gameState.walletBalance || 0)}
-                className={`nes-btn ${betAmount > (gameState.walletBalance || 0) ? "is-disabled" : "is-success"} w-full mb-4`}
+                disabled={isLoadingWallet || betAmount > userBalance}
+                className={`nes-btn ${isLoadingWallet || betAmount > userBalance ? "is-disabled" : "is-success"} w-full mb-4`}
                 style={{ fontSize: "12px" }}
               >
-                START GAME ({betAmount} SOL)
+                {isLoadingWallet ? "Loading balance..." : `START GAME (${betAmount} SOL)`}
               </button>
 
               {/* Error Message */}
-              {betAmount > (gameState.walletBalance || 0) && (
+              {!isLoadingWallet && betAmount > userBalance && (
                 <div className="nes-container is-rounded is-error mb-4">
                   <p style={{ fontSize: "8px", textAlign: "center" }}>
-                    Need {betAmount} SOL, have {gameState.walletBalance || 0}{" "}
-                    SOL
+                    Need {betAmount} SOL, have {userBalance.toFixed(4)} SOL
                   </p>
                 </div>
               )}

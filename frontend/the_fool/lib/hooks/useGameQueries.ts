@@ -1,12 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 import {
   performDive,
   surfaceWithTreasure,
-  getWalletInfo,
   startGame,
 } from "@/app/actions/gameActions";
+import { getWalletInfo } from "@/app/actions/walletActions";
 import type { DiveResult } from "@/lib/types";
 
 /**
@@ -42,8 +43,12 @@ export function useWalletBalance(userId: string | null) {
     enabled: !!userId,
     // Refetch balance every 5 seconds (while component is mounted)
     refetchInterval: 5000,
-    // Keep showing old data while refetching
+    // Keep showing old data while refetching (no loading flash)
     placeholderData: (previousData) => previousData,
+    // Consider data fresh for 2 seconds (reduces redundant fetches)
+    staleTime: 2000,
+    // Cache for 30 seconds
+    gcTime: 30_000,
   });
 }
 
@@ -64,7 +69,18 @@ export function useStartGame() {
       userId: string;
       sessionId: string;
     }) => {
-      return await startGame(userId, sessionId);
+      const toastId = toast.loading("🎮 Starting game session...");
+      try {
+        const result = await startGame(userId, sessionId);
+        toast.success("🚀 Game started! Good luck!", { id: toastId });
+        return result;
+      } catch (error) {
+        toast.error(
+          `Failed to start game: ${error instanceof Error ? error.message : "Unknown error"}`,
+          { id: toastId }
+        );
+        throw error;
+      }
     },
     onSuccess: (_data, variables) => {
       // Invalidate wallet balance to refetch after bet placed
@@ -98,13 +114,36 @@ export function usePerformDive() {
       userId: string;
       testSeed?: string;
     }): Promise<DiveResult> => {
-      return await performDive(
-        diveNumber,
-        currentTreasure,
-        sessionId,
-        userId,
-        testSeed
-      );
+      const toastId = toast.loading(`🤿 Diving to depth ${diveNumber}...`);
+      try {
+        const result = await performDive(
+          diveNumber,
+          currentTreasure,
+          sessionId,
+          userId,
+          testSeed
+        );
+        
+        if (result.survived) {
+          toast.success(
+            `✅ Survived! Treasure: ${result.totalTreasure.toFixed(2)} SOL`,
+            { id: toastId, duration: 2000 }
+          );
+        } else {
+          toast.error(`💀 Lost the dive! Better luck next time`, { 
+            id: toastId,
+            duration: 3000 
+          });
+        }
+        
+        return result;
+      } catch (error) {
+        toast.error(
+          `Dive failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          { id: toastId }
+        );
+        throw error;
+      }
     },
     onSuccess: (_data, variables) => {
       // Invalidate wallet on success (balance might change)
@@ -134,7 +173,26 @@ export function useCashOut() {
       sessionId: string;
       userId: string;
     }) => {
-      return await surfaceWithTreasure(finalTreasure, sessionId, userId);
+      const toastId = toast.loading("🏖️ Surfacing with treasure...");
+      try {
+        const result = await surfaceWithTreasure(finalTreasure, sessionId, userId);
+        
+        if (result.success) {
+          const profit = result.profit.toFixed(2);
+          toast.success(
+            `💰 Cashed out ${result.finalAmount.toFixed(2)} SOL! Profit: ${profit} SOL`,
+            { id: toastId, duration: 4000 }
+          );
+        }
+        
+        return result;
+      } catch (error) {
+        toast.error(
+          `Cash out failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          { id: toastId }
+        );
+        throw error;
+      }
     },
     onSuccess: (_data, variables) => {
       // Invalidate wallet to show updated balance after cashout
