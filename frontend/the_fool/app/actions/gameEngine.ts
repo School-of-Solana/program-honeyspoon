@@ -149,23 +149,24 @@ async function ensureHouseVault(): Promise<string> {
 /**
  * Start a new game session (place initial bet)
  * REFACTORED: Now uses GameChainPort
+ * NOTE: bet amount is now fixed from config
  */
 export async function startGameSession(
-  betAmount: number,
   userId: string,
   _sessionId: string // Ignored - chain generates PDA
 ): Promise<{ success: boolean; error?: string; sessionId?: string }> {
   try {
-    // Validate bet amount
-    const betValidation = validateBetAmount(betAmount, GAME_CONFIG);
-    if (!betValidation.valid) {
-      return { success: false, error: betValidation.error };
-    }
-
     // Validate user
     if (!userId) {
       return { success: false, error: "Invalid user ID" };
     }
+
+    // Get fixed bet from config
+    const config = await chain.getGameConfig();
+    if (!config) {
+      return { success: false, error: "Game config not initialized" };
+    }
+    const betAmount = lamportsToSol(config.fixedBet);
 
     // Ensure house vault exists
     const vaultPda = await ensureHouseVault();
@@ -244,13 +245,12 @@ export async function startGameSession(
     }
 
     // Convert to lamports
-    const betLamports = solToLamports(betAmount);
     const maxPayoutLamports = solToLamports(maxPayout);
 
     // Start session on-chain (this handles the actual money transfer)
+    // NOTE: bet amount now comes from config.fixed_bet
     const { sessionPda, state } = await chain.startSession({
       userPubkey: userId,
-      betAmountLamports: betLamports,
       maxPayoutLamports: maxPayoutLamports,
       houseVaultPda: vaultPda,
     });

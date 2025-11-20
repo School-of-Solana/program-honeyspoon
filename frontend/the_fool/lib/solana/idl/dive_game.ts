@@ -12,7 +12,7 @@ import type { Program } from '@coral-xyz/anchor';
 import type { PublicKey } from '@solana/web3.js';
 
 export type DiveGame = {
-  "address": "CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1",
+  "address": "2hMffkY1dCRo548Kj152LNyPomQAiFhw7dVAsgNbZ7F2",
   "metadata": {
     "name": "dive_game",
     "version": "0.1.0",
@@ -308,6 +308,34 @@ export type DiveGame = {
       "args": []
     },
     {
+      "name": "reset_vault_reserved",
+      "discriminator": [
+        234,
+        184,
+        164,
+        210,
+        94,
+        125,
+        213,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "house_authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "house_vault"
+          ]
+        },
+        {
+          "name": "house_vault",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "start_session",
       "discriminator": [
         23,
@@ -393,10 +421,6 @@ export type DiveGame = {
       ],
       "args": [
         {
-          "name": "bet_amount",
-          "type": "u64"
-        },
-        {
           "name": "session_index",
           "type": "u64"
         }
@@ -429,6 +453,63 @@ export type DiveGame = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "update_config",
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "UpdateConfigParams"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "withdraw_house",
@@ -723,11 +804,7 @@ export type DiveGame = {
             "type": "u16"
           },
           {
-            "name": "min_bet",
-            "type": "u64"
-          },
-          {
-            "name": "max_bet",
+            "name": "fixed_bet",
             "type": "u64"
           },
           {
@@ -785,13 +862,7 @@ export type DiveGame = {
             }
           },
           {
-            "name": "min_bet",
-            "type": {
-              "option": "u64"
-            }
-          },
-          {
-            "name": "max_bet",
+            "name": "fixed_bet",
             "type": {
               "option": "u64"
             }
@@ -1093,6 +1164,62 @@ export type DiveGame = {
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateConfigParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "base_survival_ppm",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "decay_per_dive_ppm",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "min_survival_ppm",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "treasure_multiplier_num",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "treasure_multiplier_den",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "max_payout_multiplier",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "max_dives",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "fixed_bet",
+            "type": {
+              "option": "u64"
+            }
           }
         ]
       }
@@ -1101,7 +1228,7 @@ export type DiveGame = {
 };
 
 export const IDL: DiveGame = {
-  "address": "CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1",
+  "address": "2hMffkY1dCRo548Kj152LNyPomQAiFhw7dVAsgNbZ7F2",
   "metadata": {
     "name": "dive_game",
     "version": "0.1.0",
@@ -1397,6 +1524,34 @@ export const IDL: DiveGame = {
       "args": []
     },
     {
+      "name": "reset_vault_reserved",
+      "discriminator": [
+        234,
+        184,
+        164,
+        210,
+        94,
+        125,
+        213,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "house_authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "house_vault"
+          ]
+        },
+        {
+          "name": "house_vault",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "start_session",
       "discriminator": [
         23,
@@ -1482,10 +1637,6 @@ export const IDL: DiveGame = {
       ],
       "args": [
         {
-          "name": "bet_amount",
-          "type": "u64"
-        },
-        {
           "name": "session_index",
           "type": "u64"
         }
@@ -1518,6 +1669,63 @@ export const IDL: DiveGame = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "update_config",
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  97,
+                  109,
+                  101,
+                  95,
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "UpdateConfigParams"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "withdraw_house",
@@ -1812,11 +2020,7 @@ export const IDL: DiveGame = {
             "type": "u16"
           },
           {
-            "name": "min_bet",
-            "type": "u64"
-          },
-          {
-            "name": "max_bet",
+            "name": "fixed_bet",
             "type": "u64"
           },
           {
@@ -1874,13 +2078,7 @@ export const IDL: DiveGame = {
             }
           },
           {
-            "name": "min_bet",
-            "type": {
-              "option": "u64"
-            }
-          },
-          {
-            "name": "max_bet",
+            "name": "fixed_bet",
             "type": {
               "option": "u64"
             }
@@ -2182,6 +2380,62 @@ export const IDL: DiveGame = {
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateConfigParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "base_survival_ppm",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "decay_per_dive_ppm",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "min_survival_ppm",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "treasure_multiplier_num",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "treasure_multiplier_den",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "max_payout_multiplier",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "max_dives",
+            "type": {
+              "option": "u16"
+            }
+          },
+          {
+            "name": "fixed_bet",
+            "type": {
+              "option": "u64"
+            }
           }
         ]
       }

@@ -27,18 +27,6 @@ import {
 } from "./gameEngine";
 
 /**
- * Start a new game (place bet)
- * Theme wrapper for startGameSession
- */
-export async function startGame(
-  betAmount: number,
-  userId: string,
-  sessionId: string
-): Promise<{ success: boolean; error?: string; sessionId?: string }> {
-  return startGameSession(betAmount, userId, sessionId);
-}
-
-/**
  * Perform a dive (execute a round)
  * Theme wrapper for executeRound + adds shipwreck generation
  */
@@ -110,6 +98,13 @@ export async function getWalletInfo(userId: string) {
 }
 
 /**
+ * Get house status and available funds
+ */
+export async function getHouseStatus() {
+  return getHouse();
+}
+
+/**
  * Validate a bet amount before starting game
  */
 export async function validateBetAmount(betAmount: number, userId: string) {
@@ -161,10 +156,14 @@ export async function getTransactionHistory(
 }
 
 /**
- * Get house wallet status
+ * Theme wrapper for startGameSession
+ * NOTE: bet amount is now fixed from config
  */
-export async function getHouseStatus() {
-  return getHouse();
+export async function startGame(
+  userId: string,
+  sessionId: string
+): Promise<{ success: boolean; error?: string; sessionId?: string }> {
+  return startGameSession(userId, sessionId);
 }
 
 /**

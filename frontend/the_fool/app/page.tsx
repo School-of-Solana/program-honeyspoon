@@ -374,7 +374,6 @@ export default function Home() {
 
           const { sessionPda, state } = await gameChain.startSession({
             userPubkey: userId,
-            betAmountLamports: betLamports,
             maxPayoutLamports: maxPayoutLamports,
             houseVaultPda: vaultPda.toBase58(),
           });
@@ -426,7 +425,7 @@ export default function Home() {
       } else {
         // LocalGameChain mode - use server action
         console.log("[GAME] Link: Using server action for LocalGameChain");
-        const result = await startGame(betAmount, userId, gameState.sessionId);
+        const result = await startGame(userId, gameState.sessionId);
 
         if (!result.success) {
           showError(

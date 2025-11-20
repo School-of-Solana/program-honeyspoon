@@ -294,6 +294,7 @@ export class LocalGameChain implements GameChainPort {
    * Get game config (returns hardcoded local config)
    */
   async getGameConfig(): Promise<GameConfigState | null> {
+    const fixedBet = BigInt(10_000_000); // 0.01 SOL
     return {
       configPda: "local_config",
       admin: "local_admin",
@@ -305,9 +306,11 @@ export class LocalGameChain implements GameChainPort {
       treasureMultiplierNum: 19,
       treasureMultiplierDen: 10,
       maxPayoutMultiplier: 100,
-      maxDives: 50,
-      minBet: BigInt(100_000_000), // 0.1 SOL
-      maxBet: BigInt(10_000_000_000), // 10 SOL
+      maxDives: 5,
+      fixedBet: fixedBet,
+      // Legacy fields for backward compatibility
+      minBet: fixedBet,
+      maxBet: fixedBet,
       bump: 0,
     };
   }
@@ -370,7 +373,6 @@ export class LocalGameChain implements GameChainPort {
 
   async startSession(params: {
     userPubkey: string;
-    betAmountLamports: bigint;
     maxPayoutLamports: bigint;
     houseVaultPda: string;
   }): Promise<{ sessionPda: SessionHandle; state: GameSessionState }> {
@@ -384,11 +386,18 @@ export class LocalGameChain implements GameChainPort {
       throw GameError.houseLocked();
     }
 
+    // Get fixed bet from config
+    const config = await this.getGameConfig();
+    if (!config) {
+      throw new Error("Game config not initialized");
+    }
+    const betAmountLamports = config.fixedBet;
+
     // Check user has sufficient balance
     const userBalance = await this.getUserBalance(params.userPubkey);
-    if (userBalance < params.betAmountLamports) {
+    if (userBalance < betAmountLamports) {
       throw GameError.insufficientUserFunds(
-        params.betAmountLamports,
+        betAmountLamports,
         userBalance
       );
     }
@@ -414,11 +423,11 @@ export class LocalGameChain implements GameChainPort {
     // Transfer: user → vault (mimic contract)
     this.setUserBalance(
       params.userPubkey,
-      userBalance - params.betAmountLamports
+      userBalance - betAmountLamports
     );
     this.setVaultBalance(
       params.houseVaultPda,
-      vaultBalance + params.betAmountLamports
+      vaultBalance + betAmountLamports
     );
 
     // Update vault reserved (mimic contract)
@@ -438,8 +447,8 @@ export class LocalGameChain implements GameChainPort {
       user: params.userPubkey,
       houseVault: params.houseVaultPda,
       status: SessionStatus.Active,
-      betAmount: params.betAmountLamports,
-      currentTreasure: params.betAmountLamports, // Starts equal to bet
+      betAmount: betAmountLamports,
+      currentTreasure: betAmountLamports, // Starts equal to bet
       maxPayout: params.maxPayoutLamports,
       diveNumber: 1, // First dive
       bump: 255,

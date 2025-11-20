@@ -245,8 +245,7 @@ export class SolanaGameChain implements GameChainPort {
     treasureMultiplierDen?: number;
     maxPayoutMultiplier?: number;
     maxDives?: number;
-    minBet?: bigint;
-    maxBet?: bigint;
+    fixedBet?: bigint;
   }): Promise<{ configPda: string; state: GameConfigState }> {
     const adminPubkey = new PublicKey(params.admin);
     const configPda = this.getConfigPDA();
@@ -260,8 +259,7 @@ export class SolanaGameChain implements GameChainPort {
       treasureMultiplierDen: params.treasureMultiplierDen,
       maxPayoutMultiplier: params.maxPayoutMultiplier,
       maxDives: params.maxDives,
-      minBet: params.minBet ? new BN(params.minBet.toString()) : undefined,
-      maxBet: params.maxBet ? new BN(params.maxBet.toString()) : undefined,
+      fixedBet: params.fixedBet ? new BN(params.fixedBet.toString()) : undefined,
     });
 
     // Build instruction
@@ -300,8 +298,10 @@ export class SolanaGameChain implements GameChainPort {
       treasureMultiplierDen: account.treasure_multiplier_den,
       maxPayoutMultiplier: account.max_payout_multiplier,
       maxDives: account.max_dives,
-      minBet: BigInt(account.min_bet.toString()),
-      maxBet: BigInt(account.max_bet.toString()),
+      fixedBet: BigInt(account.fixed_bet.toString()),
+      // Legacy fields for backward compatibility
+      minBet: BigInt(account.fixed_bet.toString()),
+      maxBet: BigInt(account.fixed_bet.toString()),
       bump: account.bump,
     };
   }
@@ -408,7 +408,6 @@ export class SolanaGameChain implements GameChainPort {
 
   async startSession(params: {
     userPubkey: string;
-    betAmountLamports: bigint;
     maxPayoutLamports: bigint;
     houseVaultPda: string;
   }): Promise<{ sessionPda: SessionHandle; state: GameSessionState }> {
@@ -416,15 +415,21 @@ export class SolanaGameChain implements GameChainPort {
     const vaultPubkey = new PublicKey(params.houseVaultPda);
     const configPda = this.getConfigPDA();
 
+    // Fetch config to get fixed_bet
+    const config = await this.getGameConfig();
+    if (!config) {
+      throw new Error("Game config not initialized");
+    }
+    const fixedBetLamports = BigInt(config.fixedBet.toString());
+
     // Generate session index (timestamp-based for uniqueness)
     const sessionIndex = BigInt(Date.now());
     const sessionIndexBN = new BN(sessionIndex.toString());
     const sessionPda = getSessionPDA(userPubkey, sessionIndex);
 
-    // Build instruction data
-    const betBN = new BN(params.betAmountLamports.toString());
+    // Build instruction data (no bet_amount - uses config.fixed_bet)
     const indexBN = new BN(sessionIndex.toString());
-    const data = buildStartSessionData(betBN, indexBN);
+    const data = buildStartSessionData(indexBN);
 
     // Build instruction
     const instruction = new TransactionInstruction({

@@ -13,9 +13,9 @@ export const DEBUG_FLAGS = {
 // CRITICAL: These values MUST match LocalGameChain.gameConfig
 export const GAME_CONFIG = {
   // === Core Gameplay ===
-  FIXED_BET: 0.05 as number, // SOL - Fixed bet amount for simplified gameplay (0.05 SOL = 50M lamports)
+  FIXED_BET: 0.01 as number, // SOL - Fixed bet amount (matches on-chain fixed_bet: 0.01 SOL = 10M lamports)
   BASE_SURVIVAL_PROBABILITY: 0.7 as number, // 70% at dive 1 (matches on-chain config)
-  DECAY_CONSTANT: 0.08 as number, // -8% per dive (matches on-chain decay_per_dive_ppm: 8000 / 100000)
+  DECAY_CONSTANT: 0.008 as number, // -0.8% per dive (matches on-chain decay_per_dive_ppm: 8000 / 1000000)
   MIN_WIN_PROB: 0.05 as number, // 5% minimum win probability floor (matches on-chain min_survival_ppm)
 
   // === Treasure Multipliers ===
@@ -23,8 +23,8 @@ export const GAME_CONFIG = {
   HOUSE_EDGE: 0.05 as number, // 5% house edge (built into treasure multiplier)
 
   // === Limits ===
-  MAX_PAYOUT_MULTIPLIER: 100 as number, // Maximum payout is 100x bet (0.05 SOL bet = 5 SOL max)
-  MAX_DIVES: 5 as number, // Maximum number of dives (reduced from 50 to 5)
+  MAX_PAYOUT_MULTIPLIER: 100 as number, // Maximum payout is 100x bet (0.01 SOL bet = 1 SOL max)
+  MAX_DIVES: 5 as number, // Maximum number of dives (matches on-chain max_dives: 5)
 
   // === Display ===
   LAMPORTS_PER_SOL: 1_000_000_000 as number, // For conversions
@@ -33,12 +33,12 @@ export const GAME_CONFIG = {
   // === Legacy/Deprecated (keeping for compatibility) ===
   TARGET_EV: 0.95 as number, // 0.95 EV every round (player-friendly)
   BASE_WIN_PROB: 0.7 as number, // Alias for BASE_SURVIVAL_PROBABILITY
-  MIN_BET: 0.05 as number, // Updated to match FIXED_BET (0.05 SOL = 50M lamports)
-  MAX_BET: 0.1 as number, // Updated: 0.1 SOL max (100M lamports)
+  MIN_BET: 0.01 as number, // DEPRECATED: Use FIXED_BET instead
+  MAX_BET: 0.01 as number, // DEPRECATED: Use FIXED_BET instead (no longer variable)
   STARTING_DEPTH: 0 as number, // Surface level
   DEPTH_PER_DIVE: 50 as number, // Meters deeper per round
   MAX_VISUAL_DEPTH: 2000 as number, // Visual cap for rendering
-  SESSION_TIMEOUT_MS: (30 * 60 * 1000) as number, // 30 minutes (sessions expire after inactivity)
+  SESSION_TIMEOUT_MS: (5 * 60 * 1000) as number, // 5 minutes (matches on-chain timeout: 750 slots)
 };
 
 // Depth zones with visual themes

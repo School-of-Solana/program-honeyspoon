@@ -7,6 +7,7 @@
 
 import { create } from "zustand";
 import type { Shipwreck } from "./types";
+import { GAME_CONFIG } from "./constants";
 
 /**
  * Canvas/Scene State
@@ -85,7 +86,7 @@ interface GameState extends CanvasState, GameLogicState, UIState {
     sessionId: string,
     balance: number
   ) => void;
-  startGame: (betAmount: number) => void;
+  startGame: () => void;
   completeDive: (result: {
     survived: boolean;
     totalTreasure: number;
@@ -287,9 +288,11 @@ export const useGameStore = create<GameState>((set) => ({
   },
 
   /**
-   * Start a new game (after placing bet)
+   * Start a new game session
+   * NOTE: bet amount is now fixed from config (GAME_CONFIG.FIXED_BET)
    */
-  startGame: (betAmount: number) => {
+  startGame: () => {
+    const betAmount = GAME_CONFIG.FIXED_BET;
     console.log("[STORE] 🎮 Starting new game", { betAmount });
     set({
       isPlaying: true,

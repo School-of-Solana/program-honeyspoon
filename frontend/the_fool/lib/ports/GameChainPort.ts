@@ -64,8 +64,10 @@ export interface GameConfigState {
   treasureMultiplierDen: number; // u16
   maxPayoutMultiplier: number; // u16
   maxDives: number; // u16
-  minBet: bigint; // u64 lamports
-  maxBet: bigint; // u64 lamports
+  fixedBet: bigint; // u64 lamports - single fixed bet amount
+  // Legacy fields for backward compatibility (deprecated)
+  minBet: bigint; // u64 lamports (same as fixedBet)
+  maxBet: bigint; // u64 lamports (same as fixedBet)
   bump: number; // u8
 }
 
@@ -149,7 +151,6 @@ export interface GameChainPort {
    */
   startSession(params: {
     userPubkey: string;
-    betAmountLamports: bigint;
     maxPayoutLamports: bigint;
     houseVaultPda: string;
   }): Promise<{
