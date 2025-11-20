@@ -15,7 +15,7 @@ const idl = JSON.parse(readFileSync(idlPath, 'utf-8'));
 
 // Configuration
 const RPC_URL = process.env.RPC_URL || 'https://api.devnet.solana.com';
-const PROGRAM_ID = new PublicKey('CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1');
+const PROGRAM_ID = new PublicKey(process.env.PROGRAM_ID || '2hMffkY1dCRo548Kj152LNyPomQAiFhw7dVAsgNbZ7F2');
 
 async function main() {
   console.log('Checking game config...\n');
