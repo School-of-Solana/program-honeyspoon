@@ -18,12 +18,14 @@ const __dirname = path.dirname(__filename);
 
 // Constants
 const PROGRAM_ID = new PublicKey(
-  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
+  "2hMffkY1dCRo548Kj152LNyPomQAiFhw7dVAsgNbZ7F2"
 );
 
 const HOUSE_VAULT_SEED = "house_vault";
 const SESSION_SEED = "session";
 const GAME_CONFIG_SEED = "game_config";
+const TIMEOUT_SLOTS = 750; // Session timeout in slots
+
 
 // Helper functions
 function lamports(sol: number): BN {
@@ -85,8 +87,7 @@ function buildInitConfigData(params: {
   treasureMultiplierDen?: number;
   maxPayoutMultiplier?: number;
   maxDives?: number;
-  minBet?: BN;
-  maxBet?: BN;
+  fixedBet?: BN; // Changed from minBet/maxBet
 }): Buffer {
   const discriminator = Buffer.from([23, 235, 115, 232, 168, 96, 1, 231]);
 
@@ -99,8 +100,7 @@ function buildInitConfigData(params: {
     serializeOption(params.treasureMultiplierDen ?? null, 2),
     serializeOption(params.maxPayoutMultiplier ?? null, 2),
     serializeOption(params.maxDives ?? null, 2),
-    serializeOption(params.minBet ?? null, 8),
-    serializeOption(params.maxBet ?? null, 8),
+    serializeOption(params.fixedBet ?? null, 8), // Single fixed bet
   ]);
 
   return data;
@@ -112,11 +112,11 @@ function buildInitHouseVaultData(locked: boolean): Buffer {
   return Buffer.concat([discriminator, lockedByte]);
 }
 
-function buildStartSessionData(betAmount: BN, sessionIndex: BN): Buffer {
+function buildStartSessionData(sessionIndex: BN): Buffer {
   const discriminator = Buffer.from([23, 227, 111, 142, 212, 230, 3, 175]);
-  const betBytes = betAmount.toArrayLike(Buffer, "le", 8);
   const indexBytes = sessionIndex.toArrayLike(Buffer, "le", 8);
-  return Buffer.concat([discriminator, betBytes, indexBytes]);
+  // Note: bet_amount parameter removed - now uses fixed_bet from config
+  return Buffer.concat([discriminator, indexBytes]);
 }
 
 function buildPlayRoundData(): Buffer {
@@ -200,12 +200,18 @@ function parseHouseVaultData(dataInput: Uint8Array): {
 } {
   const data = Buffer.from(dataInput);
 
+  // Expected size: 8 (discriminator) + 32 (house_authority) + 32 (game_keeper) + 1 (locked) + 8 (total_reserved) + 1 (bump) = 82 bytes
+  const expectedSize = 82;
+  if (data.length < expectedSize) {
+    throw new Error(`HouseVault account data too small: ${data.length} bytes, expected at least ${expectedSize} bytes`);
+  }
+
   let offset = 8;
 
   const houseAuthority = new PublicKey(data.slice(offset, offset + 32));
   offset += 32;
 
-  // Skip game_keeper field (32 bytes) - added in latest version
+  // Skip game_keeper field (32 bytes)
   offset += 32;
 
   const locked = data.readUInt8(offset) === 1;
@@ -233,8 +239,7 @@ function parseConfigData(dataInput: Uint8Array): {
   treasureMultiplierDen: number;
   maxPayoutMultiplier: number;
   maxDives: number;
-  minBet: BN;
-  maxBet: BN;
+  fixedBet: BN;
   bump: number;
 } {
   const data = Buffer.from(dataInput);
@@ -265,10 +270,7 @@ function parseConfigData(dataInput: Uint8Array): {
   const maxDives = data.readUInt16LE(offset);
   offset += 2;
 
-  const minBet = new BN(data.slice(offset, offset + 8), "le");
-  offset += 8;
-
-  const maxBet = new BN(data.slice(offset, offset + 8), "le");
+  const fixedBet = new BN(data.slice(offset, offset + 8), "le");
   offset += 8;
 
   const bump = data.readUInt8(offset);
@@ -282,8 +284,7 @@ function parseConfigData(dataInput: Uint8Array): {
     treasureMultiplierDen,
     maxPayoutMultiplier,
     maxDives,
-    minBet,
-    maxBet,
+    fixedBet,
     bump,
   };
 }
@@ -332,10 +333,9 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
   describe("Bet Amount Validation Tests", () => {
     beforeEach(() => {
-      // Initialize config with specific bet limits
+      // Initialize config with fixed bet (0.01 SOL)
       const configData = buildInitConfigData({
-        minBet: new BN(100_000_000), // 0.1 SOL
-        maxBet: new BN(500_000_000), // 0.5 SOL
+        fixedBet: new BN(10_000_000), // 0.01 SOL
       });
       const configIx = new TransactionInstruction({
         keys: [
@@ -377,13 +377,19 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       vaultTx.recentBlockhash = svm.latestBlockhash();
       vaultTx.add(vaultIx);
       vaultTx.sign(authority);
-      svm.sendTransaction(vaultTx);
+      const vaultResult = svm.sendTransaction(vaultTx);
+      
+      // Check if vault initialization failed
+      if (vaultResult?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(vaultResult, "Vault initialization");
+        throw new Error("Vault initialization failed - see logs above");
+      }
 
       svm.airdrop(houseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
 
       // Verify setup succeeded
       const vaultAcc = svm.getAccount(houseVaultPDA);
-      if (!vaultAcc) {
+      if (!vaultAcc || vaultAcc.data.length === 0) {
         throw new Error("Vault not initialized in beforeEach!");
       }
       const vaultInfo = parseHouseVaultData(vaultAcc.data);
@@ -408,7 +414,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = new BN(90_000_000); // 0.09 SOL (below min)
-      const data = buildStartSessionData(betAmount, new BN(0));
+      const data = buildStartSessionData(new BN(0));
 
       const instruction = new TransactionInstruction({
         keys: [
@@ -442,7 +448,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = new BN(100_000_000); // Exactly 0.1 SOL
-      const data = buildStartSessionData(betAmount, new BN(0));
+      const data = buildStartSessionData(new BN(0));
 
       const instruction = new TransactionInstruction({
         keys: [
@@ -482,7 +488,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = new BN(500_000_000); // Exactly 0.5 SOL
-      const data = buildStartSessionData(betAmount, new BN(0));
+      const data = buildStartSessionData(new BN(0));
 
       const instruction = new TransactionInstruction({
         keys: [
@@ -516,7 +522,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = new BN(510_000_000); // 0.51 SOL (above max)
-      const data = buildStartSessionData(betAmount, new BN(0));
+      const data = buildStartSessionData(new BN(0));
 
       const instruction = new TransactionInstruction({
         keys: [
@@ -550,7 +556,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = new BN(99_999_999); // min_bet - 1
-      const data = buildStartSessionData(betAmount, new BN(0));
+      const data = buildStartSessionData(new BN(0));
 
       const instruction = new TransactionInstruction({
         keys: [
@@ -584,7 +590,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = new BN(500_000_001); // max_bet + 1
-      const data = buildStartSessionData(betAmount, new BN(0));
+      const data = buildStartSessionData(new BN(0));
 
       const instruction = new TransactionInstruction({
         keys: [
@@ -670,7 +676,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(0.2);
-      const data = buildStartSessionData(betAmount, new BN(0));
+      const data = buildStartSessionData(new BN(0));
 
       const instruction = new TransactionInstruction({
         keys: [
@@ -711,7 +717,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       // PlayerA starts a session
       const [sessionPDA] = getSessionPDA(playerA.publicKey, new BN(0));
       const betAmount = lamports(0.2);
-      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
           { pubkey: playerA.publicKey, isSigner: true, isWritable: true },
@@ -766,7 +772,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       // PlayerA starts a session
       const [sessionPDA] = getSessionPDA(playerA.publicKey, new BN(0));
       const betAmount = lamports(0.2);
-      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
           { pubkey: playerA.publicKey, isSigner: true, isWritable: true },
@@ -820,7 +826,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       // PlayerA starts a session
       const [sessionPDA] = getSessionPDA(playerA.publicKey, new BN(0));
       const betAmount = lamports(0.2);
-      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
           { pubkey: playerA.publicKey, isSigner: true, isWritable: true },
@@ -873,8 +879,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       const [newConfigPDA] = getConfigPDA();
 
       const configData = buildInitConfigData({
-        minBet: new BN(1_000_000),
-        maxBet: new BN(10_000_000_000),
+        fixedBet: new BN(10_000_000), // 0.01 SOL
       });
 
       const configIx = new TransactionInstruction({
@@ -964,7 +969,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       const betAmount = lamports(0.2);
 
       // Start session
-      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -1021,7 +1026,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       const betAmount = lamports(0.2);
 
       // Start session
-      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -1047,7 +1052,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       // Warp forward 8999 slots (not expired yet)
       const clock = svm.getClock();
-      svm.warpToSlot(clock.slot + 8999n);
+      svm.warpToSlot(clock.slot + BigInt(TIMEOUT_SLOTS - 1));
 
       // Try to clean (should fail - not expired yet)
       const crank = new Keypair();
@@ -1074,7 +1079,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       expect(result?.constructor?.name).to.equal("FailedTransactionMetadata");
     });
 
-    it("should reject cleanup at exactly 9000 slots (needs > 9000)", () => {
+    it("should reject cleanup at exactly TIMEOUT_SLOTS (needs > TIMEOUT_SLOTS)", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
@@ -1082,7 +1087,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       const betAmount = lamports(0.2);
 
       // Start session
-      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -1114,7 +1119,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       // Warp forward exactly 9000 slots
       const clock = svm.getClock();
-      svm.warpToSlot(clock.slot + 9000n);
+      svm.warpToSlot(clock.slot + BigInt(TIMEOUT_SLOTS));
 
       // Clean expired session
       const crank = new Keypair();
@@ -1153,7 +1158,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       const betAmount = lamports(0.2);
 
       // Start session
-      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -1179,7 +1184,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       // Warp forward 10000 slots
       const clock = svm.getClock();
-      svm.warpToSlot(clock.slot + 10000n);
+      svm.warpToSlot(clock.slot + BigInt(TIMEOUT_SLOTS + 250));
 
       // Clean expired session
       const crank = new Keypair();
@@ -1214,7 +1219,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       const betAmount = lamports(0.2);
 
       // Start session
-      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -1352,7 +1357,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
       for (const index of sessionIndices) {
         const [sessionPDA] = getSessionPDA(player.publicKey, new BN(index));
-        const startData = buildStartSessionData(betAmount, new BN(index));
+        const startData = buildStartSessionData(new BN(index));
 
         const startIx = new TransactionInstruction({
           keys: [
@@ -1404,7 +1409,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       const betAmount = lamports(0.1);
 
       // Create first session
-      const startData1 = buildStartSessionData(betAmount, new BN(0));
+      const startData1 = buildStartSessionData(new BN(0));
       const startIx1 = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -1429,7 +1434,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       svm.sendTransaction(startTx1);
 
       // Try to create duplicate session
-      const startData2 = buildStartSessionData(betAmount, new BN(0));
+      const startData2 = buildStartSessionData(new BN(0));
       const startIx2 = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -1464,7 +1469,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       const betAmount = lamports(0.1);
 
       // Create first session
-      const startData1 = buildStartSessionData(betAmount, new BN(0));
+      const startData1 = buildStartSessionData(new BN(0));
       const startIx1 = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -1511,7 +1516,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       expect(sessionAccount).to.be.null;
 
       // Create new session with same index (should succeed)
-      const startData2 = buildStartSessionData(betAmount, new BN(0));
+      const startData2 = buildStartSessionData(new BN(0));
       const startIx2 = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -1601,7 +1606,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
       const betAmount = lamports(0.2); // 0.2 SOL
 
-      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },
@@ -1646,7 +1651,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       const betAmount = lamports(0.1);
 
       // Start session
-      const startData = buildStartSessionData(betAmount, new BN(0));
+      const startData = buildStartSessionData(new BN(0));
       const startIx = new TransactionInstruction({
         keys: [
           { pubkey: player.publicKey, isSigner: true, isWritable: true },

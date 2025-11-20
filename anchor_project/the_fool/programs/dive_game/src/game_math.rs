@@ -43,7 +43,7 @@ mod tests {
     use anchor_lang::prelude::Pubkey;
     use rstest::rstest;
     fn test_config() -> GameConfig {
-        let (base, decay, min, num, den, max_mult, max_dives, min_bet, max_bet) =
+        let (base, decay, min, num, den, max_mult, _max_dives, fixed_bet) =
             GameConfig::default_config();
         GameConfig {
             admin: Pubkey::default(),
@@ -53,9 +53,8 @@ mod tests {
             treasure_multiplier_num: num,
             treasure_multiplier_den: den,
             max_payout_multiplier: max_mult,
-            max_dives,
-            min_bet,
-            max_bet,
+            max_dives: 50, // Use higher limit for math tests (production uses 5)
+            fixed_bet,
             bump: 0,
         }
     }

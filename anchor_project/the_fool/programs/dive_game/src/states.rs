@@ -55,22 +55,20 @@ pub struct GameConfig {
     pub treasure_multiplier_den: u16,
     pub max_payout_multiplier: u16,
     pub max_dives: u16,
-    pub min_bet: u64,
-    pub max_bet: u64,
+    pub fixed_bet: u64, // Single fixed bet amount (e.g. 0.01 SOL)
     pub bump: u8,
 }
 impl GameConfig {
-    pub fn default_config() -> (u32, u32, u32, u16, u16, u16, u16, u64, u64) {
+    pub fn default_config() -> (u32, u32, u32, u16, u16, u16, u16, u64) {
         (
-            700_000,            // base_survival_ppm (70%)
-            8_000,              // decay_per_dive_ppm (0.8%)
-            50_000,             // min_survival_ppm (5%)
-            19,                 // treasure_multiplier_num
-            10,                 // treasure_multiplier_den (1.9x per dive)
-            100,                // max_payout_multiplier (100x max)
-            5,                  // max_dives (reduced from 50 to 5)
-            50_000_000,         // min_bet (0.05 SOL, reduced from 0.1 SOL)
-            100_000_000,        // max_bet (0.1 SOL, reduced from 0.2 SOL)
+            700_000,    // base_survival_ppm (70%)
+            8_000,      // decay_per_dive_ppm (0.8%)
+            50_000,     // min_survival_ppm (5%)
+            19,         // treasure_multiplier_num
+            10,         // treasure_multiplier_den (1.9x per dive)
+            100,        // max_payout_multiplier (100x max)
+            5,          // max_dives
+            10_000_000, // fixed_bet (0.01 SOL - simple fixed amount)
         )
     }
 
@@ -106,13 +104,8 @@ impl GameConfig {
         // Dive limit validation
         require!(self.max_dives > 0, crate::errors::GameError::InvalidConfig);
 
-        // Bet range validation (only if max_bet is set)
-        if self.max_bet > 0 {
-            require!(
-                self.min_bet <= self.max_bet,
-                crate::errors::GameError::InvalidConfig
-            );
-        }
+        // Fixed bet must be positive
+        require!(self.fixed_bet > 0, crate::errors::GameError::InvalidConfig);
 
         Ok(())
     }
@@ -168,7 +161,7 @@ mod tests {
     use super::*;
 
     fn test_config() -> GameConfig {
-        let (base, decay, min, num, den, max_mult, max_dives, min_bet, max_bet) =
+        let (base, decay, min, num, den, max_mult, max_dives, fixed_bet) =
             GameConfig::default_config();
         GameConfig {
             admin: Pubkey::default(),
@@ -179,8 +172,7 @@ mod tests {
             treasure_multiplier_den: den,
             max_payout_multiplier: max_mult,
             max_dives,
-            min_bet,
-            max_bet,
+            fixed_bet,
             bump: 0,
         }
     }
@@ -259,19 +251,17 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_min_bet_exceeds_max_bet() {
+    fn test_validate_fixed_bet_positive() {
         let mut config = test_config();
-        config.max_bet = 100;
-        config.min_bet = 200;
-        assert!(config.validate().is_err());
+        config.fixed_bet = 10_000_000; // 0.01 SOL
+        assert!(config.validate().is_ok());
     }
 
     #[test]
-    fn test_validate_max_bet_zero_is_valid() {
+    fn test_validate_fixed_bet_zero_is_invalid() {
         let mut config = test_config();
-        config.max_bet = 0;
-        config.min_bet = 1000;
-        assert!(config.validate().is_ok());
+        config.fixed_bet = 0; // Zero bet is invalid - must be positive
+        assert!(config.validate().is_err());
     }
 
     // GameSession tests

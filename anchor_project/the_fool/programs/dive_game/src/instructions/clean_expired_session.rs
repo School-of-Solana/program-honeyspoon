@@ -4,8 +4,9 @@ use crate::states::*;
 use anchor_lang::prelude::*;
 
 /// Timeout duration in slots
-/// Approximately 1 hour at 400ms per slot (9000 slots)
-pub const TIMEOUT_SLOTS: u64 = 9_000;
+/// Reduced to 5 minutes for faster cleanup (750 slots at 400ms per slot)
+/// This prevents capital from being locked for too long in abandoned sessions
+pub const TIMEOUT_SLOTS: u64 = 750;
 
 /// Cleans up an expired session that was abandoned by the player
 ///

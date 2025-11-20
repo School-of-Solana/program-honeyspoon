@@ -6,8 +6,9 @@ pub mod instructions;
 pub mod rng;
 pub mod states;
 use instructions::init_config::GameConfigParams;
+use instructions::update_config::UpdateConfigParams;
 use instructions::*;
-declare_id!("CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1");
+declare_id!("2hMffkY1dCRo548Kj152LNyPomQAiFhw7dVAsgNbZ7F2");
 #[program]
 pub mod dive_game {
     use super::*;
@@ -17,12 +18,8 @@ pub mod dive_game {
     pub fn init_house_vault(ctx: Context<InitializeHouseVault>, locked: bool) -> Result<()> {
         instructions::init_house_vault(ctx, locked)
     }
-    pub fn start_session(
-        ctx: Context<StartSession>,
-        bet_amount: u64,
-        session_index: u64,
-    ) -> Result<()> {
-        instructions::start_session(ctx, bet_amount, session_index)
+    pub fn start_session(ctx: Context<StartSession>, session_index: u64) -> Result<()> {
+        instructions::start_session(ctx, session_index)
     }
     pub fn play_round(ctx: Context<PlayRound>) -> Result<()> {
         instructions::play_round(ctx)
@@ -44,5 +41,8 @@ pub mod dive_game {
     }
     pub fn reset_vault_reserved(ctx: Context<ResetVaultReserved>) -> Result<()> {
         instructions::reset_vault_reserved(ctx)
+    }
+    pub fn update_config(ctx: Context<UpdateConfig>, params: UpdateConfigParams) -> Result<()> {
+        instructions::update_config(ctx, params)
     }
 }

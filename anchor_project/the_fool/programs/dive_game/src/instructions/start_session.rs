@@ -4,20 +4,15 @@ use crate::game_math;
 use crate::states::*;
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
-pub fn start_session(
-    ctx: Context<StartSession>,
-    bet_amount: u64,
-    _session_index: u64,
-) -> Result<()> {
+pub fn start_session(ctx: Context<StartSession>, _session_index: u64) -> Result<()> {
     let config = &ctx.accounts.config;
     let house_vault = &mut ctx.accounts.house_vault;
     let session = &mut ctx.accounts.session;
     let clock = Clock::get()?;
     require!(!house_vault.locked, GameError::HouseLocked);
-    require!(bet_amount >= config.min_bet, GameError::InvalidBetAmount);
-    if config.max_bet > 0 {
-        require!(bet_amount <= config.max_bet, GameError::InvalidBetAmount);
-    }
+
+    // Use fixed bet from config
+    let bet_amount = config.fixed_bet;
     let max_payout = game_math::max_payout_for_bet(config, bet_amount);
     let transfer_ix = system_program::Transfer {
         from: ctx.accounts.user.to_account_info(),
@@ -26,7 +21,7 @@ pub fn start_session(
     let cpi_ctx = CpiContext::new(ctx.accounts.system_program.to_account_info(), transfer_ix);
     system_program::transfer(cpi_ctx, bet_amount)?;
     let vault_balance = house_vault.to_account_info().lamports();
-    
+
     // Handle the case where total_reserved exceeds actual balance (accounting error)
     // This can happen if sessions weren't properly cleaned up
     let available = match vault_balance.checked_sub(house_vault.total_reserved) {
@@ -39,9 +34,7 @@ pub fn start_session(
                 house_vault.total_reserved / 1_000_000_000,
                 house_vault.key()
             );
-            msg!(
-                "HINT: Reserved funds exceed actual balance. Admin should reset total_reserved."
-            );
+            msg!("HINT: Reserved funds exceed actual balance. Admin should reset total_reserved.");
             return Err(GameError::InsufficientVaultBalance.into());
         }
     };
@@ -49,8 +42,8 @@ pub fn start_session(
     // Relaxed vault requirement: only require 20% of max_payout to be available
     // This allows the game to run with lower vault balances for testing/demo
     // Still reserve the full max_payout for accounting purposes
-    let required_balance = max_payout / 5;  // 20% of max_payout
-    
+    let required_balance = max_payout / 5; // 20% of max_payout
+
     if available < required_balance {
         msg!(
             "INSUFFICIENT_VAULT need={} have={} vault={}",

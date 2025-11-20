@@ -9,8 +9,7 @@ pub struct GameConfigParams {
     pub treasure_multiplier_den: Option<u16>,
     pub max_payout_multiplier: Option<u16>,
     pub max_dives: Option<u16>,
-    pub min_bet: Option<u64>,
-    pub max_bet: Option<u64>,
+    pub fixed_bet: Option<u64>,
 }
 pub fn init_config(ctx: Context<InitializeConfig>, params: GameConfigParams) -> Result<()> {
     let config = &mut ctx.accounts.config;
@@ -23,8 +22,7 @@ pub fn init_config(ctx: Context<InitializeConfig>, params: GameConfigParams) -> 
     config.treasure_multiplier_den = params.treasure_multiplier_den.unwrap_or(defaults.4);
     config.max_payout_multiplier = params.max_payout_multiplier.unwrap_or(defaults.5);
     config.max_dives = params.max_dives.unwrap_or(defaults.6);
-    config.min_bet = params.min_bet.unwrap_or(defaults.7);
-    config.max_bet = params.max_bet.unwrap_or(defaults.8);
+    config.fixed_bet = params.fixed_bet.unwrap_or(defaults.7);
     config.bump = ctx.bumps.config;
 
     // Validate all config parameters using centralized validation
@@ -79,8 +77,7 @@ mod tests {
             treasure_multiplier_den: Some(10),
             max_payout_multiplier: Some(100),
             max_dives: Some(200),
-            min_bet: Some(1),
-            max_bet: Some(0),
+            fixed_bet: Some(10_000_000), // 0.01 SOL
         }
     }
     #[test]
@@ -94,8 +91,7 @@ mod tests {
             treasure_multiplier_den: 0,
             max_payout_multiplier: 100,
             max_dives: 200,
-            min_bet: 1,
-            max_bet: 0,
+            fixed_bet: 10_000_000,
             bump: 0,
         };
         assert!(config.validate().is_err());
@@ -111,8 +107,7 @@ mod tests {
             treasure_multiplier_den: 10,
             max_payout_multiplier: 100,
             max_dives: 200,
-            min_bet: 1,
-            max_bet: 0,
+            fixed_bet: 10_000_000,
             bump: 0,
         };
         assert!(config.validate().is_err());
@@ -128,14 +123,13 @@ mod tests {
             treasure_multiplier_den: 10,
             max_payout_multiplier: 100,
             max_dives: 200,
-            min_bet: 1,
-            max_bet: 0,
+            fixed_bet: 10_000_000,
             bump: 0,
         };
         assert!(config.validate().is_err());
     }
     #[test]
-    fn test_config_validation_min_bet_greater_than_max_bet() {
+    fn test_config_validation_fixed_bet_works() {
         let config = GameConfig {
             admin: Pubkey::default(),
             base_survival_ppm: 990_000,
@@ -145,11 +139,10 @@ mod tests {
             treasure_multiplier_den: 10,
             max_payout_multiplier: 100,
             max_dives: 200,
-            min_bet: 1000,
-            max_bet: 100,
+            fixed_bet: 10_000_000, // 0.01 SOL
             bump: 0,
         };
-        assert!(config.validate().is_err());
+        assert!(config.validate().is_ok());
     }
     #[test]
     fn test_config_validation_zero_max_dives() {
@@ -162,8 +155,7 @@ mod tests {
             treasure_multiplier_den: 10,
             max_payout_multiplier: 100,
             max_dives: 0,
-            min_bet: 1,
-            max_bet: 0,
+            fixed_bet: 10_000_000,
             bump: 0,
         };
         assert!(config.validate().is_err());
@@ -179,8 +171,7 @@ mod tests {
             treasure_multiplier_den: 10,
             max_payout_multiplier: 100,
             max_dives: 200,
-            min_bet: 1,
-            max_bet: 0,
+            fixed_bet: 10_000_000,
             bump: 0,
         };
         assert!(config.validate().is_ok());

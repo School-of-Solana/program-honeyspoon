@@ -112,7 +112,7 @@ function logAccountStates(
 }
 
 const PROGRAM_ID = new PublicKey(
-  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
+  "CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1"
 );
 
 const HOUSE_VAULT_SEED = "house_vault";
@@ -977,7 +977,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
         expect(configData.treasureMultiplierNum).to.equal(19);
         expect(configData.treasureMultiplierDen).to.equal(10);
         expect(configData.maxPayoutMultiplier).to.equal(100);
-        expect(configData.maxDives).to.equal(50);
+        expect(configData.maxDives).to.equal(5);
       });
 
       it("should reject base_survival_ppm > 1_000_000", () => {
@@ -2244,7 +2244,7 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
       expect(sessionData.maxPayout.toString()).to.equal("10000000000"); // 100 * 0.1 SOL
     });
 
-    it("should handle large bet amount (0.5 SOL - max)", () => {
+    it("should handle large bet amount (0.1 SOL - max)", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 100n * BigInt(LAMPORTS_PER_SOL));
 

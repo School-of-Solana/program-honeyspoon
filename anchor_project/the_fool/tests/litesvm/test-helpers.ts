@@ -11,12 +11,16 @@ import type { Signer } from "@solana/web3.js";
 import BN from "bn.js";
 
 export const PROGRAM_ID = new PublicKey(
-  "9GxDuBwkkzJWe7ij6xrYv5FFAuqkDW5hjtripZAJgKb7"
+  "CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1"
 );
 
 export const HOUSE_VAULT_SEED = "house_vault";
 export const SESSION_SEED = "session";
 export const GAME_CONFIG_SEED = "game_config";
+
+// Session timeout (must match program constant)
+export const TIMEOUT_SLOTS = 750;
+
 
 export const TEST_AMOUNTS = {
   TINY: 0.001,

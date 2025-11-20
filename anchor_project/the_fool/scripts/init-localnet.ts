@@ -12,9 +12,18 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
-const PROGRAM_ID = new PublicKey(
-  "CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1"
-);
+// Read program ID from keypair file (auto-updated on build)
+const PROGRAM_KEYPAIR_PATH = path.join(__dirname, "../target/deploy/dive_game-keypair.json");
+let PROGRAM_ID: PublicKey;
+try {
+  const keypairData = JSON.parse(fs.readFileSync(PROGRAM_KEYPAIR_PATH, "utf-8"));
+  const keypair = Keypair.fromSecretKey(Uint8Array.from(keypairData));
+  PROGRAM_ID = keypair.publicKey;
+} catch (error) {
+  // Fallback to devnet program ID if keypair not found
+  PROGRAM_ID = new PublicKey("2hMffkY1dCRo548Kj152LNyPomQAiFhw7dVAsgNbZ7F2");
+  console.warn("⚠️  Could not read program keypair, using default ID");
+}
 
 const GAME_CONFIG_SEED = "game_config";
 const HOUSE_VAULT_SEED = "house_vault";
@@ -83,15 +92,14 @@ async function main() {
       const discriminator = Buffer.from([23, 235, 115, 232, 168, 96, 1, 231]);
       const data = Buffer.concat([
         discriminator,
-        serializeOption(null, 4),
-        serializeOption(null, 4),
-        serializeOption(null, 4),
-        serializeOption(null, 2),
-        serializeOption(null, 2),
-        serializeOption(null, 2),
-        serializeOption(null, 2),
-        serializeOption(100_000_000, 8),
-        serializeOption(10_000_000_000, 8),
+        serializeOption(null, 4), // base_survival_ppm (use default)
+        serializeOption(null, 4), // decay_per_dive_ppm (use default)
+        serializeOption(null, 4), // min_survival_ppm (use default)
+        serializeOption(null, 2), // treasure_multiplier_num (use default)
+        serializeOption(null, 2), // treasure_multiplier_den (use default)
+        serializeOption(null, 2), // max_payout_multiplier (use default)
+        serializeOption(null, 2), // max_dives (use default: 5)
+        serializeOption(null, 8), // fixed_bet (use default: 0.01 SOL = 10M lamports)
       ]);
 
       const instruction = new TransactionInstruction({

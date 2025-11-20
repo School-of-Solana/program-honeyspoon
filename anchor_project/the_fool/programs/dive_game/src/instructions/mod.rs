@@ -18,3 +18,5 @@ pub mod withdraw_house;
 pub use withdraw_house::*;
 pub mod reset_vault_reserved;
 pub use reset_vault_reserved::*;
+pub mod update_config;
+pub use update_config::*;
