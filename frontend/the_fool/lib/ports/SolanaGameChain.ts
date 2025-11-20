@@ -561,8 +561,28 @@ export class SolanaGameChain implements GameChainPort {
       }
     }
 
+    // If session doesn't exist after retries, it means the player died
+    // and the account was closed by the program (atomic cleanup in play_round)
     if (!state) {
-      throw GameError.invalidSession();
+      console.log("[SolanaGameChain] Session not found after playRound - player died (account closed)");
+      
+      // Create a "Lost" state to represent the death
+      // We don't have the exact final state, but we know they died
+      return {
+        state: {
+          sessionPda: params.sessionPda,
+          user: params.userPubkey,
+          houseVault: session.house_vault.toBase58(),
+          status: SessionStatus.Lost,
+          betAmount: BigInt(session.bet_amount.toString()),
+          currentTreasure: BigInt(0), // Lost all treasure
+          maxPayout: BigInt(session.max_payout.toString()),
+          diveNumber: session.dive_number,
+          bump: 0,
+          lastActiveSlot: BigInt(0),
+        },
+        survived: false,
+      };
     }
 
     // Determine if survived based on status

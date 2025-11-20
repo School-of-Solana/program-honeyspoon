@@ -2001,5 +2001,162 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
         console.log(`      ✓ Fixed bet from config: ${sessionData.betAmount.toString()} lamports (0.01 SOL)`);
       }
     });
+
+    it("should handle player death by closing session account (play_round atomic cleanup)", () => {
+      // This test verifies that when a player dies during play_round,
+      // the session account is closed and the rent is refunded to the player.
+      // This is an important behavior that the frontend must handle correctly.
+      
+      const testSvm = new LiteSVM();
+      
+      // Load program
+      const programPath = path.join(__dirname, "../../target/deploy/dive_game.so");
+      const programBytes = fs.readFileSync(programPath);
+      testSvm.addProgram(PROGRAM_ID, programBytes);
+
+      // Create test accounts
+      const testAuthority = new Keypair();
+      const testPlayer = new Keypair();
+      testSvm.airdrop(testAuthority.publicKey, 100n * BigInt(LAMPORTS_PER_SOL));
+      testSvm.airdrop(testPlayer.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
+
+      // Get PDAs
+      const [testConfigPDA] = getConfigPDA();
+      const [testHouseVaultPDA] = getHouseVaultPDA(testAuthority.publicKey);
+      const [testSessionPDA] = getSessionPDA(testPlayer.publicKey, new BN(0));
+
+      // Initialize config with very low survival rate to ensure death
+      const configData = buildInitConfigData({
+        fixedBet: new BN(10_000_000), // 0.01 SOL
+        baseSurvivalPpm: 1, // 0.0001% survival - almost guaranteed death
+        decayPerDivePpm: 0, // No decay needed
+        minSurvivalPpm: 1,
+      });
+      const configIx = new TransactionInstruction({
+        keys: [
+          { pubkey: testAuthority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: testConfigPDA, isSigner: false, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: configData,
+      });
+
+      const configTx = new Transaction();
+      configTx.recentBlockhash = testSvm.latestBlockhash();
+      configTx.add(configIx);
+      configTx.sign(testAuthority);
+      testSvm.sendTransaction(configTx);
+
+      // Initialize house vault
+      const vaultData = buildInitHouseVaultData(false);
+      const vaultIx = new TransactionInstruction({
+        keys: [
+          { pubkey: testAuthority.publicKey, isSigner: true, isWritable: true },
+          { pubkey: testHouseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: vaultData,
+      });
+
+      const vaultTx = new Transaction();
+      vaultTx.recentBlockhash = testSvm.latestBlockhash();
+      vaultTx.add(vaultIx);
+      vaultTx.sign(testAuthority);
+      testSvm.sendTransaction(vaultTx);
+
+      // Fund vault
+      testSvm.airdrop(testHouseVaultPDA, 1000n * BigInt(LAMPORTS_PER_SOL));
+
+      // Start session
+      const startData = buildStartSessionData(new BN(0));
+      const startIx = new TransactionInstruction({
+        keys: [
+          { pubkey: testPlayer.publicKey, isSigner: true, isWritable: true },
+          { pubkey: testConfigPDA, isSigner: false, isWritable: false },
+          { pubkey: testHouseVaultPDA, isSigner: false, isWritable: true },
+          { pubkey: testAuthority.publicKey, isSigner: false, isWritable: false },
+          { pubkey: testSessionPDA, isSigner: false, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        programId: PROGRAM_ID,
+        data: startData,
+      });
+
+      const startTx = new Transaction();
+      startTx.recentBlockhash = testSvm.latestBlockhash();
+      startTx.add(startIx);
+      startTx.sign(testPlayer);
+      const startResult = testSvm.sendTransaction(startTx);
+      
+      expect(startResult?.constructor?.name).to.equal("TransactionMetadata");
+
+      // Verify session exists before play_round
+      let sessionAccount = testSvm.getAccount(testSessionPDA);
+      expect(sessionAccount).to.not.be.null;
+      
+      if (sessionAccount) {
+        const sessionData = parseSessionData(sessionAccount.data);
+        expect(sessionData.status).to.equal("Active");
+        console.log("      ✓ Session created and active before play_round");
+      }
+
+      // Get player balance before play_round
+      const playerBalanceBefore = testSvm.getBalance(testPlayer.publicKey);
+
+      // Play round (with 0.0001% survival rate, player will almost certainly die)
+      const playData = buildPlayRoundData();
+      const playIx = new TransactionInstruction({
+        keys: [
+          { pubkey: testPlayer.publicKey, isSigner: true, isWritable: true },
+          { pubkey: testConfigPDA, isSigner: false, isWritable: false },
+          { pubkey: testSessionPDA, isSigner: false, isWritable: true },
+          { pubkey: testHouseVaultPDA, isSigner: false, isWritable: true },
+        ],
+        programId: PROGRAM_ID,
+        data: playData,
+      });
+
+      const playTx = new Transaction();
+      playTx.recentBlockhash = testSvm.latestBlockhash();
+      playTx.add(playIx);
+      playTx.sign(testPlayer);
+      const playResult = testSvm.sendTransaction(playTx);
+
+      // play_round should succeed regardless of survival outcome
+      expect(playResult?.constructor?.name).to.equal("TransactionMetadata");
+
+      // Check if session account still exists
+      sessionAccount = testSvm.getAccount(testSessionPDA);
+      
+      if (sessionAccount === null || sessionAccount.data.length === 0) {
+        // Session was closed - player died!
+        console.log("      ✓ Player died - session account was closed (atomic cleanup)");
+        
+        // Verify player received rent refund
+        const playerBalanceAfter = testSvm.getBalance(testPlayer.publicKey);
+        expect(Number(playerBalanceAfter)).to.be.greaterThan(Number(playerBalanceBefore));
+        console.log(`      ✓ Rent refunded to player: ${Number(playerBalanceAfter) - Number(playerBalanceBefore)} lamports`);
+        
+        // Verify house vault released the reservation
+        const vaultAccount = testSvm.getAccount(testHouseVaultPDA);
+        expect(vaultAccount).to.not.be.null;
+        if (vaultAccount) {
+          const vaultData = parseHouseVaultData(vaultAccount.data);
+          expect(vaultData.totalReserved.toString()).to.equal("0", 
+            "House vault should release reservation when player dies");
+          console.log("      ✓ House vault reservation released");
+        }
+      } else {
+        // Player survived (very unlikely with 0.0001% rate)
+        const sessionData = parseSessionData(sessionAccount.data);
+        expect(sessionData.status).to.equal("Active");
+        console.log("      ⚠️ Player survived (unlikely with 0.0001% survival rate)");
+        console.log("      ✓ Test passed - session remains active on survival");
+      }
+      
+      console.log("      ✓ Frontend must handle session closure as player death");
+    });
   });
 });
