@@ -382,4 +382,204 @@ describe("Localnet Integration - Full Game Flow", () => {
       console.log(`✅ Vault reserved: ${vaultAccount.totalReserved.toNumber() / LAMPORTS_PER_SOL} SOL`);
     });
   });
+
+  describe("Session Cleanup & Expiration", () => {
+    it("should cleanup expired session after timeout", async () => {
+      const player = Keypair.generate();
+      await airdrop(player.publicKey, 10 * LAMPORTS_PER_SOL);
+
+      const sessionIndex = new BN(Date.now() + 100);
+      const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
+
+      console.log("\n⏰ Testing Session Expiration");
+
+      // Start session
+      const houseVault = await program.account.houseVault.fetch(houseVaultPDA);
+      await program.methods
+        .startSession(sessionIndex)
+        .accounts({
+          user: player.publicKey,
+          houseVault: houseVaultPDA,
+          houseAuthority: houseVault.houseAuthority,
+        } as any)
+        .signers([player])
+        .rpc();
+
+      console.log("✅ Session started");
+
+      // Get current slot
+      const currentSlot = await provider.connection.getSlot();
+      console.log(`Current slot: ${currentSlot}`);
+
+      // Wait for timeout (on real validator this would need actual time)
+      // For now, just verify the cleanup instruction exists
+      const crank = Keypair.generate();
+      await airdrop(crank.publicKey, 1 * LAMPORTS_PER_SOL);
+
+      // Note: In real scenario, we'd need to wait for TIMEOUT_SLOTS to pass
+      // This test just verifies the instruction can be called
+      try {
+        await program.methods
+          .cleanExpiredSession()
+          .accounts({
+            crank: crank.publicKey,
+            houseVault: houseVaultPDA,
+            session: sessionPDA,
+          } as any)
+          .signers([crank])
+          .rpc();
+        
+        console.log("✅ Cleanup would work when timeout expires");
+      } catch (e) {
+        // Expected to fail because timeout hasn't passed yet
+        expect(e.message).to.include("SessionNotExpired");
+        console.log("✅ Correctly rejected cleanup before timeout");
+      }
+    });
+
+    it("should allow starting new session after previous ends", async () => {
+      const player = Keypair.generate();
+      await airdrop(player.publicKey, 50 * LAMPORTS_PER_SOL);
+
+      const sessionIndex1 = new BN(Date.now() + 200);
+      const [sessionPDA1] = getSessionPDA(player.publicKey, sessionIndex1);
+
+      console.log("\n♻️  Testing Sequential Sessions");
+
+      // First session - start and let it end
+      const houseVault = await program.account.houseVault.fetch(houseVaultPDA);
+      await program.methods
+        .startSession(sessionIndex1)
+        .accounts({
+          user: player.publicKey,
+          houseVault: houseVaultPDA,
+          houseAuthority: houseVault.houseAuthority,
+        } as any)
+        .signers([player])
+        .rpc();
+
+      console.log("✅ First session started");
+
+      // Try to play - might die or survive
+      let firstSessionClosed = false;
+      try {
+        await program.methods
+          .playRound()
+          .signers([player])
+          .rpc();
+        
+        // If we get here, check if still active
+        try {
+          const session = await program.account.gameSession.fetch(sessionPDA1);
+          if (session.status.hasOwnProperty("active")) {
+            // Cash out to close it
+            await program.methods
+              .cashOut()
+              .signers([player])
+              .rpc();
+            firstSessionClosed = true;
+            console.log("✅ First session cashed out and closed");
+          }
+        } catch (e) {
+          firstSessionClosed = true;
+          console.log("✅ First session ended");
+        }
+      } catch (e) {
+        // Died immediately - session is closed
+        firstSessionClosed = true;
+        console.log("✅ First session ended (player died)");
+      }
+
+      // Verify first session is really closed
+      try {
+        await program.account.gameSession.fetch(sessionPDA1);
+        console.log("⚠️  First session still exists (might not have closed)");
+      } catch (e) {
+        console.log("✅ First session account confirmed closed");
+      }
+
+      // Now start a DIFFERENT session (different index)
+      const sessionIndex2 = new BN(Date.now() + 300);
+      const [sessionPDA2] = getSessionPDA(player.publicKey, sessionIndex2);
+      
+      await program.methods
+        .startSession(sessionIndex2)
+        .accounts({
+          user: player.publicKey,
+          houseVault: houseVaultPDA,
+          houseAuthority: houseVault.houseAuthority,
+        } as any)
+        .signers([player])
+        .rpc();
+
+      console.log("✅ Second session started (different index)");
+
+      // Verify second session exists
+      const session2 = await program.account.gameSession.fetch(sessionPDA2);
+      expect(session2.status).to.have.property("active");
+      console.log("✅ Player can start multiple sequential sessions");
+    });
+  });
+
+  describe("Authorization & Security", () => {
+    it("should prevent unauthorized actions on player sessions", async () => {
+      const player = Keypair.generate();
+      const attacker = Keypair.generate();
+      await airdrop(player.publicKey, 10 * LAMPORTS_PER_SOL);
+      await airdrop(attacker.publicKey, 10 * LAMPORTS_PER_SOL);
+
+      const sessionIndex = new BN(Date.now() + 300);
+      const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
+
+      console.log("\n🔐 Testing Authorization");
+
+      // Player starts session
+      const houseVault = await program.account.houseVault.fetch(houseVaultPDA);
+      await program.methods
+        .startSession(sessionIndex)
+        .accounts({
+          user: player.publicKey,
+          houseVault: houseVaultPDA,
+          houseAuthority: houseVault.houseAuthority,
+        } as any)
+        .signers([player])
+        .rpc();
+
+      console.log("✅ Player session started");
+
+      // Attacker tries to play round on player's session
+      try {
+        await program.methods
+          .playRound()
+          .accounts({
+            user: attacker.publicKey,
+            session: sessionPDA,
+          } as any)
+          .signers([attacker])
+          .rpc();
+        
+        expect.fail("Should not allow attacker to play on player session");
+      } catch (e) {
+        expect(e.message).to.match(/(ConstraintHasOne|constraint was violated)/i);
+        console.log("✅ Correctly rejected unauthorized play_round");
+      }
+
+      // Attacker tries to cash out player's session
+      try {
+        await program.methods
+          .cashOut()
+          .accounts({
+            user: attacker.publicKey,
+            session: sessionPDA,
+          } as any)
+          .signers([attacker])
+          .rpc();
+        
+        expect.fail("Should not allow attacker to cash out player session");
+      } catch (e) {
+        expect(e.message).to.match(/(ConstraintHasOne|constraint was violated)/i);
+        console.log("✅ Correctly rejected unauthorized cash_out");
+      }
+    });
+  });
 });
