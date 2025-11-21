@@ -250,10 +250,9 @@ export function createPlayRoundInstruction(
 export function createCashOutInstruction(
   player: PublicKey,
   sessionPDA: PublicKey,
-  configPDA: PublicKey,
-  houseVaultPDA: PublicKey,
-  authority: PublicKey
+  houseVaultPDA: PublicKey
 ): TransactionInstruction {
+  // Rust struct: user (Signer, mut), session (mut, has_one), house_vault (mut)
   return new TransactionInstruction({
     keys: [
       { pubkey: player, isSigner: true, isWritable: true },
@@ -268,16 +267,14 @@ export function createCashOutInstruction(
 export function createLoseSessionInstruction(
   player: PublicKey,
   sessionPDA: PublicKey,
-  houseVaultPDA: PublicKey,
-  authority: PublicKey
+  houseVaultPDA: PublicKey
 ): TransactionInstruction {
+  // Rust struct: user (Signer, mut), session (mut, has_one), house_vault (mut)
   return new TransactionInstruction({
     keys: [
       { pubkey: player, isSigner: true, isWritable: true },
       { pubkey: sessionPDA, isSigner: false, isWritable: true },
       { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-      { pubkey: authority, isSigner: false, isWritable: false },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     programId: PROGRAM_ID,
     data: buildLoseSessionData(),
@@ -913,9 +910,7 @@ export function cashOut(
   const cashOutIx = createCashOutInstruction(
     player.publicKey,
     sessionPDA,
-    configPDA,
-    houseVaultPDA,
-    authority.publicKey
+    houseVaultPDA
   );
 
   return buildAndSendTx({
@@ -936,8 +931,7 @@ export function loseSession(
   const loseIx = createLoseSessionInstruction(
     player.publicKey,
     sessionPDA,
-    houseVaultPDA,
-    authority.publicKey
+    houseVaultPDA
   );
 
   return buildAndSendTx({
