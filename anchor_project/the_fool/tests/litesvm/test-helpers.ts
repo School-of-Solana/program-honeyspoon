@@ -361,6 +361,75 @@ export function parseSessionData(
   };
 }
 
+/**
+ * Creates raw session account data that can be written directly with setAccount()
+ * This bypasses the need to call start_session instruction
+ */
+export function buildSessionAccountData(params: {
+  user: PublicKey;
+  houseVault: PublicKey;
+  status: "Active" | "Lost" | "CashedOut";
+  betAmount: BN;
+  currentTreasure: BN;
+  maxPayout: BN;
+  diveNumber: number;
+  bump: number;
+  lastActiveSlot: BN;
+}): Buffer {
+  // Account discriminator for GameSession (8 bytes)
+  // This is the first 8 bytes of sha256("account:GameSession")
+  const discriminator = Buffer.from([
+    0xc3, 0x5e, 0xfc, 0x7e, 0x5f, 0x0f, 0x6b, 0x0e,
+  ]);
+
+  // Calculate total size: 8 + 32 + 32 + 1 + 8 + 8 + 8 + 2 + 1 + 8 = 108 bytes
+  const buffer = Buffer.alloc(108);
+  let offset = 0;
+
+  // Discriminator (8 bytes)
+  discriminator.copy(buffer, offset);
+  offset += 8;
+
+  // user (32 bytes)
+  params.user.toBuffer().copy(buffer, offset);
+  offset += 32;
+
+  // house_vault (32 bytes)
+  params.houseVault.toBuffer().copy(buffer, offset);
+  offset += 32;
+
+  // status (1 byte enum: 0=Active, 1=Lost, 2=CashedOut)
+  const statusByte =
+    params.status === "Active" ? 0 : params.status === "Lost" ? 1 : 2;
+  buffer.writeUInt8(statusByte, offset);
+  offset += 1;
+
+  // bet_amount (8 bytes, u64 little-endian)
+  params.betAmount.toArrayLike(Buffer, "le", 8).copy(buffer, offset);
+  offset += 8;
+
+  // current_treasure (8 bytes, u64 little-endian)
+  params.currentTreasure.toArrayLike(Buffer, "le", 8).copy(buffer, offset);
+  offset += 8;
+
+  // max_payout (8 bytes, u64 little-endian)
+  params.maxPayout.toArrayLike(Buffer, "le", 8).copy(buffer, offset);
+  offset += 8;
+
+  // dive_number (2 bytes, u16 little-endian)
+  buffer.writeUInt16LE(params.diveNumber, offset);
+  offset += 2;
+
+  // bump (1 byte)
+  buffer.writeUInt8(params.bump, offset);
+  offset += 1;
+
+  // last_active_slot (8 bytes, u64 little-endian)
+  params.lastActiveSlot.toArrayLike(Buffer, "le", 8).copy(buffer, offset);
+
+  return buffer;
+}
+
 export interface ParsedHouseVaultData {
   houseAuthority: PublicKey;
   gameKeeper: PublicKey;
