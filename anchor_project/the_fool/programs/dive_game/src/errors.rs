@@ -25,4 +25,8 @@ pub enum GameError {
     InvalidSlotHash,
     #[msg("Session has not expired yet - cannot clean up")]
     SessionNotExpired,
+    #[msg("Cannot reset vault reserved when total_reserved > 0 - may have active sessions")]
+    VaultHasReservedFunds,
+    #[msg("Vault capacity exceeded - too many concurrent sessions would risk insolvency")]
+    VaultCapacityExceeded,
 }

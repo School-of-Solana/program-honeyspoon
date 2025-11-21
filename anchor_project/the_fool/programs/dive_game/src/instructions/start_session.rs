@@ -54,7 +54,29 @@ pub fn start_session(ctx: Context<StartSession>, _session_index: u64) -> Result<
         return Err(GameError::InsufficientVaultBalance.into());
     }
 
-    // Still reserve full max_payout for proper accounting
+    // CIRCUIT BREAKER: Prevent vault insolvency from 20% rule
+    // The 20% rule allows up to 5x leverage (vault can reserve 5x its balance)
+    // This circuit breaker caps total reservations at 100% of vault balance to prevent insolvency
+    // 
+    // Without this: 5 concurrent sessions could reserve 500% of vault balance
+    // With this: Total reserved can never exceed actual vault balance
+    let new_total_reserved = house_vault
+        .total_reserved
+        .checked_add(max_payout)
+        .ok_or(GameError::Overflow)?;
+
+    if new_total_reserved > vault_balance {
+        msg!(
+            "VAULT_CAPACITY_EXCEEDED vault_balance={} SOL, current_reserved={} SOL, requested={} SOL, would_be={} SOL",
+            vault_balance / 1_000_000_000,
+            house_vault.total_reserved / 1_000_000_000,
+            max_payout / 1_000_000_000,
+            new_total_reserved / 1_000_000_000
+        );
+        return Err(GameError::VaultCapacityExceeded.into());
+    }
+
+    // Reserve full max_payout for proper accounting
     house_vault.reserve(max_payout)?;
 
     // Phase 1 RNG Security: No longer generate or store RNG seed

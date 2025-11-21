@@ -12,8 +12,10 @@ pub fn withdraw_house(ctx: Context<WithdrawHouse>, amount: u64) -> Result<()> {
 
     // Calculate solvency
     // available = balance - reserved - rent_exempt_minimum
-    // Rent exempt minimum for HouseVault (approx 1.4 SOL for safety)
-    let rent_exempt = 1_398_960;
+    // SECURITY FIX: Use dynamic rent calculation instead of hardcoded value
+    // This ensures rent exemption stays accurate as Solana rent costs change
+    let rent = Rent::get()?;
+    let rent_exempt = rent.minimum_balance(vault_account.data_len());
     let required = house_vault.total_reserved.saturating_add(rent_exempt);
 
     let available = current_balance.saturating_sub(required);

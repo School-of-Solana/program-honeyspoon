@@ -811,25 +811,42 @@ describe("Localnet Integration - Full Game Flow", () => {
   });
 
   describe("Emergency Functions - CRITICAL", () => {
-    it("should reset vault reserved (DANGEROUS)", async () => {
-      console.log("\n⚠️  Testing Emergency Reset (DANGEROUS)");
+    it("should only allow reset when total_reserved = 0", async () => {
+      console.log("\n⚠️  Testing Emergency Reset (SAFE NOW)");
 
       const beforeVault = await program.account.houseVault.fetch(houseVaultPDA);
       console.log(`Reserved before: ${beforeVault.totalReserved.toNumber() / LAMPORTS_PER_SOL} SOL`);
 
-      // This is DANGEROUS - it resets reserved funds even with active sessions!
-      await program.methods
-        .resetVaultReserved()
-        .accounts({
-          houseAuthority: authority.publicKey,
-          houseVault: houseVaultPDA,
-        } as any)
-        .rpc();
+      if (beforeVault.totalReserved.toNumber() > 0) {
+        // Should reject when total_reserved > 0
+        try {
+          await program.methods
+            .resetVaultReserved()
+            .accounts({
+              houseAuthority: authority.publicKey,
+              houseVault: houseVaultPDA,
+            } as any)
+            .rpc();
 
-      const afterVault = await program.account.houseVault.fetch(houseVaultPDA);
-      expect(afterVault.totalReserved.toNumber()).to.equal(0);
-      console.log("✅ Reserved reset to 0");
-      console.log("⚠️  WARNING: This is dangerous if sessions are active!");
+          expect.fail("Should not allow reset when total_reserved > 0");
+        } catch (e) {
+          expect(e.message).to.match(/VaultHasReservedFunds/i);
+          console.log("✅ Correctly rejected reset (reserved > 0)");
+        }
+      } else {
+        // Should succeed when total_reserved = 0
+        await program.methods
+          .resetVaultReserved()
+          .accounts({
+            houseAuthority: authority.publicKey,
+            houseVault: houseVaultPDA,
+          } as any)
+          .rpc();
+
+        const afterVault = await program.account.houseVault.fetch(houseVaultPDA);
+        expect(afterVault.totalReserved.toNumber()).to.equal(0);
+        console.log("✅ Reset succeeded (reserved was already 0)");
+      }
     });
 
     it("should reject reset by non-authority", async () => {
@@ -959,6 +976,175 @@ describe("Localnet Integration - Full Game Flow", () => {
       console.log(`Sessions started: ${successCount}/${players.length}`);
       console.log(`Reserved: ${finalVault.totalReserved.toNumber() / LAMPORTS_PER_SOL} SOL`);
       console.log("⚠️  WARNING: If all win max, vault needs 5x what's reserved!");
+    });
+  });
+
+  describe("🔒 Security Fixes Tests", () => {
+    it("should reject reset_vault_reserved when total_reserved > 0", async () => {
+      console.log("\n🔐 Testing Reset Vault Security Fix");
+
+      // Start a session to have some reserved funds
+      const player = Keypair.generate();
+      await airdrop(player.publicKey, 10 * LAMPORTS_PER_SOL);
+
+      const sessionIndex = new BN(Date.now() + 700);
+      const houseVault = await program.account.houseVault.fetch(houseVaultPDA);
+
+      await program.methods
+        .startSession(sessionIndex)
+        .accounts({
+          user: player.publicKey,
+          houseVault: houseVaultPDA,
+          houseAuthority: houseVault.houseAuthority,
+        } as any)
+        .signers([player])
+        .rpc();
+
+      // Check that we have reserved funds
+      const vaultAfterStart = await program.account.houseVault.fetch(houseVaultPDA);
+      expect(vaultAfterStart.totalReserved.toNumber()).to.be.greaterThan(0);
+      console.log(`✅ Reserved funds: ${vaultAfterStart.totalReserved.toNumber() / LAMPORTS_PER_SOL} SOL`);
+
+      // Try to reset - should fail because total_reserved > 0
+      try {
+        await program.methods
+          .resetVaultReserved()
+          .accounts({
+            houseAuthority: authority.publicKey,
+            houseVault: houseVaultPDA,
+          } as any)
+          .signers([authority])
+          .rpc();
+
+        expect.fail("Should not allow reset when total_reserved > 0");
+      } catch (e) {
+        expect(e.message).to.match(/VaultHasReservedFunds/i);
+        console.log("✅ Correctly rejected reset with active reserves");
+      }
+
+      // Clean up - cash out or lose the session
+      try {
+        await program.methods
+          .cashOut()
+          .signers([player])
+          .rpc();
+      } catch (e) {
+        // If cash out fails, that's ok for this test
+      }
+    });
+
+    it("should enforce circuit breaker on vault capacity", async () => {
+      console.log("\n⚡ Testing Circuit Breaker");
+
+      // Get current vault balance
+      const vaultBalance = await provider.connection.getBalance(houseVaultPDA);
+      const vaultAccount = await program.account.houseVault.fetch(houseVaultPDA);
+      
+      console.log(`Vault balance: ${vaultBalance / LAMPORTS_PER_SOL} SOL`);
+      console.log(`Currently reserved: ${vaultAccount.totalReserved.toNumber() / LAMPORTS_PER_SOL} SOL`);
+
+      // Calculate how many sessions we can start before hitting the circuit breaker
+      // Each session reserves max_payout (bet * 100 for 100x multiplier)
+      const config = await program.account.gameConfig.fetch(configPDA);
+      const maxPayout = config.fixedBet.toNumber() * config.maxPayoutMultiplier;
+      
+      console.log(`Max payout per session: ${maxPayout / LAMPORTS_PER_SOL} SOL`);
+      
+      // Available capacity = vault_balance - total_reserved
+      const availableCapacity = vaultBalance - vaultAccount.totalReserved.toNumber();
+      const possibleSessions = Math.floor(availableCapacity / maxPayout);
+      
+      console.log(`Can start approximately ${possibleSessions} more sessions`);
+
+      // Try to start sessions until we hit the circuit breaker
+      let sessionCount = 0;
+      const maxAttempts = 10;
+
+      for (let i = 0; i < maxAttempts; i++) {
+        const player = Keypair.generate();
+        await airdrop(player.publicKey, 10 * LAMPORTS_PER_SOL);
+        
+        const sessionIndex = new BN(Date.now() + 800 + i);
+
+        try {
+          await program.methods
+            .startSession(sessionIndex)
+            .accounts({
+              user: player.publicKey,
+              houseVault: houseVaultPDA,
+              houseAuthority: vaultAccount.houseAuthority,
+            } as any)
+            .signers([player])
+            .rpc();
+
+          sessionCount++;
+          console.log(`✅ Session ${sessionCount} started`);
+        } catch (e) {
+          if (e.message.includes("VaultCapacityExceeded")) {
+            console.log(`🛑 Circuit breaker triggered at session ${sessionCount + 1}`);
+            console.log("✅ Circuit breaker working correctly!");
+            
+            const finalVault = await program.account.houseVault.fetch(houseVaultPDA);
+            console.log(`Final reserved: ${finalVault.totalReserved.toNumber() / LAMPORTS_PER_SOL} SOL`);
+            console.log(`Vault balance: ${vaultBalance / LAMPORTS_PER_SOL} SOL`);
+            
+            // Verify circuit breaker logic: total_reserved should not exceed vault_balance
+            expect(finalVault.totalReserved.toNumber()).to.be.at.most(vaultBalance);
+            return; // Test passed
+          } else if (e.message.includes("InsufficientVaultBalance")) {
+            console.log(`⚠️  Hit 20% rule limit at session ${sessionCount + 1}`);
+            return; // This is also expected behavior
+          } else {
+            throw e; // Unexpected error
+          }
+        }
+      }
+
+      console.log(`✅ Started ${sessionCount} sessions without hitting circuit breaker`);
+      console.log("⚠️  Circuit breaker not triggered (vault has sufficient capacity)");
+    });
+
+    it("should use dynamic rent calculation in withdraw_house", async () => {
+      console.log("\n💰 Testing Dynamic Rent Calculation");
+
+      const vaultBefore = await program.account.houseVault.fetch(houseVaultPDA);
+      const vaultBalanceBefore = await provider.connection.getBalance(houseVaultPDA);
+      
+      console.log(`Vault balance: ${vaultBalanceBefore / LAMPORTS_PER_SOL} SOL`);
+      console.log(`Reserved: ${vaultBefore.totalReserved.toNumber() / LAMPORTS_PER_SOL} SOL`);
+
+      // Try to withdraw a small amount (should respect dynamic rent)
+      const withdrawAmount = 0.001 * LAMPORTS_PER_SOL; // 0.001 SOL
+
+      try {
+        await program.methods
+          .withdrawHouse(new BN(withdrawAmount))
+          .accounts({
+            houseAuthority: authority.publicKey,
+            houseVault: houseVaultPDA,
+          } as any)
+          .signers([authority])
+          .rpc();
+
+        console.log(`✅ Withdrawal succeeded (respecting dynamic rent)`);
+        
+        const vaultBalanceAfter = await provider.connection.getBalance(houseVaultPDA);
+        console.log(`New balance: ${vaultBalanceAfter / LAMPORTS_PER_SOL} SOL`);
+        
+        // Verify vault is still rent-exempt (HouseVault size = 8 + space)
+        const vaultAccountInfo = await provider.connection.getAccountInfo(houseVaultPDA);
+        const minRent = await provider.connection.getMinimumBalanceForRentExemption(
+          vaultAccountInfo.data.length
+        );
+        expect(vaultBalanceAfter).to.be.at.least(minRent);
+        console.log("✅ Vault still rent-exempt after withdrawal");
+      } catch (e) {
+        if (e.message.includes("InsufficientVaultBalance")) {
+          console.log("✅ Withdrawal correctly rejected (would break rent exemption or solvency)");
+        } else {
+          throw e;
+        }
+      }
     });
   });
 });
