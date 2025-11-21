@@ -15,7 +15,7 @@
 
 import { getWalletInfo as getEngineWalletInfo } from "./gameEngine";
 import { getGameChain } from "@/lib/ports";
-import { solToLamports, lamportsToSol } from "@/lib/utils/lamports";
+import { solToLamports, lamportsToSol } from "@/lib/utils/solana";
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   detectSolanaNetwork,

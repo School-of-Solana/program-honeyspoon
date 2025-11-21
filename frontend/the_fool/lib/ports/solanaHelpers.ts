@@ -154,7 +154,7 @@ import {
   getHouseVaultAddress,
   getSessionAddress,
 } from "../solana/pdas";
-import { lamportsToSol, solToLamports } from "../utils/lamports";
+import { lamportsToSol, solToLamports } from "../utils/solana";
 
 // Program ID from environment
 // Using lazy initialization to avoid build-time instantiation issues

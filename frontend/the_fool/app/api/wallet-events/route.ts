@@ -17,7 +17,7 @@
 
 import { NextRequest } from "next/server";
 import { getGameChain } from "@/lib/ports";
-import { lamportsToSol } from "@/lib/utils/lamports";
+import { lamportsToSol } from "@/lib/utils/solana";
 
 // Keep track of active connections
 const connections = new Set<ReadableStreamDefaultController>();

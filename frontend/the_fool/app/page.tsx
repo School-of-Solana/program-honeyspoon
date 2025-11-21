@@ -5,6 +5,8 @@ import OceanScene from "@/components/DeepSeaDiver/OceanScene";
 import DebugPanel from "@/components/DebugWalletPanel";
 import { GameErrorBoundary } from "@/components/DeepSeaDiver/GameErrorBoundary";
 import { WalletMultiButton } from "@/components/WalletMultiButton";
+import { BettingCard } from "@/components/game/BettingCard";
+import { GameHUD } from "@/components/game/GameHUD";
 
 import { SolanaAirdropPanel } from "@/components/SolanaAirdropPanel";
 import { calculateDiveStats } from "@/lib/gameLogic";
@@ -26,10 +28,10 @@ import { useWalletSSE } from "@/lib/hooks/useWalletSSE";
 import { useGameChain } from "@/lib/hooks/useGameChain";
 import { useAsyncAction } from "@/lib/hooks/useAsyncAction";
 import { useDebouncedCallback } from "use-debounce";
-import { playSound, getSoundManager } from "@/lib/soundManager";
+import { playSound, getSoundManager, preloadSounds } from "@/lib/sounds";
 import { useGameStore } from "@/lib/gameStore";
 import { useChainWalletStore } from "@/lib/chainWalletStore";
-import { solToLamports, lamportsToSol } from "@/lib/utils/lamports";
+import { solToLamports, lamportsToSol } from "@/lib/utils/solana";
 import {
   parseServerError,
   getErrorAction,
@@ -282,8 +284,9 @@ export default function Home() {
     }));
   }, [userBalance]);
 
-  // Sync initial sound state from manager on mount
+  // Initialize sounds on mount
   useEffect(() => {
+    preloadSounds();
     setSoundMuted(getSoundManager().isMuted());
   }, []);
 
@@ -1054,241 +1057,34 @@ export default function Home() {
 
         {/* Betting Card (On Beach - Right Side) */}
         {showBettingCard && (
-          <div
-            className={`absolute top-20 right-8 z-50 transition-all duration-500 ${
-              showBettingCard
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-10"
-            }`}
-          >
-            <div
-              className="nes-container is-dark with-title"
-              style={{
-                width: "400px",
-                backgroundColor: GAME_COLORS.BACKGROUND_DARK,
-              }}
-            >
-              <p className="title" style={{ fontSize: "12px" }}>
-                ABYSS FORTUNE
-              </p>
-
-              {/* Sound Mute Button */}
-              <div className="flex justify-end mb-4">
-                <button
-                  onClick={() => {
-                    getSoundManager().toggleMute();
-                    setSoundMuted(getSoundManager().isMuted());
-                  }}
-                  className={`nes-btn ${soundMuted ? "is-error" : "is-success"}`}
-                  style={{ padding: "4px 8px", fontSize: "8px" }}
-                  title="Toggle sound"
-                >
-                  {soundMuted ? "🔇 MUTED" : "🔊 SOUND"}
-                </button>
-              </div>
-
-              {/* Wallet Balance */}
-              <div
-                className="nes-container is-rounded mb-4"
-                style={{
-                  backgroundColor: GAME_COLORS.TREASURE_GOLD,
-                  color: "#000",
-                }}
-              >
-                <div className="flex justify-between items-center">
-                  <span style={{ fontSize: "10px" }}>BALANCE</span>
-                  <div className="flex items-center gap-2">
-                    <span
-                      style={{ fontSize: "16px", fontWeight: "bold" }}
-                      onClick={() =>
-                        console.log(
-                          "[UI] Amount: Balance clicked - gameState:",
-                          {
-                            walletBalance: gameState.walletBalance,
-                            userBalance,
-                            fullGameState: gameState,
-                          }
-                        )
-                      }
-                    >
-                      {isLoadingWallet ? "..." : `${userBalance.toFixed(3)} SOL`}
-                    </span>
-                    <button
-                      className="nes-btn is-primary"
-                      style={{
-                        padding: "4px 10px",
-                        fontSize: "16px",
-                        minHeight: "28px",
-                        lineHeight: "1",
-                      }}
-                      onClick={async () => {
-                        console.log("[UI] 🔄 Manual balance refresh requested");
-                        await refreshBalance();
-                      }}
-                      disabled={isLoading}
-                      title="Refresh balance"
-                    >
-                      {isLoading ? "..." : "↻"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bet Amount */}
-              <div
-                className="nes-container is-rounded mb-4"
-                style={{
-                  backgroundColor: GAME_COLORS.SUCCESS,
-                  color: "#000",
-                }}
-              >
-                <div className="text-center">
-                  <p style={{ fontSize: "8px", marginBottom: "8px" }}>
-                    WAGER PER DIVE
-                  </p>
-                  <p style={{ fontSize: "24px", fontWeight: "bold" }}>
-                    {betAmount} SOL
-                  </p>
-                </div>
-              </div>
-
-              {/* Start Button */}
-              <button
-                onClick={() => {
-                  playSound("BUTTON_CLICK");
-                  handleStartGame();
-                }}
-                disabled={isLoadingWallet || betAmount > userBalance}
-                className={`nes-btn ${isLoadingWallet || betAmount > userBalance ? "is-disabled" : "is-success"} w-full mb-4`}
-                style={{ fontSize: "12px" }}
-              >
-                {isLoadingWallet ? "Loading balance..." : `START GAME (${betAmount} SOL)`}
-              </button>
-
-              {/* Error Message */}
-              {!isLoadingWallet && betAmount > userBalance && (
-                <div className="nes-container is-rounded is-error mb-4">
-                  <p style={{ fontSize: "8px", textAlign: "center" }}>
-                    Need {betAmount} SOL, have {userBalance.toFixed(4)} SOL
-                  </p>
-                </div>
-              )}
-
-              {/* Info */}
-              <p
-                style={{ fontSize: "8px", textAlign: "center", color: "#aaa" }}
-              >
-                {gameConfig
-                  ? `${(gameConfig.HOUSE_EDGE * 100).toFixed(0)}% House Edge - ${gameConfig.BASE_SURVIVAL_PROBABILITY * 100}% Start Chance`
-                  : `${(GAME_CONFIG.HOUSE_EDGE * 100).toFixed(0)}% House Edge - Loading config...`}
-              </p>
-            </div>
-          </div>
+          <BettingCard
+            userBalance={userBalance}
+            betAmount={betAmount}
+            isLoadingWallet={isLoadingWallet}
+            isLoading={isLoading}
+            soundMuted={soundMuted}
+            gameConfig={gameConfig}
+            onStartGame={handleStartGame}
+            onRefreshBalance={refreshBalance}
+            onToggleSound={() => {
+              getSoundManager().toggleMute();
+              setSoundMuted(getSoundManager().isMuted());
+            }}
+            onPlaySound={playSound}
+          />
         )}
 
         {/* HUD Overlay (In-Game) */}
         {showHUD && currentDiveStats && (
-          <div
-            className={`absolute inset-0 pointer-events-none transition-opacity duration-500 ${
-              showHUD ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            {/* Top HUD Bar - NES Style (Treasure Only) */}
-            <div
-              className="absolute top-20 right-4 pointer-events-auto"
-              style={{ width: "180px" }}
-            >
-              {/* Treasure Panel */}
-              <div
-                className="nes-container is-dark"
-                style={{
-                  backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
-                  padding: "10px",
-                  textAlign: "center",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "24px",
-                    color: GAME_COLORS.TREASURE_GOLD,
-                    marginBottom: "2px",
-                  }}
-                >
-                  {gameState.currentTreasure} SOL
-                </p>
-                <p
-                  style={{
-                    fontSize: "8px",
-                    color: GAME_COLORS.TEXT_SECONDARY,
-                  }}
-                >
-                  TREASURE
-                </p>
-              </div>
-            </div>
-
-            {/* Bottom: Action Buttons - NES Style */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
-              <div className="max-w-4xl mx-auto">
-                {/* Stats Panel - Simplified */}
-                <div
-                  className="nes-container is-dark mb-4"
-                  style={{
-                    backgroundColor: GAME_COLORS.BACKGROUND_DARKER,
-                    padding: "12px 16px",
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        color: GAME_COLORS.TEXT_SECONDARY,
-                      }}
-                    >
-                      SURVIVAL CHANCE:
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "20px",
-                        color: GAME_COLORS.SURVIVAL_GREEN,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {(currentDiveStats.survivalProbability * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => {
-                      playSound("BUTTON_CLICK");
-                      handleDiveDeeper();
-                    }}
-                    disabled={isProcessing}
-                    className={`nes-btn ${isProcessing ? "is-disabled" : "is-error"} flex-1`}
-                    style={{ fontSize: "16px", padding: "16px" }}
-                  >
-                    {isProcessing ? "DIVING..." : "DIVE DEEPER"}
-                  </button>
-                  {gameState.diveNumber > 1 && (
-                    <button
-                      onClick={() => {
-                        playSound("BUTTON_CLICK");
-                        handleSurface();
-                      }}
-                      disabled={isProcessing}
-                      className={`nes-btn ${isProcessing ? "is-disabled" : "is-success"} flex-1`}
-                      style={{ fontSize: "16px", padding: "16px" }}
-                    >
-                      SURFACE
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <GameHUD
+            currentTreasure={gameState.currentTreasure}
+            diveNumber={gameState.diveNumber}
+            currentDiveStats={currentDiveStats}
+            isProcessing={isProcessing}
+            onDiveDeeper={handleDiveDeeper}
+            onSurface={handleSurface}
+            onPlaySound={playSound}
+          />
         )}
 
         {/* Unified Debug Panel (only in development, Local mode only) */}

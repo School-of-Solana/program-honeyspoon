@@ -26,7 +26,7 @@ import {
   validateBetAmount,
 } from "@/lib/gameEngine";
 import { getGameChain, GameError, SessionStatus } from "@/lib/ports";
-import { solToLamports, lamportsToSol } from "@/lib/utils/lamports";
+import { solToLamports, lamportsToSol } from "@/lib/utils/solana";
 import {
   addTransaction,
   deleteGameSession,
