@@ -7,7 +7,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-dive_game = "CBdZ8FbqsgSSiKunsJgr8vogMD4pKqkoXzzi9ZB4URz1"
+dive_game = "2hMffkY1dCRo548Kj152LNyPomQAiFhw7dVAsgNbZ7F2"
 
 [registry]
 url = "https://api.apr.dev"
@@ -17,4 +17,4 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 'tests/litesvm/*.ts'"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 'tests/localnet/**/*.ts'"

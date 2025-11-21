@@ -94,7 +94,7 @@ describe("Localnet Integration - Full Game Flow", () => {
         .rpc();
       console.log("✅ House vault initialized");
     } catch (e) {
-      console.log("House vault already exists");
+      console.log("House vault init error:", e.message || e);
     }
 
     // Fund house vault
@@ -123,8 +123,17 @@ describe("Localnet Integration - Full Game Flow", () => {
 
       // STEP 1: Start Session
       console.log("\n📍 Starting session...");
+      
+      // Manually fetch houseVault to help Anchor resolve houseAuthority
+      const houseVault = await program.account.houseVault.fetch(houseVaultPDA);
+      
       await program.methods
         .startSession(sessionIndex)
+        .accounts({
+          user: player.publicKey,
+          houseVault: houseVaultPDA,
+          houseAuthority: houseVault.houseAuthority,
+        } as any)
         .signers([player])
         .rpc();
 
@@ -206,8 +215,14 @@ describe("Localnet Integration - Full Game Flow", () => {
       console.log("\n💀 Testing Death Flow");
 
       // Start session
+      const houseVault2 = await program.account.houseVault.fetch(houseVaultPDA);
       await program.methods
         .startSession(sessionIndex)
+        .accounts({
+          user: player.publicKey,
+          houseVault: houseVaultPDA,
+          houseAuthority: houseVault2.houseAuthority,
+        } as any)
         .signers([player])
         .rpc();
 
@@ -255,6 +270,9 @@ describe("Localnet Integration - Full Game Flow", () => {
       // Lock vault
       await program.methods
         .toggleHouseLock()
+        .accounts({
+          houseVault: houseVaultPDA,
+        })
         .rpc();
 
       let vaultAccount = await program.account.houseVault.fetch(houseVaultPDA);
@@ -268,9 +286,15 @@ describe("Localnet Integration - Full Game Flow", () => {
       const sessionIndex = new BN(Date.now() + 2);
       const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
 
+      const houseVault3 = await program.account.houseVault.fetch(houseVaultPDA);
       try {
         await program.methods
           .startSession(sessionIndex)
+          .accounts({
+            user: player.publicKey,
+            houseVault: houseVaultPDA,
+            houseAuthority: houseVault3.houseAuthority,
+          } as any)
           .signers([player])
           .rpc();
         
@@ -283,6 +307,9 @@ describe("Localnet Integration - Full Game Flow", () => {
       // Unlock vault
       await program.methods
         .toggleHouseLock()
+        .accounts({
+          houseVault: houseVaultPDA,
+        })
         .rpc();
 
       vaultAccount = await program.account.houseVault.fetch(houseVaultPDA);
@@ -290,8 +317,14 @@ describe("Localnet Integration - Full Game Flow", () => {
       console.log("✅ Vault unlocked");
 
       // Now session should work
+      const houseVault4 = await program.account.houseVault.fetch(houseVaultPDA);
       await program.methods
         .startSession(sessionIndex)
+        .accounts({
+          user: player.publicKey,
+          houseVault: houseVaultPDA,
+          houseAuthority: houseVault4.houseAuthority,
+        } as any)
         .signers([player])
         .rpc();
 
@@ -311,12 +344,22 @@ describe("Localnet Integration - Full Game Flow", () => {
       }
 
       // Start sessions for all
+      const houseVault5 = await program.account.houseVault.fetch(houseVaultPDA);
+      const baseTime = Date.now();
+      const sessionIndices = [];
+      
       for (let i = 0; i < players.length; i++) {
-        const sessionIndex = new BN(Date.now() + 10 + i);
+        const sessionIndex = new BN(baseTime + 10 + i);
+        sessionIndices.push(sessionIndex);
         const [sessionPDA] = getSessionPDA(players[i].publicKey, sessionIndex);
 
         await program.methods
           .startSession(sessionIndex)
+          .accounts({
+            user: players[i].publicKey,
+            houseVault: houseVaultPDA,
+            houseAuthority: houseVault5.houseAuthority,
+          } as any)
           .signers([players[i]])
           .rpc();
 
@@ -325,7 +368,7 @@ describe("Localnet Integration - Full Game Flow", () => {
 
       // Verify all active
       for (let i = 0; i < players.length; i++) {
-        const sessionIndex = new BN(Date.now() + 10 + i);
+        const sessionIndex = sessionIndices[i];
         const [sessionPDA] = getSessionPDA(players[i].publicKey, sessionIndex);
         
         const sessionAccount = await program.account.gameSession.fetch(sessionPDA);
