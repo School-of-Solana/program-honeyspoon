@@ -10,6 +10,7 @@
     "test:unit": "cargo test --package dive_game --lib",
     "test:integration": "anchor test --skip-build",
     "test:litesvm": "ts-mocha -p ./tsconfig.json -t 1000000 tests/litesvm/**/*.ts",
+    "test:localnet": "ts-mocha -p ./tsconfig.json -t 1000000 tests/localnet/**/*.ts",
     "build": "anchor build",
     "build:verifiable": "anchor build --verifiable",
     "deploy:localnet": "anchor deploy",
