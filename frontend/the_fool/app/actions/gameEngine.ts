@@ -20,10 +20,8 @@ import {
   calculateMaxPotentialPayout,
   calculateRoundStats,
   DEFAULT_CONFIG,
-  _simulateRound,
   type GameConfig,
   type RoundResult,
-  _validateBetAmount,
 } from "@/lib/gameEngine";
 import { getGameChain, GameError, SessionStatus } from "@/lib/ports";
 import { solToLamports, lamportsToSol } from "@/lib/utils/solana";
@@ -249,7 +247,7 @@ export async function startGameSession(
 
     // Start session on-chain (this handles the actual money transfer)
     // NOTE: bet amount now comes from config.fixed_bet
-    const { sessionPda, state: _state } = await chain.startSession({
+    const { sessionPda, state } = await chain.startSession({
       userPubkey: userId,
       maxPayoutLamports: maxPayoutLamports,
       houseVaultPda: vaultPda,

@@ -3,7 +3,6 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useMemo, useState } from "react";
 import { getGameChain, SolanaGameChain, WalletAdapter } from "@/lib/ports";
-import type { PublicKey } from "@solana/web3.js";
 
 /**
  * Hook to access game chain with wallet integration

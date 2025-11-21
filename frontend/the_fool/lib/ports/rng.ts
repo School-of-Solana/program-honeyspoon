@@ -33,6 +33,7 @@ export function generateVRFSeed(): Uint8Array {
     return window.crypto.getRandomValues(new Uint8Array(32));
   } else {
     // Node.js
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require("crypto").randomBytes(32);
   }
 }

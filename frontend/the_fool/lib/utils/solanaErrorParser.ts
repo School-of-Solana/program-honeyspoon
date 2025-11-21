@@ -42,7 +42,7 @@ export interface ParsedSolanaError {
 }
 
 const DEVNET_EXPLORER = "https://explorer.solana.com/address";
-const CLUSTER = "?cluster=devnet";
+const _CLUSTER = "?cluster=devnet";
 
 /**
  * Extracts amounts from new compact log format

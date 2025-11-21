@@ -63,7 +63,7 @@ class Logger {
       if (stored) {
         return { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
       }
-    } catch (e) {
+    } catch (_e) {
       // Ignore localStorage errors
     }
 
@@ -139,7 +139,7 @@ class Logger {
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("logConfig", JSON.stringify(this.config));
-      } catch (e) {
+      } catch (_e) {
         // Ignore localStorage errors
       }
     }

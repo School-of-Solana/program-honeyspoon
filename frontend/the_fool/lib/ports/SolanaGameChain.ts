@@ -14,7 +14,6 @@ import {
   Transaction,
   TransactionInstruction,
   Keypair,
-  _sendAndConfirmTransaction,
   SystemProgram,
   Commitment,
 } from "@solana/web3.js";
@@ -40,16 +39,12 @@ import {
   buildCashOutData,
   buildLoseSessionData,
   buildToggleHouseLockData,
-  _lamportsToSol,
-  _solToLamports,
 } from "./solanaHelpers";
 import {
   parseSessionData,
   parseHouseVaultData,
   parseGameConfigData,
   SessionAccount,
-  _HouseVaultAccount,
-  _GameConfigAccount,
 } from "./solanaParsers";
 
 /**

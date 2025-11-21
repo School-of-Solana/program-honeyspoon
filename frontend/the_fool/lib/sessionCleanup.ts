@@ -4,7 +4,6 @@
  */
 
 import { Connection, PublicKey } from "@solana/web3.js";
-import { BN } from "@coral-xyz/anchor";
 
 interface AbandonedSession {
   sessionPda: string;
@@ -67,7 +66,7 @@ export class SessionCleanupManager {
 
       return null;
     } catch (_error) {
-      console.error("[SessionCleanup] Failed to parse stored session:", error);
+      console.error("[SessionCleanup] Failed to parse stored session:", _error);
       localStorage.removeItem(ABANDONED_SESSION_KEY);
       return null;
     }
@@ -117,7 +116,7 @@ export class SessionCleanupManager {
 
       return false;
     } catch (_error) {
-      console.error("[SessionCleanup] Failed to check session:", error);
+      console.error("[SessionCleanup] Failed to check session:", _error);
       return false;
     }
   }

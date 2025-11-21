@@ -168,7 +168,7 @@ function getProgramId(): PublicKey {
     }
     try {
       _programId = new PublicKey(programIdStr);
-    } catch (error) {
+    } catch (_error) {
       console.error(
         `[solanaHelpers] Invalid PROGRAM_ID: "${programIdStr}", using fallback`
       );

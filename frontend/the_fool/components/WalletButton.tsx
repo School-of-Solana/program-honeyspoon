@@ -48,6 +48,7 @@ export function WalletButton() {
           {/* Wallet Icon/Name */}
           <div className="flex items-center gap-2">
             {wallet.wallet?.adapter?.icon && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={wallet.wallet.adapter.icon}
                 alt={walletName}

@@ -42,7 +42,7 @@ export function SolanaStatusBanner() {
           setConnected(true);
           setChecking(false);
         }
-      } catch (error) {
+      } catch (_error) {
         if (mounted) {
           setConnected(false);
           setChecking(false);

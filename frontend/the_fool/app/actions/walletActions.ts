@@ -293,7 +293,7 @@ export async function airdropSol(
     let publicKey: PublicKey;
     try {
       publicKey = new PublicKey(walletAddress);
-    } catch (err) {
+    } catch (_err) {
       return {
         success: false,
         error: "Invalid wallet address",

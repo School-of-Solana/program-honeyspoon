@@ -9,7 +9,7 @@
 
 /* eslint-disable react-hooks/rules-of-hooks */
 import { useState, useEffect } from "react";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { GAME_COLORS } from "@/lib/gameColors";
 import { airdropSol } from "@/app/actions/walletActions";
 import { useChainWalletStore } from "@/lib/chainWalletStore";
@@ -31,7 +31,7 @@ export function SolanaAirdropPanel() {
   }
 
   const { publicKey, connected } = useWallet();
-  const { _connection } = useConnection();
+  // const { connection } = useConnection(); // Unused
 
   // Get balances from Zustand store (updated via SSE)
   const userBalance = useChainWalletStore((state) => state.userBalance);

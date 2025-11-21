@@ -14,7 +14,7 @@
 
 import { useState, useEffect } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { GAME_COLORS } from "@/lib/gameColors";
 
 // TODO: Replace with actual server actions once program is updated
@@ -74,7 +74,7 @@ export function WalletManager() {
           gamesPlayed: 47,
         });
       } catch (_error) {
-        console.error("[WALLET MANAGER] Failed to fetch balances:", error);
+        console.error("[WALLET MANAGER] Failed to fetch balances:", _error);
       } finally {
         setIsLoading(false);
       }
@@ -117,7 +117,7 @@ export function WalletManager() {
       // Refresh balances
       // await fetchBalances();
     } catch (_error) {
-      setMessage(`ERROR: Deposit failed: ${error}`);
+      setMessage(`ERROR: Deposit failed: ${_error}`);
     } finally {
       setIsProcessing(false);
       setTimeout(() => setMessage(""), 5000);
@@ -153,7 +153,7 @@ export function WalletManager() {
       // Refresh balances
       // await fetchBalances();
     } catch (_error) {
-      setMessage(`ERROR: Withdraw failed: ${error}`);
+      setMessage(`ERROR: Withdraw failed: ${_error}`);
     } finally {
       setIsProcessing(false);
       setTimeout(() => setMessage(""), 5000);

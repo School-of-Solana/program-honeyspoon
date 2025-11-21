@@ -27,7 +27,6 @@ import { mockHouseVaultPDA, mockSessionPDA } from "../solana/pdas";
 import {
   generateVRFSeed,
   simulateRoundOutcome,
-  treasureForRound,
   type GameCurveConfig,
 } from "./rng";
 

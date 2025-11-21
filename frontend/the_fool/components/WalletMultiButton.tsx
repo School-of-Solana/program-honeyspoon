@@ -1,8 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { WalletName } from "@solana/wallet-adapter-base";
-import { _WalletIcon } from "@solana/wallet-adapter-react-ui";
+// import { WalletIcon } from "/wallet-adapter-react-ui"; // Unused
 import { useState, useRef, useEffect } from "react";
 
 /**
@@ -30,7 +31,7 @@ export function WalletMultiButton() {
     wallet,
     wallets,
     select,
-    _connect,
+    // connect,
     disconnect,
     connecting,
   } = useWallet();
