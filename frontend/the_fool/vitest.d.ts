@@ -1,13 +1,10 @@
 import "@testing-library/jest-dom";
-import { expect } from "vitest";
-
-type ExtendedMatchers<R = unknown> =
-  import("@testing-library/jest-dom/matchers").TestingLibraryMatchers<
-    ReturnType<typeof expect.stringContaining>,
-    R
-  >;
+import type { TestingLibraryMatchers } from "@testing-library/jest-dom/matchers";
 
 declare module "vitest" {
-  interface Assertion<T = any> extends ExtendedMatchers<T> {}
-  interface AsymmetricMatchersContaining extends ExtendedMatchers {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-object-type
+  interface Assertion<T = any> extends TestingLibraryMatchers<T, void> {}
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface AsymmetricMatchersContaining
+    extends TestingLibraryMatchers<unknown, void> {}
 }

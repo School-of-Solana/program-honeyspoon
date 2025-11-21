@@ -15,12 +15,12 @@ import {
  * - Warns users if network is not running when in Solana mode
  */
 export function SolanaStatusBanner() {
-  const [connected, setConnected] = useState<boolean | null>(null);
-  const [checking, setChecking] = useState(true);
-  const [showBanner, setShowBanner] = useState(true);
-
   const useSolana = process.env.NEXT_PUBLIC_USE_SOLANA === "true";
   const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "http://localhost:8899";
+
+  const [connected, setConnected] = useState<boolean | null>(null);
+  const [checking, setChecking] = useState(useSolana); // Initialize based on useSolana
+  const [showBanner, setShowBanner] = useState(true);
 
   // Detect network from RPC URL
   const network = detectSolanaNetwork(rpcUrl);
@@ -29,7 +29,6 @@ export function SolanaStatusBanner() {
 
   useEffect(() => {
     if (!useSolana) {
-      setChecking(false);
       return;
     }
 

@@ -45,13 +45,11 @@ export function WalletManager() {
   const [message, setMessage] = useState("");
   const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
 
-  // Don't show if not connected
-  if (!connected || !publicKey) {
-    return null;
-  }
-
   // Fetch balances
   useEffect(() => {
+    if (!connected || !publicKey) {
+      return;
+    }
     const fetchBalances = async () => {
       if (!publicKey) return;
 
@@ -75,7 +73,7 @@ export function WalletManager() {
           totalWon: 9.2,
           gamesPlayed: 47,
         });
-      } catch (error) {
+      } catch (_error) {
         console.error("[WALLET MANAGER] Failed to fetch balances:", error);
       } finally {
         setIsLoading(false);
@@ -83,11 +81,12 @@ export function WalletManager() {
     };
 
     fetchBalances();
+  }, [publicKey, connection, connected]);
 
-    // Poll every 5 seconds
-    const interval = setInterval(fetchBalances, 5000);
-    return () => clearInterval(interval);
-  }, [publicKey, connection]);
+  // Don't show if not connected
+  if (!connected || !publicKey) {
+    return null;
+  }
 
   // Handle deposit
   const handleDeposit = async () => {
@@ -117,7 +116,7 @@ export function WalletManager() {
 
       // Refresh balances
       // await fetchBalances();
-    } catch (error) {
+    } catch (_error) {
       setMessage(`ERROR: Deposit failed: ${error}`);
     } finally {
       setIsProcessing(false);
@@ -153,7 +152,7 @@ export function WalletManager() {
 
       // Refresh balances
       // await fetchBalances();
-    } catch (error) {
+    } catch (_error) {
       setMessage(`ERROR: Withdraw failed: ${error}`);
     } finally {
       setIsProcessing(false);

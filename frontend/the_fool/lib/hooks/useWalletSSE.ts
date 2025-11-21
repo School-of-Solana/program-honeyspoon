@@ -33,6 +33,7 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const connectFnRef = useRef<(() => void) | null>(null);
 
   const cleanup = useCallback(() => {
     if (eventSourceRef.current) {
@@ -52,8 +53,15 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
       return;
     }
 
-    // Clean up any existing connection
-    cleanup();
+    // Clean up any existing connection first
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
 
     const url = `/api/wallet-events?userId=${encodeURIComponent(userId)}`;
     console.log("[SSE Hook] 🔌 Connecting to SSE:", url);
@@ -112,14 +120,26 @@ export function useWalletSSE(userId: string | null): UseWalletSSEResult {
       );
       setError(`Connection lost. Reconnecting in ${delay / 1000}s...`);
 
-      cleanup();
+      // Cleanup before reconnecting
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
 
       reconnectTimeoutRef.current = setTimeout(() => {
         console.log("[SSE Hook] Attempting reconnection...");
-        connect();
+        // Use ref to avoid circular dependency
+        if (connectFnRef.current) {
+          connectFnRef.current();
+        }
       }, delay);
     };
-  }, [userId, cleanup]);
+  }, [userId]);
+
+  // Store connect function in ref so it can call itself
+  useEffect(() => {
+    connectFnRef.current = connect;
+  }, [connect]);
 
   // Connect on mount and when userId changes
   useEffect(() => {

@@ -9,7 +9,7 @@
  */
 
 import type { Program } from "@coral-xyz/anchor";
-import type { PublicKey } from "@solana/web3.js";
+import type { _PublicKey } from "@solana/web3.js";
 
 export type DiveGame = {
   address: "2hMffkY1dCRo548Kj152LNyPomQAiFhw7dVAsgNbZ7F2";

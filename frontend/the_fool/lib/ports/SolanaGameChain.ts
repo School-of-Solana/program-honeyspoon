@@ -14,7 +14,7 @@ import {
   Transaction,
   TransactionInstruction,
   Keypair,
-  sendAndConfirmTransaction,
+  _sendAndConfirmTransaction,
   SystemProgram,
   Commitment,
 } from "@solana/web3.js";
@@ -40,16 +40,16 @@ import {
   buildCashOutData,
   buildLoseSessionData,
   buildToggleHouseLockData,
-  lamportsToSol,
-  solToLamports,
+  _lamportsToSol,
+  _solToLamports,
 } from "./solanaHelpers";
 import {
   parseSessionData,
   parseHouseVaultData,
   parseGameConfigData,
   SessionAccount,
-  HouseVaultAccount,
-  GameConfigAccount,
+  _HouseVaultAccount,
+  _GameConfigAccount,
 } from "./solanaParsers";
 
 /**
@@ -265,7 +265,7 @@ export class SolanaGameChain implements GameChainPort {
     });
 
     // Build instruction
-    const instruction = new TransactionInstruction({
+    const _instruction = new TransactionInstruction({
       keys: [
         { pubkey: adminPubkey, isSigner: true, isWritable: true },
         { pubkey: configPda, isSigner: false, isWritable: true },
@@ -322,7 +322,7 @@ export class SolanaGameChain implements GameChainPort {
     const data = buildInitHouseVaultData(false);
 
     // Build instruction
-    const instruction = new TransactionInstruction({
+    const _instruction = new TransactionInstruction({
       keys: [
         { pubkey: houseAuthorityPubkey, isSigner: true, isWritable: true },
         { pubkey: vaultPda, isSigner: false, isWritable: true },
@@ -349,7 +349,7 @@ export class SolanaGameChain implements GameChainPort {
     const data = buildToggleHouseLockData();
 
     // Build instruction
-    const instruction = new TransactionInstruction({
+    const _instruction = new TransactionInstruction({
       keys: [
         { pubkey: authorityPubkey, isSigner: true, isWritable: true },
         { pubkey: vaultPubkey, isSigner: false, isWritable: true },
@@ -373,7 +373,7 @@ export class SolanaGameChain implements GameChainPort {
     }
 
     // Get vault balance
-    const balance = await this.connection.getBalance(vaultPubkey);
+    const _balance = await this.connection.getBalance(vaultPubkey);
 
     return {
       vaultPda: vaultPubkey.toBase58(),
@@ -422,11 +422,11 @@ export class SolanaGameChain implements GameChainPort {
     if (!config) {
       throw new Error("Game config not initialized");
     }
-    const fixedBetLamports = BigInt(config.fixedBet.toString());
+    const _fixedBetLamports = BigInt(config.fixedBet.toString());
 
     // Generate session index (timestamp-based for uniqueness)
     const sessionIndex = BigInt(Date.now());
-    const sessionIndexBN = new BN(sessionIndex.toString());
+    const _sessionIndexBN = new BN(sessionIndex.toString());
     const sessionPda = getSessionPDA(userPubkey, sessionIndex);
 
     // Build instruction data (no bet_amount - uses config.fixed_bet)
@@ -678,7 +678,7 @@ export class SolanaGameChain implements GameChainPort {
     const data = buildLoseSessionData();
 
     // Build instruction
-    const instruction = new TransactionInstruction({
+    const _instruction = new TransactionInstruction({
       keys: [
         { pubkey: userPubkey, isSigner: true, isWritable: true },
         { pubkey: sessionPubkey, isSigner: false, isWritable: true },
@@ -778,7 +778,7 @@ export function createSolanaGameChain(
   let houseAuthorityPubkey: PublicKey;
   try {
     houseAuthorityPubkey = new PublicKey(houseAuthority);
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
       `[createSolanaGameChain] Invalid houseAuthority: "${houseAuthority}". Must be a valid base58 public key.`
     );

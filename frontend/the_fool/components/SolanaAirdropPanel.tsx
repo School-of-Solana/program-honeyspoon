@@ -31,7 +31,7 @@ export function SolanaAirdropPanel() {
   }
 
   const { publicKey, connected } = useWallet();
-  const { connection } = useConnection();
+  const { _connection } = useConnection();
 
   // Get balances from Zustand store (updated via SSE)
   const userBalance = useChainWalletStore((state) => state.userBalance);
@@ -44,8 +44,8 @@ export function SolanaAirdropPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [balance, setBalance] = useState<number | null>(null);
   const [houseBalance, setHouseBalance] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingHouse, setIsLoadingHouse] = useState(false);
+  const [isLoading, _setIsLoading] = useState(false);
+  const [isLoadingHouse, _setIsLoadingHouse] = useState(false);
   const [isAirdropping, setIsAirdropping] = useState(false);
   const [isAirdroppingHouse, setIsAirdroppingHouse] = useState(false);
   const [airdropAmount, setAirdropAmount] = useState("1");

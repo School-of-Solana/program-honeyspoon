@@ -66,7 +66,7 @@ export class SessionCleanupManager {
       }
 
       return null;
-    } catch (error) {
+    } catch (_error) {
       console.error("[SessionCleanup] Failed to parse stored session:", error);
       localStorage.removeItem(ABANDONED_SESSION_KEY);
       return null;
@@ -116,7 +116,7 @@ export class SessionCleanupManager {
       );
 
       return false;
-    } catch (error) {
+    } catch (_error) {
       console.error("[SessionCleanup] Failed to check session:", error);
       return false;
     }

@@ -431,7 +431,7 @@ export class LocalGameChain implements GameChainPort {
         vault.totalReserved,
         params.maxPayoutLamports
       );
-    } catch (e) {
+    } catch (_e) {
       throw GameError.overflow("total_reserved");
     }
 
@@ -528,7 +528,7 @@ export class LocalGameChain implements GameChainPort {
             vault.totalReserved,
             session.maxPayout
           );
-        } catch (e) {
+        } catch (_e) {
           throw GameError.overflow("total_reserved underflow");
         }
       }
@@ -576,7 +576,7 @@ export class LocalGameChain implements GameChainPort {
         vault.totalReserved,
         session.maxPayout
       );
-    } catch (e) {
+    } catch (_e) {
       throw GameError.overflow("total_reserved underflow");
     }
 
@@ -646,7 +646,7 @@ export class LocalGameChain implements GameChainPort {
         vault.totalReserved,
         session.maxPayout
       );
-    } catch (e) {
+    } catch (_e) {
       throw GameError.overflow("total_reserved underflow");
     }
 

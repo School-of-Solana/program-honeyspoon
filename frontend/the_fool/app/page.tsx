@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import OceanScene from "@/components/DeepSeaDiver/OceanScene";
 import DebugPanel from "@/components/DebugWalletPanel";
 import { GameErrorBoundary } from "@/components/DeepSeaDiver/GameErrorBoundary";
@@ -17,7 +17,6 @@ import {
   generateSessionId,
   startGame,
   getWalletInfo,
-  getHouseStatus,
 } from "./actions/gameActions";
 import type { GameState, DiveStats } from "@/lib/types";
 import { GAME_CONFIG } from "@/lib/constants";
@@ -27,7 +26,6 @@ import { useWalletBalance } from "@/lib/hooks/useGameQueries";
 import { useWalletOrUserId } from "@/lib/hooks/useWalletOrUserId";
 import { useWalletSSE } from "@/lib/hooks/useWalletSSE";
 import { useGameChain } from "@/lib/hooks/useGameChain";
-import { useAsyncAction } from "@/lib/hooks/useAsyncAction";
 import { useDebouncedCallback } from "use-debounce";
 import { playSound, getSoundManager, preloadSounds } from "@/lib/sounds";
 import { useGameStore } from "@/lib/gameStore";
@@ -38,7 +36,6 @@ import {
   getErrorAction,
   ErrorCategory,
   isErrorCategory,
-  type GameError,
 } from "@/lib/errorTypes";
 import {
   parseSolanaError,
@@ -49,19 +46,19 @@ export default function Home() {
   // Fetch game config from blockchain
   const {
     config: gameConfig,
-    loading: configLoading,
-    error: configError,
+    loading: _configLoading,
+    error: _configError,
   } = useGameConfig();
 
   // Use wallet integration hook (handles both Solana wallet and local userId)
   const {
-    userId: walletOrUserId,
-    isWalletMode,
-    walletConnected,
+    userId: _walletOrUserId,
+    isWalletMode: _isWalletMode,
+    walletConnected: _walletConnected,
   } = useWalletOrUserId();
 
   // Use game chain hook (provides wallet-connected chain instance)
-  const { chain: gameChain, connected: isChainWalletConnected } =
+  const { chain: gameChain, connected: _isChainWalletConnected } =
     useGameChain();
 
   // Use Zustand store for userId and wallet balance
@@ -82,7 +79,7 @@ export default function Home() {
   const isLoading = useChainWalletStore((state) => state.isLoading);
   const updateFromSSE = useChainWalletStore((state) => state.updateFromSSE);
   const setSSEConnected = useChainWalletStore((state) => state.setSSEConnected);
-  const isSSEConnected = useChainWalletStore((state) => state.isSSEConnected);
+  const _isSSEConnected = useChainWalletStore((state) => state.isSSEConnected);
   const lastUpdated = useChainWalletStore((state) => state.lastUpdated);
   const houseVaultBalance = useChainWalletStore(
     (state) => state.houseVaultBalance
@@ -95,7 +92,7 @@ export default function Home() {
   const {
     data: sseData,
     isConnected: sseConnected,
-    error: sseError,
+    error: _sseError,
   } = useWalletSSE(userIdFromStore);
 
   // Update store when SSE data arrives
@@ -155,7 +152,7 @@ export default function Home() {
           localStorage.setItem("game_user_id", userWallets[0]);
           return;
         }
-      } catch (e) {
+      } catch (_e) {
         console.warn("[GAME] Failed to parse wallets from localStorage");
       }
     }
@@ -221,7 +218,7 @@ export default function Home() {
   const [soundMuted, setSoundMuted] = useState(false); // Sound mute state
 
   // House wallet info for debug panel (now comes from Zustand store)
-  const houseWalletInfo = {
+  const _houseWalletInfo = {
     balance: houseVaultBalance,
     reservedFunds: houseVaultReserved,
     availableFunds: houseVaultBalance - houseVaultReserved,
@@ -504,7 +501,7 @@ export default function Home() {
         console.log("[GAME] Final Parsed Error for User:");
         console.log(userMessage);
         console.log("[GAME] Full Parsed Data:", parsed);
-      } catch (parseError) {
+      } catch (_parseError) {
         // Fall back to generic message if parsing fails
         userMessage = error instanceof Error ? error.message : "Unknown error";
       }
@@ -528,7 +525,7 @@ export default function Home() {
   };
 
   // Wrap handleStartGame with debouncing to prevent double-clicks (2 second delay)
-  const debouncedStartGame = useDebouncedCallback(
+  const _debouncedStartGame = useDebouncedCallback(
     handleStartGame,
     2000, // 2 second debounce
     { leading: true, trailing: false } // Execute immediately on first click, ignore subsequent clicks

@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
         console.log("[SSE] Active connections:", connections.size);
         try {
           controller.close();
-        } catch (e) {
+        } catch (_e) {
           // Already closed
         }
       });

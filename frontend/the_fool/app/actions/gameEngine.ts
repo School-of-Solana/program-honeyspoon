@@ -20,10 +20,10 @@ import {
   calculateMaxPotentialPayout,
   calculateRoundStats,
   DEFAULT_CONFIG,
-  simulateRound,
+  _simulateRound,
   type GameConfig,
   type RoundResult,
-  validateBetAmount,
+  _validateBetAmount,
 } from "@/lib/gameEngine";
 import { getGameChain, GameError, SessionStatus } from "@/lib/ports";
 import { solToLamports, lamportsToSol } from "@/lib/utils/solana";
@@ -249,7 +249,7 @@ export async function startGameSession(
 
     // Start session on-chain (this handles the actual money transfer)
     // NOTE: bet amount now comes from config.fixed_bet
-    const { sessionPda, state } = await chain.startSession({
+    const { sessionPda, state: _state } = await chain.startSession({
       userPubkey: userId,
       maxPayoutLamports: maxPayoutLamports,
       houseVaultPda: vaultPda,
@@ -349,7 +349,7 @@ export async function executeRound(
   currentValue: number,
   sessionId: string,
   userId: string,
-  testSeed?: string
+  _testSeed?: string
 ): Promise<RoundResult> {
   // Validate inputs
   if (roundNumber < 1 || roundNumber > GAME_CONFIG.maxRounds) {
@@ -588,7 +588,7 @@ export async function cashOut(
 
   try {
     // Cash out on-chain
-    const { finalTreasureLamports, state } = await chain.cashOut({
+    const { finalTreasureLamports, state: _state } = await chain.cashOut({
       sessionPda: sessionId,
       userPubkey: userId,
     });
@@ -720,7 +720,7 @@ export async function getWalletInfo(userId: string): Promise<{
  * Helper: Get vault balance from chain
  * In LocalGameChain, this is simulated. In SolanaGameChain, it's the actual SOL balance.
  */
-async function getChainVaultBalance(vaultPda: string): Promise<bigint> {
+async function _getChainVaultBalance(vaultPda: string): Promise<bigint> {
   // For LocalGameChain, we can query the test balance
   // For SolanaGameChain, this would query connection.getBalance()
   const vault = await chain.getHouseVault(vaultPda);

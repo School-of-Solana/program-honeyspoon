@@ -65,6 +65,7 @@ export function getErrorMessage(errorCode: number): string {
 /**
  * Checks if a transaction error matches a specific game error
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function hasGameError(error: any, expected: GameErrorCode): boolean {
   if (!error) return false;
 
