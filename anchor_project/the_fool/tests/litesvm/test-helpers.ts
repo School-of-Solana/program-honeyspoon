@@ -986,3 +986,122 @@ export function getConfigData(
 export const SYSVAR_SLOT_HASHES_PUBKEY = new PublicKey(
   "SysvarS1otHashes111111111111111111111111111"
 );
+
+// ============================================================================
+// LiteSVM Test Helpers - Bypass deserialization issues with setAccount()
+// ============================================================================
+
+/**
+ * Helper to create a mock session account directly in LiteSVM
+ * This bypasses the start_session instruction deserialization issue
+ */
+export function createMockSessionAccount(
+  svm: LiteSVM,
+  params: {
+    player: PublicKey;
+    sessionIndex: BN;
+    houseVault: PublicKey;
+    betAmount: BN;
+    config?: ParsedConfigData;
+    status?: "Active" | "Lost" | "CashedOut";
+    diveNumber?: number;
+    currentTreasure?: BN;
+  }
+): PublicKey {
+  const [sessionPDA, bump] = getSessionPDA(params.player, params.sessionIndex);
+  
+  // Default config values if not provided
+  const maxPayoutMultiplier = params.config?.maxPayoutMultiplier ?? 100;
+  const maxPayout = params.betAmount.muln(maxPayoutMultiplier);
+  
+  const sessionData = buildSessionAccountData({
+    user: params.player,
+    houseVault: params.houseVault,
+    status: params.status ?? "Active",
+    betAmount: params.betAmount,
+    currentTreasure: params.currentTreasure ?? params.betAmount,
+    maxPayout: maxPayout,
+    diveNumber: params.diveNumber ?? 1,
+    bump: bump,
+    lastActiveSlot: new BN(0),
+  });
+
+  svm.setAccount(sessionPDA, {
+    lamports: 2_000_000, // Rent-exempt amount
+    data: sessionData,
+    owner: PROGRAM_ID,
+    executable: false,
+    rentEpoch: 0,
+  });
+
+  return sessionPDA;
+}
+
+/**
+ * Helper to create multiple mock sessions for testing concurrent sessions
+ */
+export function createMockSessions(
+  svm: LiteSVM,
+  params: {
+    player: PublicKey;
+    houseVault: PublicKey;
+    count: number;
+    betAmount: BN;
+    config?: ParsedConfigData;
+  }
+): PublicKey[] {
+  const sessionPDAs: PublicKey[] = [];
+  
+  for (let i = 0; i < params.count; i++) {
+    const sessionPDA = createMockSessionAccount(svm, {
+      player: params.player,
+      sessionIndex: new BN(i),
+      houseVault: params.houseVault,
+      betAmount: params.betAmount,
+      config: params.config,
+    });
+    sessionPDAs.push(sessionPDA);
+  }
+  
+  return sessionPDAs;
+}
+
+/**
+ * Helper to update house vault's total_reserved manually
+ * Useful for testing reserved funds tracking
+ */
+export function updateVaultReserved(
+  svm: LiteSVM,
+  vaultPDA: PublicKey,
+  totalReserved: BN
+): void {
+  const vaultAccount = svm.getAccount(vaultPDA);
+  if (!vaultAccount) throw new Error("Vault account not found");
+  
+  const vaultData = parseHouseVaultData(vaultAccount.data);
+  const buffer = Buffer.from(vaultAccount.data);
+  
+  // total_reserved is at offset 8 + 32 + 32 + 1 = 73
+  totalReserved.toArrayLike(Buffer, "le", 8).copy(buffer, 73);
+  
+  svm.setAccount(vaultPDA, {
+    lamports: Number(vaultAccount.lamports),
+    data: buffer,
+    owner: vaultAccount.owner,
+    executable: vaultAccount.executable,
+    rentEpoch: Number(vaultAccount.rentEpoch),
+  });
+}
+
+/**
+ * Calculates expected total_reserved for multiple sessions
+ */
+export function calculateExpectedReserved(
+  sessions: { betAmount: BN; maxPayoutMultiplier?: number }[]
+): BN {
+  return sessions.reduce((total, session) => {
+    const multiplier = session.maxPayoutMultiplier ?? 100;
+    const maxPayout = session.betAmount.muln(multiplier);
+    return total.add(maxPayout);
+  }, new BN(0));
+}
