@@ -142,11 +142,10 @@ export function buildInitHouseVaultData(isLocked: boolean): Buffer {
   return Buffer.concat([discriminator, lockedByte]);
 }
 
-export function buildStartSessionData(betAmount: BN, sessionIndex: BN): Buffer {
+export function buildStartSessionData(sessionIndex: BN): Buffer {
   const discriminator = Buffer.from([23, 227, 111, 142, 212, 230, 3, 175]);
-  const betBuffer = betAmount.toArrayLike(Buffer, "le", 8);
   const indexBuffer = sessionIndex.toArrayLike(Buffer, "le", 8);
-  return Buffer.concat([discriminator, betBuffer, indexBuffer]);
+  return Buffer.concat([discriminator, indexBuffer]);
 }
 
 export function buildPlayRoundData(): Buffer {
@@ -214,7 +213,6 @@ export function createStartSessionInstruction(
   configPDA: PublicKey,
   houseVaultPDA: PublicKey,
   authority: PublicKey,
-  betAmount: BN,
   sessionIndex: BN
 ): TransactionInstruction {
   return new TransactionInstruction({
@@ -227,7 +225,7 @@ export function createStartSessionInstruction(
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     programId: PROGRAM_ID,
-    data: buildStartSessionData(betAmount, sessionIndex),
+    data: buildStartSessionData(sessionIndex),
   });
 }
 
@@ -616,7 +614,7 @@ export function createBasicFixture(
 }
 
 export interface StartGameSessionParams extends GameFixture {
-  betAmount: BN;
+  betAmount: BN; // Note: betAmount is not passed to instruction, it's read from config on-chain
 }
 
 export function startGameSession(params: StartGameSessionParams): void {
@@ -627,7 +625,6 @@ export function startGameSession(params: StartGameSessionParams): void {
     configPDA,
     houseVaultPDA,
     authority,
-    betAmount,
     sessionIndex,
   } = params;
 
@@ -637,7 +634,6 @@ export function startGameSession(params: StartGameSessionParams): void {
     configPDA,
     houseVaultPDA,
     authority.publicKey,
-    betAmount,
     sessionIndex
   );
 
@@ -857,7 +853,6 @@ export function createPlayer(svm: LiteSVM, sol: number = 10): Keypair {
 export function startSession(
   ctx: TestContext,
   player: Keypair,
-  betAmount: BN,
   sessionIndex: BN = new BN(0)
 ): any {
   const { svm, authority, configPDA, houseVaultPDA } = ctx;
@@ -870,7 +865,6 @@ export function startSession(
     configPDA,
     houseVaultPDA,
     authority.publicKey,
-    betAmount,
     sessionIndex
   );
 
@@ -988,12 +982,13 @@ export const SYSVAR_SLOT_HASHES_PUBKEY = new PublicKey(
 );
 
 // ============================================================================
-// LiteSVM Test Helpers - Bypass deserialization issues with setAccount()
+// LiteSVM Test Helpers - Direct state manipulation patterns
 // ============================================================================
 
 /**
  * Helper to create a mock session account directly in LiteSVM
- * This bypasses the start_session instruction deserialization issue
+ * This uses direct state injection via setAccount() to bypass instruction execution
+ * when testing business logic and invariants.
  */
 export function createMockSessionAccount(
   svm: LiteSVM,
@@ -1006,13 +1001,15 @@ export function createMockSessionAccount(
     status?: "Active" | "Lost" | "CashedOut";
     diveNumber?: number;
     currentTreasure?: BN;
+    maxPayout?: BN;
+    lastActiveSlot?: BN;
   }
 ): PublicKey {
   const [sessionPDA, bump] = getSessionPDA(params.player, params.sessionIndex);
   
   // Default config values if not provided
   const maxPayoutMultiplier = params.config?.maxPayoutMultiplier ?? 100;
-  const maxPayout = params.betAmount.muln(maxPayoutMultiplier);
+  const maxPayout = params.maxPayout ?? params.betAmount.muln(maxPayoutMultiplier);
   
   const sessionData = buildSessionAccountData({
     user: params.player,
@@ -1023,7 +1020,7 @@ export function createMockSessionAccount(
     maxPayout: maxPayout,
     diveNumber: params.diveNumber ?? 1,
     bump: bump,
-    lastActiveSlot: new BN(0),
+    lastActiveSlot: params.lastActiveSlot ?? new BN(0),
   });
 
   svm.setAccount(sessionPDA, {

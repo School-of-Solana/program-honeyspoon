@@ -461,6 +461,100 @@ function parseConfigData(dataInput: Uint8Array): {
   };
 }
 
+// Helper to read config data from chain
+function getConfigData(
+  svm: LiteSVM,
+  configPDA: PublicKey
+): ReturnType<typeof parseConfigData> | null {
+  const account = svm.getAccount(configPDA);
+  if (!account) return null;
+  return parseConfigData(Buffer.from(account.data));
+}
+
+// Helper to create mock session account for testing invariants
+function createMockSessionAccount(
+  svm: LiteSVM,
+  params: {
+    player: PublicKey;
+    sessionIndex: BN;
+    houseVault: PublicKey;
+    betAmount: BN;
+    config?: ReturnType<typeof parseConfigData>;
+    status?: "Active" | "Lost" | "CashedOut";
+    diveNumber?: number;
+    currentTreasure?: BN;
+    maxPayout?: BN;
+    lastActiveSlot?: BN;
+  }
+): PublicKey {
+  const [sessionPDA, bump] = getSessionPDA(params.player, params.sessionIndex);
+  
+  const maxPayoutMultiplier = params.config?.maxPayoutMultiplier ?? 100;
+  const maxPayout = params.maxPayout ?? params.betAmount.muln(maxPayoutMultiplier);
+  
+  const sessionData = buildSessionAccountData({
+    user: params.player,
+    houseVault: params.houseVault,
+    status: params.status ?? "Active",
+    betAmount: params.betAmount,
+    currentTreasure: params.currentTreasure ?? params.betAmount,
+    maxPayout: maxPayout,
+    diveNumber: params.diveNumber ?? 1,
+    bump: bump,
+    lastActiveSlot: params.lastActiveSlot ?? new BN(0),
+  });
+
+  svm.setAccount(sessionPDA, {
+    lamports: 2_000_000,
+    data: sessionData,
+    owner: PROGRAM_ID,
+    executable: false,
+    rentEpoch: 0,
+  });
+
+  return sessionPDA;
+}
+
+// Helper to update vault's total_reserved directly
+function updateVaultReserved(
+  svm: LiteSVM,
+  vaultPDA: PublicKey,
+  totalReserved: BN
+): void {
+  const vaultAccount = svm.getAccount(vaultPDA);
+  if (!vaultAccount) throw new Error("Vault account not found");
+  
+  const buffer = Buffer.from(vaultAccount.data);
+  // total_reserved is at offset 8 + 32 + 32 + 1 = 73
+  totalReserved.toArrayLike(Buffer, "le", 8).copy(buffer, 73);
+  
+  svm.setAccount(vaultPDA, {
+    lamports: Number(vaultAccount.lamports),
+    data: buffer,
+    owner: vaultAccount.owner,
+    executable: vaultAccount.executable,
+    rentEpoch: Number(vaultAccount.rentEpoch),
+  });
+}
+
+// Helper to create lose_session instruction
+function createLoseSessionInstruction(
+  player: PublicKey,
+  sessionPDA: PublicKey,
+  houseVaultPDA: PublicKey
+): TransactionInstruction {
+  const loseData = Buffer.from([203, 44, 58, 22, 70, 7, 102, 42]); // lose_session discriminator
+  return new TransactionInstruction({
+    keys: [
+      { pubkey: player, isSigner: true, isWritable: true },
+      { pubkey: sessionPDA, isSigner: false, isWritable: true },
+      { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
+    ],
+    programId: PROGRAM_ID,
+    data: loseData,
+  });
+}
+
 describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
   let svm: LiteSVM;
   let authority: Keypair;
@@ -2712,72 +2806,68 @@ describe("LiteSVM Tests - Dive Game (Comprehensive)", () => {
     // The program works correctly (verified by Rust unit tests and actual Solana)
 
 
-    it.skip("should reject double lose_session - SKIPPED: LiteSVM deserialization limitation", () => {
+    it("should reject double lose_session (using mock pattern)", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
-      const [sessionPDA] = getSessionPDA(player.publicKey, new BN(0));
+      const sessionIndex = new BN(0);
       const betAmount = lamports(TEST_AMOUNTS.SMALL);
+      const configData = getConfigData(svm, configPDA);
+      expect(configData).to.not.be.null;
 
-      const startData = buildStartSessionData(new BN(0));
-      const startIx = new TransactionInstruction({
-        keys: [
-          { pubkey: player.publicKey, isSigner: true, isWritable: true },
-          { pubkey: configPDA, isSigner: false, isWritable: false },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-          { pubkey: authority.publicKey, isSigner: false, isWritable: false },
-          { pubkey: sessionPDA, isSigner: false, isWritable: true },
-          {
-            pubkey: SystemProgram.programId,
-            isSigner: false,
-            isWritable: false,
-          },
-        ],
-        programId: PROGRAM_ID,
-        data: startData,
+      // Create active session with mock helper
+      const sessionPDA = createMockSessionAccount(svm, {
+        player: player.publicKey,
+        sessionIndex,
+        houseVault: houseVaultPDA,
+        betAmount,
+        config: configData!,
+        status: "Active",
       });
 
-      const startTx = new Transaction();
-      startTx.recentBlockhash = svm.latestBlockhash();
-      startTx.add(startIx);
-      startTx.sign(player);
-      svm.sendTransaction(startTx);
+      // Update vault to reflect reserved funds
+      const maxPayout = betAmount.muln(configData!.maxPayoutMultiplier);
+      updateVaultReserved(svm, houseVaultPDA, maxPayout);
 
-      const loseData = buildLoseSessionData();
-      const loseIx = new TransactionInstruction({
-        keys: [
-          { pubkey: player.publicKey, isSigner: true, isWritable: true },
-          { pubkey: sessionPDA, isSigner: false, isWritable: true },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-        ],
-        programId: PROGRAM_ID,
-        data: loseData,
-      });
+      // First lose_session should succeed
+      const loseIx1 = createLoseSessionInstruction(
+        player.publicKey,
+        sessionPDA,
+        houseVaultPDA
+      );
 
       const loseTx1 = new Transaction();
       loseTx1.recentBlockhash = svm.latestBlockhash();
-      loseTx1.add(loseIx);
+      loseTx1.add(loseIx1);
       loseTx1.sign(player);
       const result1 = svm.sendTransaction(loseTx1);
-      expect(result1?.constructor?.name).to.not.equal(
-        "FailedTransactionMetadata"
-      );
+      
+      // Debug: log if it failed
+      if (result1?.constructor?.name === "FailedTransactionMetadata") {
+        logTransactionFailure(result1, "First lose_session in double-lose test");
+      }
+      
+      // Verify first lose succeeded
+      expect(result1?.constructor?.name).to.equal("TransactionMetadata");
 
-      const loseIx2 = new TransactionInstruction({
-        keys: [
-          { pubkey: player.publicKey, isSigner: true, isWritable: true },
-          { pubkey: sessionPDA, isSigner: false, isWritable: true },
-          { pubkey: houseVaultPDA, isSigner: false, isWritable: true },
-        ],
-        programId: PROGRAM_ID,
-        data: loseData,
-      });
+      // Verify session account was closed
+      const sessionAccount = svm.getAccount(sessionPDA);
+      expect(sessionAccount).to.be.null;
+
+      // Second lose_session should fail (account doesn't exist)
+      const loseIx2 = createLoseSessionInstruction(
+        player.publicKey,
+        sessionPDA,
+        houseVaultPDA
+      );
 
       const loseTx2 = new Transaction();
       loseTx2.recentBlockhash = svm.latestBlockhash();
       loseTx2.add(loseIx2);
       loseTx2.sign(player);
       const result2 = svm.sendTransaction(loseTx2);
+      
+      // Verify second lose failed (account not initialized)
       expect(result2?.constructor?.name).to.equal("FailedTransactionMetadata");
     });
 
