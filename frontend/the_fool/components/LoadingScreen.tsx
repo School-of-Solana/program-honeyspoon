@@ -1,6 +1,6 @@
 /**
  * LoadingScreen Component
- * 
+ *
  * Displays a full-screen loading animation while the game initializes
  */
 

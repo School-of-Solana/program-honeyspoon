@@ -7,11 +7,15 @@ import type { GameConfigState } from "@/lib/ports/GameChainPort";
  *
  * This replaces hardcoded constants with values from the on-chain GameConfig account.
  * Updates automatically when config changes.
- * 
+ *
  * Uses TanStack Query for automatic caching, refetching, and loading states.
  */
 export function useGameConfig() {
-  const { data: config, isLoading: loading, error } = useQuery({
+  const {
+    data: config,
+    isLoading: loading,
+    error,
+  } = useQuery({
     queryKey: ["gameConfig"],
     queryFn: async () => {
       const chain = getGameChain();
@@ -71,7 +75,11 @@ export function useGameConfig() {
     config: friendlyConfig,
     rawConfig: config,
     loading,
-    error: error ? (error instanceof Error ? error.message : "Unknown error") : null,
+    error: error
+      ? error instanceof Error
+        ? error.message
+        : "Unknown error"
+      : null,
   };
 }
 

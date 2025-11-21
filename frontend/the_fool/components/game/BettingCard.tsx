@@ -1,6 +1,6 @@
 /**
  * BettingCard Component
- * 
+ *
  * Displays the betting interface when not in a game:
  * - Wallet balance
  * - Bet amount
@@ -41,9 +41,7 @@ export function BettingCard({
   const hasInsufficientBalance = !isLoadingWallet && betAmount > userBalance;
 
   return (
-    <div
-      className="absolute top-20 right-8 z-50 transition-all duration-500 opacity-100 translate-y-0"
-    >
+    <div className="absolute top-20 right-8 z-50 transition-all duration-500 opacity-100 translate-y-0">
       <div
         className="nes-container is-dark with-title"
         style={{
@@ -142,9 +140,7 @@ export function BettingCard({
         )}
 
         {/* Info */}
-        <p
-          style={{ fontSize: "8px", textAlign: "center", color: "#aaa" }}
-        >
+        <p style={{ fontSize: "8px", textAlign: "center", color: "#aaa" }}>
           {gameConfig
             ? `${(gameConfig.houseEdge * 100).toFixed(0)}% House Edge - ${(gameConfig.baseWinProbability * 100).toFixed(0)}% Start Chance`
             : `${(GAME_CONFIG.HOUSE_EDGE * 100).toFixed(0)}% House Edge - Loading config...`}

@@ -1,21 +1,21 @@
 /**
  * Sound Manager - Using Howler.js
- * 
+ *
  * Simplified audio playback system with preloading and volume control
  */
 
-import { Howl, Howler } from 'howler';
+import { Howl, Howler } from "howler";
 
 // Sound configuration
 const SOUNDS = {
-  COIN: { src: '/sounds/coin.wav', volume: 0.6 },
-  EXPLOSION: { src: '/sounds/explosion.wav', volume: 0.5 },
-  BUBBLES: { src: '/sounds/bubbles.wav', volume: 0.4 },
-  SURFACE: { src: '/sounds/surface.wav', volume: 0.5 },
-  DIVE: { src: '/sounds/dive.wav', volume: 0.5 },
-  WATER_LOOP: { src: '/sounds/water-loop.wav', volume: 0.15 },
-  BEACH_WAVES: { src: '/sounds/beach-waves.ogg', volume: 0.12 },
-  BUTTON_CLICK: { src: '/sounds/button-click.wav', volume: 0.3 },
+  COIN: { src: "/sounds/coin.wav", volume: 0.6 },
+  EXPLOSION: { src: "/sounds/explosion.wav", volume: 0.5 },
+  BUBBLES: { src: "/sounds/bubbles.wav", volume: 0.4 },
+  SURFACE: { src: "/sounds/surface.wav", volume: 0.5 },
+  DIVE: { src: "/sounds/dive.wav", volume: 0.5 },
+  WATER_LOOP: { src: "/sounds/water-loop.wav", volume: 0.15 },
+  BEACH_WAVES: { src: "/sounds/beach-waves.ogg", volume: 0.12 },
+  BUTTON_CLICK: { src: "/sounds/button-click.wav", volume: 0.3 },
 } as const;
 
 export type SoundType = keyof typeof SOUNDS;
@@ -42,8 +42,8 @@ function initSound(type: SoundType): Howl {
 
 // Preload all sounds
 export function preloadSounds(): void {
-  if (typeof window === 'undefined') return;
-  
+  if (typeof window === "undefined") return;
+
   Object.keys(SOUNDS).forEach((key) => {
     initSound(key as SoundType);
   });
@@ -54,14 +54,14 @@ export function playSound(
   type: SoundType,
   options?: { loop?: boolean; volume?: number }
 ): number | undefined {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
 
   const sound = initSound(type);
-  
+
   if (options?.loop !== undefined) {
     sound.loop(options.loop);
   }
-  
+
   if (options?.volume !== undefined) {
     sound.volume(options.volume);
   }

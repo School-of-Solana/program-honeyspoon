@@ -1,6 +1,6 @@
 /**
  * GameHUD Component
- * 
+ *
  * Displays the in-game HUD overlay:
  * - Current treasure amount
  * - Survival chance

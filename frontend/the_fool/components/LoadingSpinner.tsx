@@ -1,9 +1,15 @@
 /**
  * Loading Spinner Component
- * 
+ *
  * Retro NES-style loading indicator for blockchain operations
  */
-export function LoadingSpinner({ size = "md", message }: { size?: "sm" | "md" | "lg"; message?: string }) {
+export function LoadingSpinner({
+  size = "md",
+  message,
+}: {
+  size?: "sm" | "md" | "lg";
+  message?: string;
+}) {
   const sizeClasses = {
     sm: "text-xs",
     md: "text-sm",
@@ -28,18 +34,18 @@ export function LoadingSpinner({ size = "md", message }: { size?: "sm" | "md" | 
  * For smaller UI elements
  */
 export function InlineSpinner() {
-  return (
-    <span className="inline-block animate-pulse text-yellow-400">
-      ⏳
-    </span>
-  );
+  return <span className="inline-block animate-pulse text-yellow-400">⏳</span>;
 }
 
 /**
  * Button Loading State
  * Shows loading spinner inside a button
  */
-export function ButtonSpinner({ message = "Processing..." }: { message?: string }) {
+export function ButtonSpinner({
+  message = "Processing...",
+}: {
+  message?: string;
+}) {
   return (
     <span className="flex items-center gap-2">
       <span className="animate-spin">⏳</span>
@@ -52,7 +58,11 @@ export function ButtonSpinner({ message = "Processing..." }: { message?: string 
  * Overlay Loading Screen
  * Full-screen loading overlay for critical operations
  */
-export function LoadingOverlay({ message = "Processing transaction..." }: { message?: string }) {
+export function LoadingOverlay({
+  message = "Processing transaction...",
+}: {
+  message?: string;
+}) {
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
       <div className="nes-container is-rounded with-title bg-gray-900 p-8">

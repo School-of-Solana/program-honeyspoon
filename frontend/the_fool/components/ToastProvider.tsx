@@ -4,7 +4,7 @@ import { Toaster } from "react-hot-toast";
 
 /**
  * Toast Notification Provider
- * 
+ *
  * Provides global toast notifications with NES-style theme
  */
 export function ToastProvider() {

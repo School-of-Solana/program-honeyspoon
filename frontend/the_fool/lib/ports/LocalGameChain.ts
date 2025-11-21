@@ -396,10 +396,7 @@ export class LocalGameChain implements GameChainPort {
     // Check user has sufficient balance
     const userBalance = await this.getUserBalance(params.userPubkey);
     if (userBalance < betAmountLamports) {
-      throw GameError.insufficientUserFunds(
-        betAmountLamports,
-        userBalance
-      );
+      throw GameError.insufficientUserFunds(betAmountLamports, userBalance);
     }
 
     // Check vault can cover the reservation
@@ -421,10 +418,7 @@ export class LocalGameChain implements GameChainPort {
     }
 
     // Transfer: user → vault (mimic contract)
-    this.setUserBalance(
-      params.userPubkey,
-      userBalance - betAmountLamports
-    );
+    this.setUserBalance(params.userPubkey, userBalance - betAmountLamports);
     this.setVaultBalance(
       params.houseVaultPda,
       vaultBalance + betAmountLamports

@@ -259,7 +259,9 @@ export class SolanaGameChain implements GameChainPort {
       treasureMultiplierDen: params.treasureMultiplierDen,
       maxPayoutMultiplier: params.maxPayoutMultiplier,
       maxDives: params.maxDives,
-      fixedBet: params.fixedBet ? new BN(params.fixedBet.toString()) : undefined,
+      fixedBet: params.fixedBet
+        ? new BN(params.fixedBet.toString())
+        : undefined,
     });
 
     // Build instruction
@@ -564,8 +566,10 @@ export class SolanaGameChain implements GameChainPort {
     // If session doesn't exist after retries, it means the player died
     // and the account was closed by the program (atomic cleanup in play_round)
     if (!state) {
-      console.log("[SolanaGameChain] Session not found after playRound - player died (account closed)");
-      
+      console.log(
+        "[SolanaGameChain] Session not found after playRound - player died (account closed)"
+      );
+
       // Create a "Lost" state to represent the death
       // We don't have the exact final state, but we know they died
       return {

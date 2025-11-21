@@ -67,11 +67,14 @@ export default function Home() {
   // Use Zustand store for userId and wallet balance
   const userIdFromStore = useChainWalletStore((state) => state.userId);
   const setUserId = useChainWalletStore((state) => state.setUserId);
-  const userBalanceFromStore = useChainWalletStore((state) => state.userBalance);
-  
+  const userBalanceFromStore = useChainWalletStore(
+    (state) => state.userBalance
+  );
+
   // Use TanStack Query for wallet balance (with auto-refetch every 5s)
-  const { data: walletData, isLoading: isLoadingWallet } = useWalletBalance(userIdFromStore);
-  
+  const { data: walletData, isLoading: isLoadingWallet } =
+    useWalletBalance(userIdFromStore);
+
   // Prefer TanStack Query balance over Zustand (more reliable and auto-refetches)
   // walletData comes from walletActions.getWalletInfo which returns userBalance
   const userBalance = walletData?.userBalance ?? userBalanceFromStore;
@@ -948,7 +951,7 @@ export default function Home() {
 
   // Show loading screen while initial data is being fetched
   const isInitialLoading = isLoadingWallet && userBalance === 0 && !userId;
-  
+
   if (isInitialLoading) {
     return <LoadingScreen />;
   }

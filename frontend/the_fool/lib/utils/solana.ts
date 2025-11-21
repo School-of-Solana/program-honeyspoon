@@ -3,7 +3,7 @@
  * Using @solana/web3.js standard utilities
  */
 
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 /**
  * Convert SOL to lamports
@@ -30,7 +30,10 @@ export function lamportsToSol(lamports: bigint | number): number {
  * @param decimals - Number of decimal places (default 2)
  * @returns Formatted SOL string
  */
-export function formatSol(lamports: bigint | number, decimals: number = 2): string {
+export function formatSol(
+  lamports: bigint | number,
+  decimals: number = 2
+): string {
   const sol = lamportsToSol(lamports);
   return `${sol.toFixed(decimals)} SOL`;
 }

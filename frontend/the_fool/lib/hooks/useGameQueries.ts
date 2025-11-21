@@ -22,7 +22,7 @@ export const gameQueryKeys = {
 
 /**
  * Query Hook: Get Wallet Balance
- * 
+ *
  * Fetches user wallet balance with automatic refetching every 5 seconds
  * and on window focus (for wallet sync when user returns to tab)
  */
@@ -54,7 +54,7 @@ export function useWalletBalance(userId: string | null) {
 
 /**
  * Mutation Hook: Start Game
- * 
+ *
  * Creates a new game session and places initial bet
  * Invalidates wallet balance on success to trigger refetch
  */
@@ -93,7 +93,7 @@ export function useStartGame() {
 
 /**
  * Mutation Hook: Perform Dive
- * 
+ *
  * Executes a dive attempt (round) in the game
  * Updates wallet balance on success or failure
  */
@@ -123,19 +123,19 @@ export function usePerformDive() {
           userId,
           testSeed
         );
-        
+
         if (result.survived) {
           toast.success(
             `✅ Survived! Treasure: ${result.totalTreasure.toFixed(2)} SOL`,
             { id: toastId, duration: 2000 }
           );
         } else {
-          toast.error(`💀 Lost the dive! Better luck next time`, { 
+          toast.error(`💀 Lost the dive! Better luck next time`, {
             id: toastId,
-            duration: 3000 
+            duration: 3000,
           });
         }
-        
+
         return result;
       } catch (error) {
         toast.error(
@@ -156,7 +156,7 @@ export function usePerformDive() {
 
 /**
  * Mutation Hook: Cash Out (Surface with Treasure)
- * 
+ *
  * Ends game session and transfers winnings to wallet
  * Invalidates wallet balance on success to show updated balance
  */
@@ -175,8 +175,12 @@ export function useCashOut() {
     }) => {
       const toastId = toast.loading("🏖️ Surfacing with treasure...");
       try {
-        const result = await surfaceWithTreasure(finalTreasure, sessionId, userId);
-        
+        const result = await surfaceWithTreasure(
+          finalTreasure,
+          sessionId,
+          userId
+        );
+
         if (result.success) {
           const profit = result.profit.toFixed(2);
           toast.success(
@@ -184,7 +188,7 @@ export function useCashOut() {
             { id: toastId, duration: 4000 }
           );
         }
-        
+
         return result;
       } catch (error) {
         toast.error(
