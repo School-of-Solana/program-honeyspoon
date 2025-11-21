@@ -418,7 +418,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
     // SKIPPED: LiteSVM has issues deserializing start_session instructions
     // The program works correctly (verified by Rust unit tests and actual Solana)
-    it.skip("should create session with configured fixed bet (0.1 SOL) - SKIPPED: LiteSVM deserialization limitation", () => {
+    it("should create session with configured fixed bet (0.1 SOL)", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
@@ -468,7 +468,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
     // SKIPPED: LiteSVM has issues deserializing start_session instructions
     // The program works correctly (verified by Rust unit tests and actual Solana)
-    it.skip("should allow different fixed bet amounts in different configs - SKIPPED: LiteSVM deserialization limitation", () => {
+    it("should allow different fixed bet amounts in different configs", () => {
       // Create a different config with different fixed bet
       const differentAuthority = new Keypair();
       svm.airdrop(differentAuthority.publicKey, 100n * BigInt(LAMPORTS_PER_SOL));
@@ -535,7 +535,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
     // SKIPPED: LiteSVM has issues deserializing start_session instructions
     // The program works correctly (verified by Rust unit tests and actual Solana)
-    it.skip("should use fixed bet consistently across multiple sessions - SKIPPED: LiteSVM deserialization limitation", () => {
+    it("should use fixed bet consistently across multiple sessions", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 50n * BigInt(LAMPORTS_PER_SOL));
 
@@ -1336,7 +1336,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
     // SKIPPED: LiteSVM has issues deserializing start_session instructions
     // The program works correctly (verified by Rust unit tests and actual Solana)
-    it.skip("should allow player to create 5 concurrent sessions with different indices - SKIPPED: LiteSVM deserialization limitation", () => {
+    it("should allow player to create 5 concurrent sessions with different indices", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 50n * BigInt(LAMPORTS_PER_SOL));
 
@@ -1383,7 +1383,11 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       // Verify reserved funds
       const vaultAccount = svm.getAccount(houseVaultPDA);
       const vaultData = parseHouseVaultData(vaultAccount!.data);
-      const expectedReserved = betAmount.muln(100).muln(5);
+      // Config has fixed_bet = 0.01 SOL, max_payout = 100 * 0.01 SOL = 1 SOL per session
+      // 5 sessions * 1 SOL = 5 SOL total reserved
+      const configAccount = svm.getAccount(configPDA);
+      const configData = parseConfigData(configAccount!.data);
+      const expectedReserved = configData.fixedBet.muln(configData.maxPayoutMultiplier).muln(5);
       expect(vaultData.totalReserved.toString()).to.equal(
         expectedReserved.toString()
       );
@@ -1595,7 +1599,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
 
     // SKIPPED: LiteSVM has issues deserializing start_session instructions
     // The program works correctly (verified by Rust unit tests and actual Solana)
-    it.skip("should calculate max_payout correctly at session start - SKIPPED: LiteSVM deserialization limitation", () => {
+    it("should calculate max_payout correctly at session start", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
@@ -1631,17 +1635,20 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       if (!sessionAccount) return;
 
       const sessionData = parseSessionData(sessionAccount.data);
-      const expectedMaxPayout = betAmount.muln(100); // 0.2 * 100 = 20 SOL
+      // Config has fixed_bet = 0.01 SOL, max_payout_multiplier = 100
+      const configAccount = svm.getAccount(configPDA);
+      const configData = parseConfigData(configAccount!.data);
+      const expectedMaxPayout = configData.fixedBet.muln(configData.maxPayoutMultiplier);
 
       expect(sessionData.maxPayout.toString()).to.equal(
         expectedMaxPayout.toString()
       );
-      expect(sessionData.betAmount.toString()).to.equal(betAmount.toString());
+      expect(sessionData.betAmount.toString()).to.equal(configData.fixedBet.toString());
     });
 
     // SKIPPED: LiteSVM has issues deserializing start_session instructions
     // The program works correctly (verified by Rust unit tests and actual Solana)
-    it.skip("should never allow treasure to exceed max_payout across many rounds - SKIPPED: LiteSVM deserialization limitation", () => {
+    it("should never allow treasure to exceed max_payout across many rounds", () => {
       const player = new Keypair();
       svm.airdrop(player.publicKey, 10n * BigInt(LAMPORTS_PER_SOL));
 
@@ -1748,7 +1755,7 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       console.log("      ✓ Verified: Anchor requires ALL function parameters in instruction data");
     });
 
-    it.skip("should successfully start session with correct instruction serialization - SKIPPED: LiteSVM deserialization limitation", () => {
+    it("should successfully start session with correct instruction serialization", () => {
       // Integration test: Verify the actual transaction works on LiteSVM
       // SKIPPED: LiteSVM has the same Anchor instruction deserialization issue
       // This test would pass on actual localnet/devnet, but not in LiteSVM
@@ -1815,11 +1822,11 @@ describe("LiteSVM Additional Tests - Comprehensive Coverage", () => {
       // Fund vault
       svm.airdrop(houseVaultPDA, BigInt(lamports(100).toNumber()));
 
-      // Build start_session instruction with CORRECT serialization (8 bytes only)
+      // Build start_session instruction with CORRECT serialization (16 bytes: 8 discriminator + 8 session_index)
       const startData = buildStartSessionData(sessionIndex);
       
       // Verify instruction data is correct BEFORE sending
-      expect(startData.length).to.equal(8, "Instruction must be 8 bytes before sending");
+      expect(startData.length).to.equal(16, "Instruction must be 16 bytes (8-byte discriminator + 8-byte u64)");
 
       const startIx = new TransactionInstruction({
         keys: [
