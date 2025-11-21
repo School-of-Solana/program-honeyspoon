@@ -21,6 +21,8 @@ export enum GameErrorCode {
   MaxDivesReached = 6009,
   InvalidSlotHash = 6010,
   SessionNotExpired = 6011,
+  VaultHasReservedFunds = 6012,
+  VaultCapacityExceeded = 6013,
 }
 
 export const GameErrorMessage: Record<GameErrorCode, string> = {
@@ -41,6 +43,10 @@ export const GameErrorMessage: Record<GameErrorCode, string> = {
     "Could not retrieve valid slot hash from SlotHashes sysvar",
   [GameErrorCode.SessionNotExpired]:
     "Session has not expired yet - cannot clean up",
+  [GameErrorCode.VaultHasReservedFunds]:
+    "Cannot reset vault reserved when total_reserved > 0 - may have active sessions",
+  [GameErrorCode.VaultCapacityExceeded]:
+    "Vault capacity exceeded - too many concurrent sessions would risk insolvency",
 };
 
 export type GameErrorName = keyof typeof GameErrorCode;

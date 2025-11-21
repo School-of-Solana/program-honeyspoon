@@ -750,6 +750,16 @@
       "code": 6011,
       "name": "SessionNotExpired",
       "msg": "Session has not expired yet - cannot clean up"
+    },
+    {
+      "code": 6012,
+      "name": "VaultHasReservedFunds",
+      "msg": "Cannot reset vault reserved when total_reserved > 0 - may have active sessions"
+    },
+    {
+      "code": 6013,
+      "name": "VaultCapacityExceeded",
+      "msg": "Vault capacity exceeded - too many concurrent sessions would risk insolvency"
     }
   ],
   "types": [
