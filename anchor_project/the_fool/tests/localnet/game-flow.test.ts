@@ -1147,4 +1147,253 @@ describe("Localnet Integration - Full Game Flow", () => {
       }
     });
   });
+
+  describe("🎲 RNG Statistical Analysis", () => {
+    it("should have statistically valid RNG over 100 games (99.9% confidence)", async function() {
+      this.timeout(300000); // 5 minutes for 100 games
+      
+      console.log("\n🎲 Running 100-game RNG statistical test...");
+      console.log("Expected: ~70 survive dive 1, ~30 die (within ±10 for 99.9% confidence)");
+      
+      const NUM_GAMES = 100;
+      const EXPECTED_SURVIVAL_RATE = 0.70; // 70%
+      const CONFIDENCE_99_9 = 3.29; // z-score for 99.9% confidence
+      
+      // Calculate acceptable range using binomial distribution
+      // σ = sqrt(n × p × (1-p))
+      const stdDev = Math.sqrt(NUM_GAMES * EXPECTED_SURVIVAL_RATE * (1 - EXPECTED_SURVIVAL_RATE));
+      const margin = CONFIDENCE_99_9 * stdDev;
+      const expectedSurvivors = NUM_GAMES * EXPECTED_SURVIVAL_RATE;
+      const minAcceptable = Math.floor(expectedSurvivors - margin);
+      const maxAcceptable = Math.ceil(expectedSurvivors + margin);
+      
+      console.log(`📊 Statistical bounds (99.9% confidence):`);
+      console.log(`   Expected survivors: ${expectedSurvivors.toFixed(1)}`);
+      console.log(`   Standard deviation: ${stdDev.toFixed(2)}`);
+      console.log(`   Acceptable range: ${minAcceptable}-${maxAcceptable} survivors`);
+      console.log(`   (This test should fail only 0.1% of the time with fair RNG)\n`);
+
+      const houseVault = await program.account.houseVault.fetch(houseVaultPDA);
+      const players: Keypair[] = [];
+      let survivors = 0;
+      let deaths = 0;
+      const deathOnDive: number[] = [];
+
+      // Create and fund players
+      console.log("🎮 Creating 100 test players...");
+      for (let i = 0; i < NUM_GAMES; i++) {
+        const player = Keypair.generate();
+        await airdrop(player.publicKey, 1 * LAMPORTS_PER_SOL);
+        players.push(player);
+      }
+      console.log("✅ All players funded\n");
+
+      console.log("🎰 Playing 100 games...");
+      const startTime = Date.now();
+
+      for (let i = 0; i < NUM_GAMES; i++) {
+        const player = players[i];
+        const sessionIndex = new BN(Date.now() + 1000 + i);
+        const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
+
+        try {
+          // Start session
+          await program.methods
+            .startSession(sessionIndex)
+            .accounts({
+              user: player.publicKey,
+              houseVault: houseVaultPDA,
+              houseAuthority: houseVault.houseAuthority,
+            } as any)
+            .signers([player])
+            .rpc();
+
+          // Play first round
+          await program.methods
+            .playRound()
+            .accounts({
+              user: player.publicKey,
+              session: sessionPDA,
+              houseVault: houseVaultPDA,
+            } as any)
+            .signers([player])
+            .rpc();
+
+          // Check if survived
+          try {
+            const session = await program.account.gameSession.fetch(sessionPDA);
+            if (session.status === 0) { // Active = survived
+              survivors++;
+              // Clean up by losing the session
+              try {
+                await program.methods
+                  .loseSession()
+                  .accounts({
+                    user: player.publicKey,
+                    session: sessionPDA,
+                    houseVault: houseVaultPDA,
+                  } as any)
+                  .signers([player])
+                  .rpc();
+              } catch (e) {
+                // Already closed, that's fine
+              }
+            } else if (session.status === 1) { // Lost = died
+              deaths++;
+              deathOnDive.push(session.diveNumber);
+            }
+          } catch (e) {
+            // Session not found = player died and session was closed atomically
+            deaths++;
+            deathOnDive.push(1);
+          }
+        } catch (e) {
+          console.error(`❌ Game ${i + 1} failed:`, e.message);
+          throw e;
+        }
+
+        // Progress indicator every 10 games
+        if ((i + 1) % 10 === 0) {
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+          console.log(`   Progress: ${i + 1}/${NUM_GAMES} games (${survivors} survived, ${deaths} died) [${elapsed}s]`);
+        }
+      }
+
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`\n✅ All ${NUM_GAMES} games completed in ${totalTime}s\n`);
+
+      // Calculate statistics
+      const survivalRate = survivors / NUM_GAMES;
+      const deathRate = deaths / NUM_GAMES;
+      const zScore = Math.abs(survivors - expectedSurvivors) / stdDev;
+      
+      console.log("📊 RNG STATISTICS:");
+      console.log(`   Survivors: ${survivors}/${NUM_GAMES} (${(survivalRate * 100).toFixed(1)}%)`);
+      console.log(`   Deaths: ${deaths}/${NUM_GAMES} (${(deathRate * 100).toFixed(1)}%)`);
+      console.log(`   Z-score: ${zScore.toFixed(2)} (threshold: ${CONFIDENCE_99_9})`);
+      console.log(`   Acceptable range: ${minAcceptable}-${maxAcceptable} survivors`);
+      
+      // Chi-square test
+      const chiSquare = Math.pow(survivors - expectedSurvivors, 2) / expectedSurvivors +
+                        Math.pow(deaths - (NUM_GAMES - expectedSurvivors), 2) / (NUM_GAMES - expectedSurvivors);
+      console.log(`   Chi-square: ${chiSquare.toFixed(2)} (critical value: 10.83 for p=0.001)`);
+
+      console.log("\n📈 INTERPRETATION:");
+      if (survivors >= minAcceptable && survivors <= maxAcceptable) {
+        console.log(`   ✅ RNG appears FAIR (within 99.9% confidence interval)`);
+        console.log(`   ✅ Survival rate ${(survivalRate * 100).toFixed(1)}% is close to expected 70%`);
+      } else {
+        console.log(`   ❌ RNG appears BIASED (outside 99.9% confidence interval)`);
+        console.log(`   ❌ This should only happen 0.1% of the time with fair RNG`);
+        console.log(`   ❌ Likely indicates a bug in the randomness implementation`);
+      }
+
+      // Assertions
+      expect(survivors).to.be.at.least(minAcceptable, 
+        `Too few survivors (${survivors}) - RNG may be biased toward death. Expected ${minAcceptable}-${maxAcceptable}.`);
+      expect(survivors).to.be.at.most(maxAcceptable,
+        `Too many survivors (${survivors}) - RNG may be biased toward survival. Expected ${minAcceptable}-${maxAcceptable}.`);
+      expect(chiSquare).to.be.lessThan(10.83,
+        `Chi-square test failed - RNG distribution is not random (χ²=${chiSquare.toFixed(2)})`);
+
+      console.log("\n✅ RNG STATISTICAL TEST PASSED");
+      console.log("   (This test has a 0.1% false positive rate with fair RNG)");
+    });
+
+    it("should show uniform distribution of random rolls", async function() {
+      this.timeout(180000); // 3 minutes
+      
+      console.log("\n📊 Testing RNG roll distribution uniformity...");
+      
+      const NUM_SAMPLES = 50;
+      const NUM_BUCKETS = 10; // Divide 0-1M into 10 buckets of 100k each
+      const buckets = new Array(NUM_BUCKETS).fill(0);
+      
+      console.log(`Running ${NUM_SAMPLES} games to analyze roll distribution...\n`);
+
+      const houseVault = await program.account.houseVault.fetch(houseVaultPDA);
+      
+      for (let i = 0; i < NUM_SAMPLES; i++) {
+        const player = Keypair.generate();
+        await airdrop(player.publicKey, 1 * LAMPORTS_PER_SOL);
+        
+        const sessionIndex = new BN(Date.now() + 2000 + i);
+        const [sessionPDA] = getSessionPDA(player.publicKey, sessionIndex);
+
+        try {
+          await program.methods
+            .startSession(sessionIndex)
+            .accounts({
+              user: player.publicKey,
+              houseVault: houseVaultPDA,
+              houseAuthority: houseVault.houseAuthority,
+            } as any)
+            .signers([player])
+            .rpc();
+
+          const tx = await program.methods
+            .playRound()
+            .accounts({
+              user: player.publicKey,
+              session: sessionPDA,
+              houseVault: houseVaultPDA,
+            } as any)
+            .signers([player])
+            .rpc();
+
+          // Get transaction logs to extract the roll value
+          const txDetails = await provider.connection.getTransaction(tx, {
+            commitment: "confirmed",
+            maxSupportedTransactionVersion: 0
+          });
+
+          if (txDetails && txDetails.meta && txDetails.meta.logMessages) {
+            const rollLog = txDetails.meta.logMessages.find(log => log.includes("RNG_ROLL"));
+            if (rollLog) {
+              const rollMatch = rollLog.match(/roll=(\d+)/);
+              if (rollMatch) {
+                const roll = parseInt(rollMatch[1]);
+                const bucketIndex = Math.floor(roll / 100000); // 0-9
+                if (bucketIndex < NUM_BUCKETS) {
+                  buckets[bucketIndex]++;
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // Game may have failed, that's ok for this test
+        }
+
+        if ((i + 1) % 10 === 0) {
+          console.log(`   Sampled ${i + 1}/${NUM_SAMPLES} games...`);
+        }
+      }
+
+      console.log("\n📊 Roll Distribution (0-1,000,000 divided into 10 buckets):");
+      const expectedPerBucket = NUM_SAMPLES / NUM_BUCKETS;
+      let chiSquare = 0;
+      
+      for (let i = 0; i < NUM_BUCKETS; i++) {
+        const rangeStart = i * 100000;
+        const rangeEnd = (i + 1) * 100000;
+        const percent = (buckets[i] / NUM_SAMPLES * 100).toFixed(1);
+        const bar = "█".repeat(Math.round(buckets[i] / NUM_SAMPLES * 50));
+        console.log(`   ${rangeStart.toString().padStart(7)}-${rangeEnd.toString().padEnd(7)}: ${buckets[i].toString().padStart(2)} (${percent}%) ${bar}`);
+        
+        chiSquare += Math.pow(buckets[i] - expectedPerBucket, 2) / expectedPerBucket;
+      }
+
+      // Chi-square critical value for 9 degrees of freedom at p=0.001 is 27.88
+      console.log(`\n   Chi-square: ${chiSquare.toFixed(2)} (critical: 27.88 for p=0.001)`);
+      
+      if (chiSquare < 27.88) {
+        console.log(`   ✅ Distribution appears uniform (chi-square test passed)`);
+      } else {
+        console.log(`   ❌ Distribution appears non-uniform (chi-square test failed)`);
+      }
+
+      expect(chiSquare).to.be.lessThan(27.88, 
+        "Roll distribution is not uniform - RNG may not be properly randomized");
+    });
+  });
 });
